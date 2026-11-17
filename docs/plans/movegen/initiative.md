@@ -1,0 +1,80 @@
+# Initiative: `movegen` — replace shakmaty with `atomic-movegen`
+
+## Status
+
+**Not started (2026-11-17).** This initiative begins only after `parity`
+reaches `P5` and the result is recorded in the ledger. No plans yet.
+
+## Goal
+
+Replace the parity prover's `shakmaty` rules layer with `atomic-movegen`
+while preserving correctness, proof acceptance and wall-time parity, then use
+the new movegen's APIs to improve the prover.
+
+The checker stays on `shakmaty`. The two rules implementations must remain
+independent, so a movegen bug cannot hide in both the prover and the checker.
+
+## Prerequisites
+
+- `parity` `P5` is recorded: all three bench cells proved at 10 s, geomean
+  wall `<= 1.0` against `provari --guide hand`, every claim accepted by our
+  checker and `provari check`.
+- The parity prover's rules surface is documented: position parsing, legal
+  moves, terminal outcomes, hashes, en passant, castling, promotions and
+  insufficient material.
+- A pinned `atomic-movegen` version is chosen and recorded in
+  `PROVENANCE.md`/`Cargo.toml`.
+- A differential harness exists that compares the two rules implementations
+  on the fixtures, the bench corpus and random play-out positions.
+
+## Non-goals
+
+- **No checker change.** The checker remains on shakmaty. A movegen
+  replacement in the checker would destroy the independent-veto property.
+- **No search-formulation change.** The search stays DF-PN with the hand
+  guide. Movegen work is a rules-layer replacement, not a new solver.
+- **No proof-format change.** The compact `.pvr` v1 format and its move order
+  stay unchanged.
+- **No web, UCI, tablebases, NNUE/model, portfolio or parallel search.**
+  Those remain out of scope unless a separate initiative says otherwise.
+- **No silent rules divergence.** A difference between shakmaty and
+  `atomic-movegen` is a finding, not a convenience.
+
+## Candidate work items
+
+These are placeholders; the first plan will turn them into concrete items
+after the parity handoff.
+
+| # | Item | Note |
+| --- | --- | --- |
+| M1 | **Rules adapter** | Wrap `atomic-movegen::Board` behind the prover's position interface; keep shakmaty for parsing and the checker |
+| M2 | **Move/effect layer** | Replace the parity `Mover`/`Effect` precomputation with `atomic-movegen`'s movegen and effect APIs where they are faster |
+| M3 | **Hash/key parity** | Match the prover's board-only key and legal en passant handling; pin against shakmaty |
+| M4 | **Terminality** | Use `atomic-movegen`'s outcome/terminal APIs; preserve the checker's insufficient-material rule |
+| M5 | **Differential harness** | Compare legal moves, outcomes, hashes and proof acceptance on fixtures, corpus and random play-outs |
+| M6 | **Wall parity** | Re-run the bench; a movegen change that regresses wall time is not adopted without a measured win |
+| M7 | **Upstream asks** | File measured API requests to `atomic-movegen` only when the prover's profile justifies them |
+
+## Gates
+
+- The differential harness reports zero disagreements on the frozen fixtures
+  and the bench corpus, and no proof is accepted by one rules implementation
+  and rejected by the other.
+- The checker still uses shakmaty only and shares no code with the prover.
+- The bench remains at `P5` or better; a regression is a finding, not a
+  silent adoption.
+- `make test`, `make test-full` and `make veto` green.
+
+## Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| Rules divergence (en passant, castling, promotions, insufficient material) | Differential harness; checker veto; classify and report |
+| Checker loses independence | D4/D11: checker stays on shakmaty |
+| Movegen is slower on the prover's hot path | Measure before adopting; keep the parity path until a gate passes |
+| Proof format changes accidentally | Pin the format tests; the checker is the external contract |
+| Scope creep into search tuning | Movegen is a rules-layer initiative; search changes need their own item and gate |
+
+## History
+
+- **2026-11-17** — initiative opened as a placeholder. No plans, no code.
