@@ -1,0 +1,41 @@
+## Context
+
+Our last try to build the fastest atomic chess win-prover was `https://github.com/golmman/atomi`.
+Our current assessment is that we can't close the T_5 gap within a reasonable amount of effort. So here is my plan to move forward.
+
+Start from scratch in a new repository (this repo, `470M1`) with GPL-3.0 license.
+
+That way we can copy freely from
+
+* https://github.com/aiorla/provari
+* https://github.com/golmman/atomi
+* https://github.com/golmman/atomic_solver
+
+and achieve parity with provaris wall times, then improve further by adopting ideas from atomi and atomic_solver.
+
+The planning process and structure of atomi and atomic_solver proved to be fruitful, so i propose adopting the best ideas, e.g. initiative structure, decisions, history, gotchas etc.
+
+In particular i like to have:
+
+**bench.md**
+
+* similar to atomis `docs/plans/prover/bench.md`
+* independent of initiative
+* focus on the "Ledger" table
+
+**Initiatives**
+
+* `parity`
+  * pure win prover and checker with cli based on provari
+  * goal: wall times <= provari
+  * no web frontend
+  * sub-goals and non-goals similar to the `prover` initiative of `atomi`
+* `movegen`
+  * goal: replace `shakmaty` with `atomic-movegen`
+  * started after `parity` is finished
+
+## Task
+
+Your task is build only the documentational scaffolding now, no coding in this session.
+Get a thorough understanding of provari, atomi, atomic_solver and then
+set up the directory and file structure, add the initiatives, add the first plans in the `parity` initiative, add an AGENTS.md, etc.
