@@ -11,12 +11,12 @@
 use std::fs;
 use std::io::Write;
 use std::process::{Command, Stdio};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
-use shakmaty::Color;
+use shakmaty::{Color, Position as _};
 
-use atomic470m1::{check, format, lines, position};
+use atomic470m1::{check, dfpn, format, lines, position};
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -36,7 +36,7 @@ fn main() {
         },
         "line" => line(rest),
         "bench" => bench(rest),
-        "prove" => Err("search is plan2: `prove` is not implemented yet".into()),
+        "prove" => prove(rest),
         "version" | "--version" => {
             println!("470m1 {}", env!("CARGO_PKG_VERSION"));
             Ok(())
@@ -69,7 +69,7 @@ const HELP: &str = "\
 Usage: 470m1 COMMAND [OPTIONS]
 
 Commands:
-  prove FEN                searches one position for a win (plan2)
+  prove FEN                searches one position for a win
   bench FILE --out FILE    measures the reference side of a corpus
   check PROOF...           verifies proofs, independently of the search
   line PROOF ['MOVES']     shows a proof's lines (--pgn FILE writes its tree)
@@ -78,7 +78,11 @@ Commands:
 Options:
   --seconds S              a search or check budget
   --memory MB              a search's memory label
-  --guide hand|none        the reference guide for `bench`
+  --guide hand|none        the guide for `prove` and `bench`
+  --proofs PATH            where `prove` writes its proof
+  --json                   `prove` prints one JSON line
+  --seed N                 `prove` perturbs tie-breaks deterministically
+  --evals N                `prove` stops after N child evaluations
   --workers N              checks at a time
   --compact-only           `check` refuses JSON-lines proofs
   --pgn FILE               where `line` writes the proof's tree
@@ -86,6 +90,116 @@ Options:
   --out FILE               where `bench` writes results
   --reference PATH         the provari binary for `bench`
 ";
+
+/// Searches one position for a win, and writes its proof when asked.
+fn prove(args: &[String]) -> Result<(), String> {
+    let mut free = Vec::new();
+    let mut seconds = None;
+    let mut memory = 192usize;
+    let mut guide = "hand".to_owned();
+    let mut proofs = None;
+    let mut json = false;
+    let mut seed = 0u64;
+    let mut evals = None;
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        let mut value = || args.next().ok_or(format!("{arg} needs a value"));
+        match arg.as_str() {
+            "--seconds" => seconds = Some(value()?.parse().map_err(|_| "bad --seconds")?),
+            "--memory" => memory = value()?.parse().map_err(|_| "bad --memory")?,
+            "--guide" => guide = value()?.to_owned(),
+            "--proofs" => proofs = Some(value()?.to_owned()),
+            "--seed" => seed = value()?.parse().map_err(|_| "bad --seed")?,
+            "--evals" => evals = Some(value()?.parse().map_err(|_| "bad --evals")?),
+            "--json" => json = true,
+            unknown if unknown.starts_with("--") => {
+                return Err(format!("unknown option {unknown}: see 470m1 --help"));
+            }
+            _ => free.push(arg.clone()),
+        }
+    }
+    let fen = free
+        .first()
+        .ok_or("usage: 470m1 prove FEN [--seconds S] [--memory MB] [--guide hand|none] [--proofs PATH] [--json] [--seed N] [--evals N]")?;
+    let guide = match guide.as_str() {
+        "hand" => dfpn::Guide::Hand,
+        "none" => dfpn::Guide::None,
+        other => return Err(format!("--guide is hand or none, not {other}")),
+    };
+    let root = position(fen)?;
+    let started = Instant::now();
+    let deadline = match seconds {
+        Some(seconds) => started + Duration::from_secs_f64(seconds),
+        None => started + Duration::from_secs(60 * 60 * 24 * 365),
+    };
+    let needed = dfpn::proofs_needed(seconds, None);
+    let (table, proof_mb) = dfpn::split(memory, needed);
+    let mut search = dfpn::Dfpn::new(&root, guide, deadline, (table, proof_mb));
+    search.set_seed(seed);
+    if let Some(evals) = evals {
+        search.set_eval_limit(evals);
+    }
+    let moves = search.solve(&root);
+    let elapsed = started.elapsed().as_millis() as u64;
+    let mut written = None;
+    if let (Some(_), Some(path)) = (moves, &proofs) {
+        let (header, bytes) = format::encode(&root, root.turn(), |pos| {
+            let key = (pos.hash(), pos.halfmoves());
+            search
+                .winning_move(&pos.to_atomic(), &key)
+                .and_then(|m| format::board_move(pos, &m))
+        })?;
+        format::save(std::path::Path::new(path), &bytes)?;
+        written = Some(header);
+    }
+    let mate = written.as_ref().map_or(moves, |header| Some(header.moves));
+    let mut result = json!({
+        "found": moves.is_some(),
+        "mate": mate,
+        "nodes": search.nodes,
+        "child_evals": search.evals,
+        "expansions": search.expansions,
+        "ms": elapsed,
+        "guide": match guide {
+            dfpn::Guide::Hand => "hand",
+            dfpn::Guide::None => "none",
+        },
+        "seed": seed,
+    });
+    if let Some(header) = &written {
+        result["proof_moves"] = json!(header.positions);
+        result["proof_path"] = json!(proofs);
+    }
+    if let Some((proof, disproof)) = search.root_numbers
+        && moves.is_none()
+    {
+        result["root"] = json!([proof, disproof]);
+        if disproof == 0 {
+            result["refuted"] = json!(true);
+        }
+    }
+    if search.proofs_full() && moves.is_none() {
+        result["error"] = json!("the proofs filled their memory: give more --memory");
+    }
+    if json {
+        println!("{result}");
+    } else if moves.is_some() {
+        println!(
+            "win in {} attacker moves, {} nodes, {} ms",
+            mate.unwrap_or(0),
+            search.nodes,
+            elapsed
+        );
+    } else if result.get("refuted").and_then(Value::as_bool) == Some(true) {
+        println!(
+            "no win: refuted after {} nodes, {} ms",
+            search.nodes, elapsed
+        );
+    } else {
+        println!("no win found after {} nodes, {} ms", search.nodes, elapsed);
+    }
+    Ok(())
+}
 
 /// Shows a checked proof's lines.
 fn line(args: &[String]) -> Result<(), String> {

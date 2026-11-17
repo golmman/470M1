@@ -17,8 +17,12 @@ claim.
 
 ## Current state
 
-Documentation scaffolding only. There is no crate, binary, test or measurement
-yet. Plan 1 creates the first code.
+Plan 2 complete (2026-11-17). The crate, rules layer, proof format,
+independent checker, `line`, bench harness, oracle/veto and the DF-PN search
+core with the hand guide are in place. `prove` proves all three bench cells at
+120 s (9/9, both checkers, geomean 0.985); a same-session 10 s matrix gave
+geomean 0.968. Plan 3 owns the 10 s parity gate. See
+[`docs/plans/parity/report2.md`](docs/plans/parity/report2.md).
 
 ## Collaboration
 

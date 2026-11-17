@@ -28,6 +28,12 @@ a second initiative so search and rules effects are not confounded.
 
 ## History
 
+- **2026-11-17** — plan 2 executed. Ported provari `v0.1.0`'s single-threaded
+  table, full-key proofs, DF-PN and exhaustive baseline, stripped tablebase,
+  network, model, progress and sampling code, and added the hand guide, proof
+  writer and `prove`. At 120 s all three cells proved, 9/9 seeds/repeats,
+  every proof accepted by both checkers, geomean 0.985. A same-session 10 s
+  matrix gave geomean 0.968, 9/9 each. See [`report2.md`](report2.md).
 - **2026-11-17** — plan 1 executed. Crate, rules helpers, compact/JSONL
   proof format, independent checker, `line`, reference-side bench, oracle and
   veto landed. Eight oracle-written proofs accepted by both checkers; one

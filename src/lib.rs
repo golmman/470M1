@@ -9,9 +9,15 @@
 
 pub mod board;
 pub mod check;
+pub mod clock;
+pub mod dfpn;
+pub mod eval;
 pub mod format;
 pub mod lines;
 pub mod moves;
+pub mod proofs;
+pub mod search;
+pub mod table;
 pub mod walk;
 
 use shakmaty::{

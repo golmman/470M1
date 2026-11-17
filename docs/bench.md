@@ -161,7 +161,15 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 
 | Plan | Date | Host | Stack | `core` | `easy-win` | `deep-win` | Geomean | Cap |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| _none yet_ | | | | | | | | |
+| plan2 | 2026-11-17 | `8f5ca2f2750a` | hand, single-thread | **1.091** | **0.987** | **0.887** | **0.985** | 120 s |
+
+
+Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
+by `470m1 check` and `provari check`. Candidate proof lengths 17/15/19 against
+same-session reference mates 17/15/22; `child_evals` 3,823,775 / 897,937 /
+38,205,943. A same-session 10 s matrix (not this row) gave factors 1.049 /
+0.975 / 0.887, geomean 0.968, 9/9 accepted per cell; plan3 owns the 10 s gate.
+See `plans/parity/measurements/plan2/`.
 
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
@@ -176,7 +184,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | Pin | HEAD | Rows |
 | --- | --- | --- |
 | `provari-v0.4.0` | `bceb1ee1faf7d9cf2422eb89c931be69ae30619d` | the 1.000 side of every factor |
-| `470m1@<sha>` | _to be filled by plan1_ | _none yet_ |
+| `470m1@<sha>` | _owner commits the plan2 tree_ | plan2 |
 
 ## History
 

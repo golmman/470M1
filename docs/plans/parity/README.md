@@ -16,6 +16,7 @@ a decision record, a measurement record, or a historical plan/report.
 | [`plan1.md`](plan1.md) | P0: repository, rules, proof format, independent checker, bench harness |
 | [`report1.md`](report1.md) | Plan 1 result: gates green, reference values, scope changes |
 | [`plan2.md`](plan2.md) | P1: DF-PN search core, hand guide, proof writer |
+| [`report2.md`](report2.md) | Plan 2 result: search core, 120 s and 10 s matrices |
 | [`plan3.md`](plan3.md) | P2: parity measurement and gap closure |
 | `measurements/planN/` | Committed drivers, parsed results, `env.json`, provenance READMEs |
 
@@ -23,10 +24,14 @@ a decision record, a measurement record, or a historical plan/report.
 
 - Plan 1 complete: crate, rules helpers, compact/JSONL proof format,
   independent checker, `line`, reference-side bench, oracle and veto.
-- Reference values are in [`measurements/plan1/`](measurements/plan1/); no
-  ledger row (no candidate search).
-- Next session: execute [`plan2.md`](plan2.md) (P1 search core).
-- The performance ledger is [`../../bench.md`](../../bench.md).
+- Plan 2 complete: board/moves, table, full-key proofs, DF-PN with the hand
+  guide, proof writer and `prove`. At 120 s all three cells are proved, 9/9,
+  both checkers, geomean 0.985. A same-session 10 s matrix gave geomean 0.968,
+  9/9 each; plan3 owns the 10 s gate.
+- Measurements are in [`measurements/plan1/`](measurements/plan1/) and
+  [`measurements/plan2/`](measurements/plan2/); the ledger row is in
+  [`../../bench.md`](../../bench.md).
+- Next session: execute [`plan3.md`](plan3.md) (P2 parity gate).
 
 ## Conventions
 

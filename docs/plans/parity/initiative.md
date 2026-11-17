@@ -2,13 +2,15 @@
 
 ## Status
 
-**Plan 1 complete (2026-11-17).** The crate, rules helpers, proof format,
-independent checker, `line`, reference-side bench, oracle and veto are in
-place; there is no search yet. The next session executes [`plan2.md`](plan2.md)
-(P1: search core). The goal is the top rung `P5`:
-all three bench cells proved at 10 s, geomean wall `<= 1.0` against
-`provari --guide hand`, every claim accepted by our checker and by
-`provari check`.
+**Plan 2 complete (2026-11-17).** The search core is in place: board/moves,
+table, full-key proofs, DF-PN with the hand guide, proof writer and `prove`.
+At the plan's 120 s cap all three cells are proved, 9/9 seeds/repeats, every
+proof accepted by both checkers; geomean 0.985. A same-session 10 s matrix
+also proved all three (geomean 0.968, 9/9 each), but plan3 owns the 10 s
+parity gate. The next session executes [`plan3.md`](plan3.md) (P2: parity
+gate). The goal remains the top rung `P5`: all three bench cells proved at
+10 s, geomean wall `<= 1.0` against `provari --guide hand`, every claim
+accepted by our checker and by `provari check`.
 
 ## Reference
 
@@ -148,8 +150,8 @@ independently of items. A plan header names its item.
 | # | Item | Status / next action |
 | --- | --- | --- |
 | 1 | **P0 — foundation** (plan1) | **done.** Crate, CLI skeleton, rules, proof format, independent checker, bench harness, oracle, corpus. Gate green; see [`report1.md`](report1.md) |
-| 2 | **P1 — search core** (plan2) | **next.** Board/moves/effect, table, proofs, DF-PN, hand guide, proof writer, `prove`. Gate: `P1`/`P2` rungs; proofs accepted by both checkers; no refutations |
-| 3 | **P2 — parity gate** (plan3) | **proposed.** Same-session baseline, per-node/tree diagnosis, port atomi's measured wins if needed, 10 s matrix, D14, ledger. Gate: `P4`/`P5` |
+| 2 | **P1 — search core** (plan2) | **done.** Board/moves/effect, table, proofs, DF-PN, hand guide, proof writer, `prove`. Gate: `P3` at 120 s (all three cells, 9/9, both checkers); 10 s candidate matrix geomean 0.968. See [`report2.md`](report2.md) |
+| 3 | **P2 — parity gate** (plan3) | **next.** Same-session baseline, per-node/tree diagnosis, port atomi's measured wins if needed, 10 s matrix, D14, ledger. Gate: `P4`/`P5` |
 | 4 | **P3 — hardening** | **future.** Cleanup, error handling, CLI polish, slow tests, licence gate, docs. No performance claim |
 | 5 | **Movegen handoff** | **future.** Close `parity` and open `movegen` only after `P5` is recorded in the ledger |
 

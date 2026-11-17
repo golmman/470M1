@@ -1,6 +1,6 @@
 # Plan 2 — P1: DF-PN search core, hand guide, proof writer
 
-**Item:** 2 (P1 search core). **Status:** next. **Session type:** execution.
+**Item:** 2 (P1 search core). **Status:** done (see [`report2.md`](report2.md)). **Session type:** execution.
 **Predecessor:** [`plan1.md`](plan1.md). **Successor:** [`plan3.md`](plan3.md).
 
 ## Goal

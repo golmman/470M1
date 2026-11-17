@@ -1,4 +1,4 @@
-.PHONY: test test-full lint licence oracle veto bench fmt clippy doc
+.PHONY: test test-full lint licence oracle veto bench bench2 fmt clippy doc
 
 test: lint licence
 	cargo test
@@ -35,3 +35,10 @@ bench:
 		--provari /tmp/470M1-oracle/provari/target/release/provari \
 		--corpus bench/corpus.json \
 		--out docs/plans/parity/measurements/plan1/results.json
+
+bench2:
+	cargo build --release
+	python3 docs/plans/parity/measurements/plan2/run_bench.py \
+		--provari /tmp/470M1-oracle/provari/target/release/provari \
+		--candidate target/release/470m1 \
+		--out docs/plans/parity/measurements/plan2/results.json
