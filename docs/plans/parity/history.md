@@ -28,6 +28,12 @@ a second initiative so search and rules effects are not confounded.
 
 ## History
 
+- **2026-11-17** — plan 1 executed. Crate, rules helpers, compact/JSONL
+  proof format, independent checker, `line`, reference-side bench, oracle and
+  veto landed. Eight oracle-written proofs accepted by both checkers; one
+  truncated control rejected by both. Reference medians: `core` 0.342 s,
+  `easy-win` 0.075 s, `deep-win` 4.721 s. No ledger row. See
+  [`report1.md`](report1.md).
 - **2026-11-17** — documentation scaffolding created. Read provari `v0.4.0`
   (`bceb1ee`), atomi (`a4802e7`) and atomic_solver (`14abcf2`). Recorded
   decisions D1–D12, the parity rungs `P1`–`P5`, the source take-list, the

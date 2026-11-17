@@ -1,6 +1,6 @@
 # Plan 1 — P0: repository, rules, proof format, independent checker, bench harness
 
-**Item:** 1 (P0 foundation). **Status:** proposed. **Session type:** execution.
+**Item:** 1 (P0 foundation). **Status:** done (see [`report1.md`](report1.md)). **Session type:** execution.
 **Predecessor:** none. **Successor:** [`plan2.md`](plan2.md).
 
 ## Goal

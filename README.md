@@ -8,7 +8,8 @@ reproducible bench set. The second, [`movegen`](docs/plans/movegen/initiative.md
 replaces the parity rules dependency with `atomic-movegen` after parity is
 reached.
 
-**Status:** documentation scaffolding only. No code has been written yet.
+**Status:** plan 1 complete (P0 foundation: rules, proof format, independent
+checker, `line`, reference bench, oracle/veto). The search core is plan 2.
 
 ## Documents
 

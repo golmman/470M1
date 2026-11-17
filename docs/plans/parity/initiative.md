@@ -2,9 +2,10 @@
 
 ## Status
 
-**Documentation scaffolding only (2026-11-17).** No code, no measurements.
-The next session executes [`plan1.md`](plan1.md) (P0: repository, rules, proof
-format, independent checker, bench harness). The goal is the top rung `P5`:
+**Plan 1 complete (2026-11-17).** The crate, rules helpers, proof format,
+independent checker, `line`, reference-side bench, oracle and veto are in
+place; there is no search yet. The next session executes [`plan2.md`](plan2.md)
+(P1: search core). The goal is the top rung `P5`:
 all three bench cells proved at 10 s, geomean wall `<= 1.0` against
 `provari --guide hand`, every claim accepted by our checker and by
 `provari check`.
@@ -146,8 +147,8 @@ independently of items. A plan header names its item.
 
 | # | Item | Status / next action |
 | --- | --- | --- |
-| 1 | **P0 — foundation** (plan1) | **next.** Crate, CLI skeleton, rules, proof format, independent checker, bench harness, oracle, corpus. Gate: checker accepts known provari proofs and rejects controls; bench harness runs the reference side |
-| 2 | **P1 — search core** (plan2) | **proposed.** Board/moves/effect, table, proofs, DF-PN, hand guide, proof writer, `prove`. Gate: `P1`/`P2` rungs; proofs accepted by both checkers; no refutations |
+| 1 | **P0 — foundation** (plan1) | **done.** Crate, CLI skeleton, rules, proof format, independent checker, bench harness, oracle, corpus. Gate green; see [`report1.md`](report1.md) |
+| 2 | **P1 — search core** (plan2) | **next.** Board/moves/effect, table, proofs, DF-PN, hand guide, proof writer, `prove`. Gate: `P1`/`P2` rungs; proofs accepted by both checkers; no refutations |
 | 3 | **P2 — parity gate** (plan3) | **proposed.** Same-session baseline, per-node/tree diagnosis, port atomi's measured wins if needed, 10 s matrix, D14, ledger. Gate: `P4`/`P5` |
 | 4 | **P3 — hardening** | **future.** Cleanup, error handling, CLI polish, slow tests, licence gate, docs. No performance claim |
 | 5 | **Movegen handoff** | **future.** Close `parity` and open `movegen` only after `P5` is recorded in the ledger |

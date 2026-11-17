@@ -1,0 +1,146 @@
+{
+  "side": "provari-hand",
+  "corpus_sha256": "9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e",
+  "seconds": 10.0,
+  "memory_mb": 192,
+  "repeats": 3,
+  "rows": [
+    {
+      "cell": "core",
+      "id": "core",
+      "run": 1,
+      "wall_s": 0.383,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "ms": 377
+    },
+    {
+      "cell": "core",
+      "id": "core",
+      "run": 2,
+      "wall_s": 0.341,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "ms": 336
+    },
+    {
+      "cell": "core",
+      "id": "core",
+      "run": 3,
+      "wall_s": 0.342,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "ms": 336
+    },
+    {
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "run": 1,
+      "wall_s": 0.075,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "ms": 69
+    },
+    {
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "run": 2,
+      "wall_s": 0.075,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "ms": 70
+    },
+    {
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "run": 3,
+      "wall_s": 0.073,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "ms": 68
+    },
+    {
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "run": 1,
+      "wall_s": 4.67,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "ms": 4664
+    },
+    {
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "run": 2,
+      "wall_s": 4.721,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "ms": 4716
+    },
+    {
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "run": 3,
+      "wall_s": 4.781,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "ms": 4776
+    }
+  ],
+  "summary": {
+    "core": {
+      "id": "core",
+      "walls_s": [
+        0.383,
+        0.341,
+        0.342
+      ],
+      "median_wall_s": 0.342,
+      "wins": 3,
+      "mate": 17,
+      "nodes": 342289
+    },
+    "easy-win": {
+      "id": "1eb80b92f92c",
+      "walls_s": [
+        0.075,
+        0.075,
+        0.073
+      ],
+      "median_wall_s": 0.075,
+      "wins": 3,
+      "mate": 15,
+      "nodes": 72523
+    },
+    "deep-win": {
+      "id": "db6a741c723f",
+      "walls_s": [
+        4.67,
+        4.721,
+        4.781
+      ],
+      "median_wall_s": 4.721,
+      "wins": 3,
+      "mate": 22,
+      "nodes": 4574912
+    }
+  }
+}

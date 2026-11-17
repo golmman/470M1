@@ -14,14 +14,18 @@ a decision record, a measurement record, or a historical plan/report.
 | [`history.md`](history.md) | Chronological record and durable findings |
 | [`analysis1.md`](analysis1.md) | Prior-art map of provari, atomi and atomic_solver; what parity takes and defers |
 | [`plan1.md`](plan1.md) | P0: repository, rules, proof format, independent checker, bench harness |
+| [`report1.md`](report1.md) | Plan 1 result: gates green, reference values, scope changes |
 | [`plan2.md`](plan2.md) | P1: DF-PN search core, hand guide, proof writer |
 | [`plan3.md`](plan3.md) | P2: parity measurement and gap closure |
 | `measurements/planN/` | Committed drivers, parsed results, `env.json`, provenance READMEs |
 
 ## Current state (2026-11-17)
 
-- Documentation scaffolding only; no code, no measurements.
-- Next session: execute [`plan1.md`](plan1.md).
+- Plan 1 complete: crate, rules helpers, compact/JSONL proof format,
+  independent checker, `line`, reference-side bench, oracle and veto.
+- Reference values are in [`measurements/plan1/`](measurements/plan1/); no
+  ledger row (no candidate search).
+- Next session: execute [`plan2.md`](plan2.md) (P1 search core).
 - The performance ledger is [`../../bench.md`](../../bench.md).
 
 ## Conventions
