@@ -17,12 +17,15 @@ claim.
 
 ## Current state
 
-Plan 2 complete (2026-11-17). The crate, rules layer, proof format,
+Plan 3 complete (2026-11-17). The crate, rules layer, proof format,
 independent checker, `line`, bench harness, oracle/veto and the DF-PN search
-core with the hand guide are in place. `prove` proves all three bench cells at
-120 s (9/9, both checkers, geomean 0.985); a same-session 10 s matrix gave
-geomean 0.968. Plan 3 owns the 10 s parity gate. See
-[`docs/plans/parity/report2.md`](docs/plans/parity/report2.md).
+core with the hand guide are in place. `P4` is reached at 10 s (all three
+cells, 9/9, both checkers, timed and untimed counters identical). `P5` is
+recorded as met on the protocol: median geomean 0.983 over four same-session
+passes (range 0.964–1.013), a margin inside the host's wall drift; `core` is
+still 2–9% behind per cell while `deep-win` is 10–15% ahead. No lever was
+adopted: per-node cost already matches provari's. The next step is the kill
+review. See [`docs/plans/parity/report3.md`](docs/plans/parity/report3.md).
 
 ## Collaboration
 

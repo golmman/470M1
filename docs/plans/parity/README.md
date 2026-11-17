@@ -18,6 +18,7 @@ a decision record, a measurement record, or a historical plan/report.
 | [`plan2.md`](plan2.md) | P1: DF-PN search core, hand guide, proof writer |
 | [`report2.md`](report2.md) | Plan 2 result: search core, 120 s and 10 s matrices |
 | [`plan3.md`](plan3.md) | P2: parity measurement and gap closure |
+| [`report3.md`](report3.md) | Plan 3 result: `P4`/`P5` measured, levers closed, ledger row at 10 s |
 | `measurements/planN/` | Committed drivers, parsed results, `env.json`, provenance READMEs |
 
 ## Current state (2026-11-17)
@@ -25,13 +26,17 @@ a decision record, a measurement record, or a historical plan/report.
 - Plan 1 complete: crate, rules helpers, compact/JSONL proof format,
   independent checker, `line`, reference-side bench, oracle and veto.
 - Plan 2 complete: board/moves, table, full-key proofs, DF-PN with the hand
-  guide, proof writer and `prove`. At 120 s all three cells are proved, 9/9,
-  both checkers, geomean 0.985. A same-session 10 s matrix gave geomean 0.968,
-  9/9 each; plan3 owns the 10 s gate.
-- Measurements are in [`measurements/plan1/`](measurements/plan1/) and
-  [`measurements/plan2/`](measurements/plan2/); the ledger row is in
+  guide, proof writer and `prove`.
+- Plan 3 complete: `P4` at 10 s (all three cells, 9/9, both checkers, timed and
+  untimed counters identical); `P5` recorded as met on the protocol (median
+  geomean 0.983 over four same-session passes, range 0.964–1.013). No lever
+  adopted; the `core` gap is the seed protocol's tree plus the proof export.
+- Measurements are in [`measurements/plan1/`](measurements/plan1/),
+  [`measurements/plan2/`](measurements/plan2/) and
+  [`measurements/plan3/`](measurements/plan3/); ledger rows are in
   [`../../bench.md`](../../bench.md).
-- Next session: execute [`plan3.md`](plan3.md) (P2 parity gate).
+- Next: the kill review (plans 2–3 since the last one); it decides between
+  closing `parity` for `movegen` and buying `core` margin first.
 
 ## Conventions
 

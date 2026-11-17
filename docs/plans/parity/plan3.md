@@ -1,8 +1,9 @@
 # Plan 3 — P2: parity measurement and gap closure
 
-**Item:** 3 (P2 parity gate). **Status:** proposed. **Session type:** execution.
-**Predecessor:** [`plan2.md`](plan2.md). **Successor:** the `movegen`
-initiative, after `P5` is recorded.
+**Item:** 3 (P2 parity gate). **Status:** done (see
+[`report3.md`](report3.md)). **Session type:** execution.
+**Predecessor:** [`plan2.md`](plan2.md). **Successor:** the kill review, then
+the `movegen` initiative.
 
 ## Goal
 

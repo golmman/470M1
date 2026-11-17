@@ -28,6 +28,19 @@ a second initiative so search and rules effects are not confounded.
 
 ## History
 
+- **2026-11-17** — plan 3 executed. Measured three protocol variants in four
+  interleaved same-session 10 s passes and one 120 s pass. `P4` reached (all
+  three cells, 9/9, both checkers at 10 s, timed and untimed counters
+  identical). `P5` recorded as met on the protocol: median geomean 0.983
+  (range 0.964–1.013) against provari `--guide hand`, margin inside the host's
+  ~10% wall drift. No lever adopted: the candidate's per-node cost is already
+  at or below provari's on an identical tree, so HOTPATH-V2/NULL-PIPE are
+  closed; the proof-retention share was swept and closed (proofs never fill;
+  the tree moves by up to 35% with the table size). The `core` gap is the seed
+  protocol's 10–17% tree inflation plus the 26 ms proof export. Findings: the
+  plan2 driver mixed seeds in its counters; the cap selects the memory split,
+  so it is a search parameter. Ledger row at 10 s. See
+  [`report3.md`](report3.md).
 - **2026-11-17** — plan 2 executed. Ported provari `v0.1.0`'s single-threaded
   table, full-key proofs, DF-PN and exhaustive baseline, stripped tablebase,
   network, model, progress and sampling code, and added the hand guide, proof
