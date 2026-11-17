@@ -163,6 +163,7 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | plan2 | 2026-11-17 | `8f5ca2f2750a` | hand, single-thread | **1.091** | **0.987** | **0.887** | **0.985** | 120 s |
 | plan3 | 2026-11-17 | `8f5ca2f2750a` | hand, single-thread | **1.062** | **0.988** | **0.854** | **0.964** | 10 s |
+| plan4 | 2026-11-17 | `8f5ca2f2750a` | hand, tie-break seed (0–2) | **1.055** | **1.106** | **0.900** | **1.016** | 10 s |
 
 
 Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
@@ -184,6 +185,18 @@ protocols: both sides exporting a proof 0.988, and search wall only 0.918. A
 120 s cap row reads 0.975 (3/3; `deep-win` 0.831).
 See `plans/parity/report3.md` and `plans/parity/measurements/plan3/`.
 
+Plan4 footnote: **regression row, not a speed claim.** Coverage 3/3, seeds
+0–2, three repeats, every proof accepted by `470m1 check` and `provari check`
+(9/9 per cell), `D14` timed and untimed counters identical for all 9
+cell-seed pairs. This row measures the D8 correction: a seed now perturbs
+only exact tie-breaks. Seed 0 (the product default) reads 0.965 / 1.012 /
+0.931, geomean 0.965; seeds 1–2 still reorder `core`'s many equally scored
+children (1.147 / 1.055) and `easy-win` (1.106 / 1.118). Candidate proof
+lengths at the median run 17 / 18 / 21 against same-session reference mates
+17 / 15 / 22 (seed 0: 17 / 15 / 22); `child_evals` 4,619,153 / 981,405 /
+56,145,712. No cap, cell or memory split changed. See
+`plans/parity/report4.md` and `plans/parity/measurements/plan4/`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -199,6 +212,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `provari-v0.4.0` | `bceb1ee1faf7d9cf2422eb89c931be69ae30619d` | the 1.000 side of every factor |
 | `470m1@<sha>` | _owner commits the plan2 tree_ | plan2 |
 | `470m1@<sha>` | _owner commits the plan3 tree_ | plan3 |
+| `470m1@<sha>` | _owner commits the plan4 tree_ | plan4 |
 
 ## History
 

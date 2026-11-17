@@ -1,0 +1,1115 @@
+{
+  "side": "candidate-hand vs provari-hand",
+  "corpus_sha256": "9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e",
+  "seconds": 10.0,
+  "reference_seconds": 10.0,
+  "memory_mb": 192,
+  "repeats": 3,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "protocols": [
+    "a"
+  ],
+  "candidate_flags": "",
+  "rows": [
+    {
+      "side": "provari-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 1,
+      "wall_s": 0.383,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 1,
+      "wall_s": 0.387,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": 3823765,
+      "expansions": 189605,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 1,
+      "wall_s": 0.463,
+      "returncode": 0,
+      "win": true,
+      "mate": 14,
+      "nodes": 406879,
+      "child_evals": 4619153,
+      "expansions": 227960,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 1,
+      "wall_s": 0.422,
+      "returncode": 0,
+      "win": true,
+      "mate": 14,
+      "nodes": 369860,
+      "child_evals": 4241810,
+      "expansions": 209469,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 2,
+      "wall_s": 0.38,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": 3823765,
+      "expansions": 189605,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 2,
+      "wall_s": 0.459,
+      "returncode": 0,
+      "win": true,
+      "mate": 14,
+      "nodes": 406879,
+      "child_evals": 4619153,
+      "expansions": 227960,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 2,
+      "wall_s": 0.419,
+      "returncode": 0,
+      "win": true,
+      "mate": 14,
+      "nodes": 369860,
+      "child_evals": 4241810,
+      "expansions": 209469,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 2,
+      "wall_s": 0.415,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 3,
+      "wall_s": 0.453,
+      "returncode": 0,
+      "win": true,
+      "mate": 14,
+      "nodes": 406879,
+      "child_evals": 4619153,
+      "expansions": 227960,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 3,
+      "wall_s": 0.423,
+      "returncode": 0,
+      "win": true,
+      "mate": 14,
+      "nodes": 369860,
+      "child_evals": 4241810,
+      "expansions": 209469,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 3,
+      "wall_s": 0.4,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 3,
+      "wall_s": 0.386,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": 3823765,
+      "expansions": 189605,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 1,
+      "wall_s": 0.087,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 1,
+      "wall_s": 0.086,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 1,
+      "wall_s": 0.094,
+      "returncode": 0,
+      "win": true,
+      "mate": 18,
+      "nodes": 79633,
+      "child_evals": 981405,
+      "expansions": 57678,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 1,
+      "wall_s": 0.095,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 82964,
+      "child_evals": 971340,
+      "expansions": 56710,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 2,
+      "wall_s": 0.086,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 2,
+      "wall_s": 0.098,
+      "returncode": 0,
+      "win": true,
+      "mate": 18,
+      "nodes": 79633,
+      "child_evals": 981405,
+      "expansions": 57678,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 2,
+      "wall_s": 0.094,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 82964,
+      "child_evals": 971340,
+      "expansions": 56710,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 2,
+      "wall_s": 0.084,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 3,
+      "wall_s": 0.094,
+      "returncode": 0,
+      "win": true,
+      "mate": 18,
+      "nodes": 79633,
+      "child_evals": 981405,
+      "expansions": 57678,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 3,
+      "wall_s": 0.095,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 82964,
+      "child_evals": 971340,
+      "expansions": 56710,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 3,
+      "wall_s": 0.085,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 3,
+      "wall_s": 0.086,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 1,
+      "wall_s": 4.94,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 1,
+      "wall_s": 4.877,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": 58229418,
+      "expansions": 3198022,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 1,
+      "wall_s": 4.693,
+      "returncode": 0,
+      "win": true,
+      "mate": 21,
+      "nodes": 4438637,
+      "child_evals": 56145712,
+      "expansions": 3101015,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 1,
+      "wall_s": 4.514,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4238713,
+      "child_evals": 54066365,
+      "expansions": 2985766,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 2,
+      "wall_s": 4.859,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": 58229418,
+      "expansions": 3198022,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 2,
+      "wall_s": 4.836,
+      "returncode": 0,
+      "win": true,
+      "mate": 21,
+      "nodes": 4438637,
+      "child_evals": 56145712,
+      "expansions": 3101015,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 2,
+      "wall_s": 4.512,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4238713,
+      "child_evals": 54066365,
+      "expansions": 2985766,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 2,
+      "wall_s": 5.225,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 1,
+      "run": 3,
+      "wall_s": 4.701,
+      "returncode": 0,
+      "win": true,
+      "mate": 21,
+      "nodes": 4438637,
+      "child_evals": 56145712,
+      "expansions": 3101015,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 2,
+      "run": 3,
+      "wall_s": 4.518,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4238713,
+      "child_evals": 54066365,
+      "expansions": 2985766,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 3,
+      "wall_s": 5.238,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 3,
+      "wall_s": 4.864,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": 58229418,
+      "expansions": 3198022,
+      "verdict": "accepted"
+    }
+  ],
+  "summary": {
+    "a": {
+      "cells": {
+        "core": {
+          "id": "core",
+          "reference_wall_s": 0.4,
+          "reference_wall_spread_s": [
+            0.383,
+            0.415
+          ],
+          "candidate_wall_s": 0.422,
+          "factor": 1.055,
+          "reference_mate": 17,
+          "candidate_mate": 17,
+          "candidate_at_median": {
+            "seed": 2,
+            "mate": 14,
+            "nodes": 369860,
+            "child_evals": 4241810,
+            "expansions": 209469
+          },
+          "per_seed": {
+            "0": {
+              "wall_s": 0.386,
+              "factor": 0.965,
+              "mate": 17,
+              "nodes": 342289,
+              "child_evals": 3823765,
+              "expansions": 189605,
+              "accepted": 3,
+              "runs": 3
+            },
+            "1": {
+              "wall_s": 0.459,
+              "factor": 1.147,
+              "mate": 14,
+              "nodes": 406879,
+              "child_evals": 4619153,
+              "expansions": 227960,
+              "accepted": 3,
+              "runs": 3
+            },
+            "2": {
+              "wall_s": 0.422,
+              "factor": 1.055,
+              "mate": 14,
+              "nodes": 369860,
+              "child_evals": 4241810,
+              "expansions": 209469,
+              "accepted": 3,
+              "runs": 3
+            }
+          },
+          "accepted": 9,
+          "runs": 9,
+          "verdicts": [
+            "accepted"
+          ]
+        },
+        "easy-win": {
+          "id": "1eb80b92f92c",
+          "reference_wall_s": 0.085,
+          "reference_wall_spread_s": [
+            0.084,
+            0.087
+          ],
+          "candidate_wall_s": 0.094,
+          "factor": 1.106,
+          "reference_mate": 15,
+          "candidate_mate": 15,
+          "candidate_at_median": {
+            "seed": 1,
+            "mate": 18,
+            "nodes": 79633,
+            "child_evals": 981405,
+            "expansions": 57678
+          },
+          "per_seed": {
+            "0": {
+              "wall_s": 0.086,
+              "factor": 1.012,
+              "mate": 15,
+              "nodes": 72523,
+              "child_evals": 897937,
+              "expansions": 52251,
+              "accepted": 3,
+              "runs": 3
+            },
+            "1": {
+              "wall_s": 0.094,
+              "factor": 1.106,
+              "mate": 18,
+              "nodes": 79633,
+              "child_evals": 981405,
+              "expansions": 57678,
+              "accepted": 3,
+              "runs": 3
+            },
+            "2": {
+              "wall_s": 0.095,
+              "factor": 1.118,
+              "mate": 15,
+              "nodes": 82964,
+              "child_evals": 971340,
+              "expansions": 56710,
+              "accepted": 3,
+              "runs": 3
+            }
+          },
+          "accepted": 9,
+          "runs": 9,
+          "verdicts": [
+            "accepted"
+          ]
+        },
+        "deep-win": {
+          "id": "db6a741c723f",
+          "reference_wall_s": 5.225,
+          "reference_wall_spread_s": [
+            4.94,
+            5.238
+          ],
+          "candidate_wall_s": 4.701,
+          "factor": 0.9,
+          "reference_mate": 22,
+          "candidate_mate": 22,
+          "candidate_at_median": {
+            "seed": 1,
+            "mate": 21,
+            "nodes": 4438637,
+            "child_evals": 56145712,
+            "expansions": 3101015
+          },
+          "per_seed": {
+            "0": {
+              "wall_s": 4.864,
+              "factor": 0.931,
+              "mate": 22,
+              "nodes": 4574912,
+              "child_evals": 58229418,
+              "expansions": 3198022,
+              "accepted": 3,
+              "runs": 3
+            },
+            "1": {
+              "wall_s": 4.701,
+              "factor": 0.9,
+              "mate": 21,
+              "nodes": 4438637,
+              "child_evals": 56145712,
+              "expansions": 3101015,
+              "accepted": 3,
+              "runs": 3
+            },
+            "2": {
+              "wall_s": 4.514,
+              "factor": 0.864,
+              "mate": 22,
+              "nodes": 4238713,
+              "child_evals": 54066365,
+              "expansions": 2985766,
+              "accepted": 3,
+              "runs": 3
+            }
+          },
+          "accepted": 9,
+          "runs": 9,
+          "verdicts": [
+            "accepted"
+          ]
+        }
+      },
+      "geomean": 1.016,
+      "coverage": "3/3"
+    }
+  },
+  "d14": [
+    {
+      "cell": "core",
+      "seed": 0,
+      "wall_s": 0.382,
+      "returncode": 0,
+      "found": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": 3823765,
+      "expansions": 189605,
+      "timed_counters": [
+        [
+          17,
+          342289,
+          3823765,
+          189605
+        ],
+        [
+          17,
+          342289,
+          3823765,
+          189605
+        ],
+        [
+          17,
+          342289,
+          3823765,
+          189605
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "core",
+      "seed": 1,
+      "wall_s": 0.455,
+      "returncode": 0,
+      "found": true,
+      "mate": 14,
+      "nodes": 406879,
+      "child_evals": 4619153,
+      "expansions": 227960,
+      "timed_counters": [
+        [
+          14,
+          406879,
+          4619153,
+          227960
+        ],
+        [
+          14,
+          406879,
+          4619153,
+          227960
+        ],
+        [
+          14,
+          406879,
+          4619153,
+          227960
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "core",
+      "seed": 2,
+      "wall_s": 0.419,
+      "returncode": 0,
+      "found": true,
+      "mate": 14,
+      "nodes": 369860,
+      "child_evals": 4241810,
+      "expansions": 209469,
+      "timed_counters": [
+        [
+          14,
+          369860,
+          4241810,
+          209469
+        ],
+        [
+          14,
+          369860,
+          4241810,
+          209469
+        ],
+        [
+          14,
+          369860,
+          4241810,
+          209469
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "easy-win",
+      "seed": 0,
+      "wall_s": 0.083,
+      "returncode": 0,
+      "found": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "timed_counters": [
+        [
+          15,
+          72523,
+          897937,
+          52251
+        ],
+        [
+          15,
+          72523,
+          897937,
+          52251
+        ],
+        [
+          15,
+          72523,
+          897937,
+          52251
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "easy-win",
+      "seed": 1,
+      "wall_s": 0.092,
+      "returncode": 0,
+      "found": true,
+      "mate": 18,
+      "nodes": 79633,
+      "child_evals": 981405,
+      "expansions": 57678,
+      "timed_counters": [
+        [
+          18,
+          79633,
+          981405,
+          57678
+        ],
+        [
+          18,
+          79633,
+          981405,
+          57678
+        ],
+        [
+          18,
+          79633,
+          981405,
+          57678
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "easy-win",
+      "seed": 2,
+      "wall_s": 0.093,
+      "returncode": 0,
+      "found": true,
+      "mate": 15,
+      "nodes": 82964,
+      "child_evals": 971340,
+      "expansions": 56710,
+      "timed_counters": [
+        [
+          15,
+          82964,
+          971340,
+          56710
+        ],
+        [
+          15,
+          82964,
+          971340,
+          56710
+        ],
+        [
+          15,
+          82964,
+          971340,
+          56710
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "deep-win",
+      "seed": 0,
+      "wall_s": 4.82,
+      "returncode": 0,
+      "found": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": 58229418,
+      "expansions": 3198022,
+      "timed_counters": [
+        [
+          22,
+          4574912,
+          58229418,
+          3198022
+        ],
+        [
+          22,
+          4574912,
+          58229418,
+          3198022
+        ],
+        [
+          22,
+          4574912,
+          58229418,
+          3198022
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "deep-win",
+      "seed": 1,
+      "wall_s": 4.745,
+      "returncode": 0,
+      "found": true,
+      "mate": 21,
+      "nodes": 4438637,
+      "child_evals": 56145712,
+      "expansions": 3101015,
+      "timed_counters": [
+        [
+          21,
+          4438637,
+          56145712,
+          3101015
+        ],
+        [
+          21,
+          4438637,
+          56145712,
+          3101015
+        ],
+        [
+          21,
+          4438637,
+          56145712,
+          3101015
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "deep-win",
+      "seed": 2,
+      "wall_s": 4.503,
+      "returncode": 0,
+      "found": true,
+      "mate": 22,
+      "nodes": 4238713,
+      "child_evals": 54066365,
+      "expansions": 2985766,
+      "timed_counters": [
+        [
+          22,
+          4238713,
+          54066365,
+          2985766
+        ],
+        [
+          22,
+          4238713,
+          54066365,
+          2985766
+        ],
+        [
+          22,
+          4238713,
+          54066365,
+          2985766
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    }
+  ]
+}

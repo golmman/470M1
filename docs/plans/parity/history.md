@@ -28,6 +28,19 @@ a second initiative so search and rules effects are not confounded.
 
 ## History
 
+- **2026-11-17** — plan 4 executed. Fixed D8: `Dfpn::perturb`'s ±1% guide
+  step scaling is gone; a seed now picks only among children with equal
+  deciding number and equal history, and seed 0 is byte-for-byte the old
+  search (a 100k-node `core` counter fixture pins it). Allocation failures
+  and checking-thread failures now return errors; numeric flags are validated;
+  exit codes and `--help` are documented. `make test-full` runs the ignored
+  10 s three-cell test, which proves each cell twice, checks both proofs, and
+  requires identical counters. One 10 s matrix (seeds 0–2, three repeats):
+  3/3 coverage, 9/9 per cell accepted by both checkers, `D14` counters
+  identical, geomean 1.016. The corrected seed still reorders `core`'s many
+  equal-scored children (seed 0 0.965; seeds 1–2 1.147/1.055), so the row is
+  a regression row, not a speed claim. No new dependency, no provenance
+  change. See [`report4.md`](report4.md).
 - **2026-11-17** — plan 3 executed. Measured three protocol variants in four
   interleaved same-session 10 s passes and one 120 s pass. `P4` reached (all
   three cells, 9/9, both checkers at 10 s, timed and untimed counters

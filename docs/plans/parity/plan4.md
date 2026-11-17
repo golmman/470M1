@@ -1,6 +1,7 @@
 # Plan 4 — P3: hardening
 
-**Item:** 4 (P3 hardening). **Status:** proposed. **Session type:** execution.
+**Item:** 4 (P3 hardening). **Status:** done (see
+[`report4.md`](report4.md)). **Session type:** execution.
 **Predecessor:** [`plan3.md`](plan3.md), [`report3.md`](report3.md) and
 [`kill-review1.md`](kill-review1.md). **Successor:** the `movegen` handoff
 (item 5).

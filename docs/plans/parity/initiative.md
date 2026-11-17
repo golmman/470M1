@@ -2,17 +2,18 @@
 
 ## Status
 
-**Plan 3 complete (2026-11-17).** `P4` reached: all three cells proved at
-10 s, 9/9 seeds/repeats, every proof accepted by both checkers, and the timed
-and untimed counters identical. `P5` is **recorded as met on the 10 s
-protocol**: the session median geomean is 0.983 over four same-session passes
-(0.992 / 1.013 / 0.974 / 0.964); the margin is inside the host's ~10% wall
-drift, so the rung is met in letter and only partly in per-cell intent
-(`core` 1.02–1.09, `easy-win` ~1.0, `deep-win` 0.83–0.93). No lever was
-adopted: per-node cost already matches provari's and the `core` gap is the
-seed protocol's tree plus the proof export. The next step is the **kill
-review** (after every 2 plans), which decides whether to close `parity` and
-open `movegen` or buy margin first. See [`report3.md`](report3.md).
+**Plan 4 complete (2026-11-17).** `P4` remains reached at 10 s: all three
+cells proved, 9/9 seeds/repeats, every proof accepted by both checkers, and
+timed and untimed counters identical. `P5` is met on the **product default**
+(seed 0; kill review 1 read 0.947, this session's seed-0 runs read 0.965 with
+all three cells below 1.0). The D8 defect is fixed: a seed now perturbs only
+equal-scored children, never a guide step's magnitude, and seed 0 is
+unchanged. The corrected three-seed 10 s row is 1.016 because tie-break-only
+seeding still reorders `core`'s many equally scored children (seed 0 0.965,
+seed 1 1.147, seed 2 1.055); it is recorded as a regression row, not a speed
+claim. Error handling, flag validation, exit codes, help, the ignored
+bench-cell test and the docs gates are closed. Next: the owner's `movegen`
+handoff decision. See [`report4.md`](report4.md).
 
 ## Reference
 
@@ -154,15 +155,14 @@ independently of items. A plan header names its item.
 | 1 | **P0 — foundation** (plan1) | **done.** Crate, CLI skeleton, rules, proof format, independent checker, bench harness, oracle, corpus. Gate green; see [`report1.md`](report1.md) |
 | 2 | **P1 — search core** (plan2) | **done.** Board/moves/effect, table, proofs, DF-PN, hand guide, proof writer, `prove`. Gate: `P3` at 120 s (all three cells, 9/9, both checkers); 10 s candidate matrix geomean 0.968. See [`report2.md`](report2.md) |
 | 3 | **P2 — parity gate** (plan3) | **done.** `P4` reached; `P5` met on the protocol with a noise-band margin (median geomean 0.983). No lever adopted; levers closed with evidence. See [`report3.md`](report3.md) |
-| 4 | **P3 — hardening** | **future.** Cleanup, error handling, CLI polish, slow tests, licence gate, docs. No performance claim |
-| 5 | **Movegen handoff** | **future.** Close `parity` and open `movegen` after the kill review confirms the `P5` row |
-| 6 | **Parity margin (optional)** | **proposed.** Only if the review wants margin: faster proof export (4% on `core`) and a seed that perturbs only tie-breaks (D8). Both need a gate |
+| 4 | **P3 — hardening** (plan4) | **done.** D8 tie-break-only seed, no user-triggerable CLI panic, flag validation and exit codes, ignored 10 s bench-cell test, licence/docs gates. Corrected seed row 1.016 is a regression, not a speed claim. See [`report4.md`](report4.md) |
+| 5 | **Movegen handoff** | **next.** Close `parity` and open `movegen`; owner decision after plan 4 |
 
 ### Closed items
 
 | # | Item | Outcome |
 | --- | --- | --- |
-| — | _none yet_ | |
+| 6 | Parity margin (optional) | **cancelled** by kill review 1: the product default already met `P5`, so there was no product margin to buy. The D8 seed correction landed as item 4 instead |
 
 ### Stop rules
 

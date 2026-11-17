@@ -1,7 +1,9 @@
 //! `470M1`: an Atomic win prover and an independent proof checker.
 //!
-//! Plan 1 supplies the rules helpers, the compact proof format, a proof walk,
-//! the independent checker and the `line` viewer. The search itself is plan 2.
+//! The crate supplies the rules helpers, the compact proof format, a proof
+//! walk, the independent checker, the hand-guided DF-PN search and the `line`
+//! viewer. The CLI in `main.rs` exposes them as `prove`, `check`, `line` and
+//! `bench`.
 //!
 //! Adapted from provari `bceb1ee1faf7d9cf2422eb89c931be69ae30619d`
 //! (`src/lib.rs`, `src/search.rs`): tablebase, NNUE, model, web and UCI code

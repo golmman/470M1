@@ -1,8 +1,9 @@
 //! `470m1`: Atomic win proofs.
 //!
-//! Plan 1 implements `check`, `line`, a reference-side `bench`, and a `prove`
-//! stub; `prove`'s search arrives in plan 2. The command names and output
-//! shapes follow provari where it matters.
+//! The CLI exposes the prover (`prove`), the independent checker (`check`),
+//! the proof viewer (`line`) and the reference-side bench. Command names and
+//! output shapes follow provari where it matters; flags are validated before
+//! any search or file read.
 //!
 //! Adapted from provari `bceb1ee1faf7d9cf2422eb89c931be69ae30619d`
 //! (`src/main.rs`): tablebase, NNUE/model, web and UCI commands removed; the
@@ -17,6 +18,56 @@ use serde_json::{Value, json};
 use shakmaty::{Color, Position as _};
 
 use atomic470m1::{check, dfpn, format, lines, position};
+
+/// The most memory one search or reference run may be asked for, in MB.
+const MOST_MEMORY_MB: usize = 1 << 20;
+/// The most repeats one bench may run per cell.
+const MOST_REPEATS: usize = 1 << 10;
+
+/// A finite, positive number of seconds, or a clear usage error.
+fn parse_seconds(value: &str, flag: &str) -> Result<f64, String> {
+    let seconds: f64 = value
+        .parse()
+        .map_err(|_| format!("{flag} needs a finite positive number of seconds"))?;
+    if !seconds.is_finite() || seconds <= 0.0 {
+        return Err(format!("{flag} must be finite and positive, not {seconds}"));
+    }
+    if Duration::try_from_secs_f64(seconds).is_err() {
+        return Err(format!("{flag} is too large: {seconds}"));
+    }
+    Ok(seconds)
+}
+
+/// A memory label in MB, within the range the search supports.
+fn parse_memory(value: &str, flag: &str) -> Result<usize, String> {
+    let memory: usize = value
+        .parse()
+        .map_err(|_| format!("{flag} needs a positive integer number of megabytes"))?;
+    if memory == 0 || memory > MOST_MEMORY_MB {
+        return Err(format!("{flag} is 1..={MOST_MEMORY_MB} MB, not {memory}"));
+    }
+    Ok(memory)
+}
+
+fn parse_positive_u64(value: &str, flag: &str) -> Result<u64, String> {
+    let number: u64 = value
+        .parse()
+        .map_err(|_| format!("{flag} needs a positive integer"))?;
+    if number == 0 {
+        return Err(format!("{flag} must be at least 1, not 0"));
+    }
+    Ok(number)
+}
+
+fn parse_positive_u32(value: &str, flag: &str) -> Result<u32, String> {
+    let number = parse_positive_u64(value, flag)?;
+    u32::try_from(number).map_err(|_| format!("{flag} is too large: {number}"))
+}
+
+fn parse_positive_usize(value: &str, flag: &str) -> Result<usize, String> {
+    let number = parse_positive_u64(value, flag)?;
+    usize::try_from(number).map_err(|_| format!("{flag} is too large: {number}"))
+}
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -83,12 +134,19 @@ Options:
   --json                   `prove` prints one JSON line
   --seed N                 `prove` perturbs tie-breaks deterministically
   --evals N                `prove` stops after N child evaluations
-  --workers N              checks at a time
+  --workers N              checks at a time (1 or more)
   --compact-only           `check` refuses JSON-lines proofs
   --pgn FILE               where `line` writes the proof's tree
   --until N                where `line --pgn` stops the tree
   --out FILE               where `bench` writes results
   --reference PATH         the provari binary for `bench`
+  --repeats N              `bench` runs each cell N times
+  --version                prints the version
+
+Exit codes:
+  0  success
+  1  a checked proof is invalid
+  2  usage error or another failure
 ";
 
 /// Searches one position for a win, and writes its proof when asked.
@@ -105,12 +163,16 @@ fn prove(args: &[String]) -> Result<(), String> {
     while let Some(arg) = args.next() {
         let mut value = || args.next().ok_or(format!("{arg} needs a value"));
         match arg.as_str() {
-            "--seconds" => seconds = Some(value()?.parse().map_err(|_| "bad --seconds")?),
-            "--memory" => memory = value()?.parse().map_err(|_| "bad --memory")?,
+            "--seconds" => seconds = Some(parse_seconds(value()?, "--seconds")?),
+            "--memory" => memory = parse_memory(value()?, "--memory")?,
             "--guide" => guide = value()?.to_owned(),
             "--proofs" => proofs = Some(value()?.to_owned()),
-            "--seed" => seed = value()?.parse().map_err(|_| "bad --seed")?,
-            "--evals" => evals = Some(value()?.parse().map_err(|_| "bad --evals")?),
+            "--seed" => {
+                seed = value()?
+                    .parse()
+                    .map_err(|_| "--seed needs an unsigned integer".to_owned())?;
+            }
+            "--evals" => evals = Some(parse_positive_u64(value()?, "--evals")?),
             "--json" => json = true,
             unknown if unknown.starts_with("--") => {
                 return Err(format!("unknown option {unknown}: see 470m1 --help"));
@@ -129,12 +191,19 @@ fn prove(args: &[String]) -> Result<(), String> {
     let root = position(fen)?;
     let started = Instant::now();
     let deadline = match seconds {
-        Some(seconds) => started + Duration::from_secs_f64(seconds),
+        Some(seconds) => {
+            let duration = Duration::try_from_secs_f64(seconds)
+                .map_err(|_| "--seconds is too large".to_owned())?;
+            started
+                .checked_add(duration)
+                .ok_or("--seconds is too large")?
+        }
         None => started + Duration::from_secs(60 * 60 * 24 * 365),
     };
     let needed = dfpn::proofs_needed(seconds, None);
     let (table, proof_mb) = dfpn::split(memory, needed);
-    let mut search = dfpn::Dfpn::new(&root, guide, deadline, (table, proof_mb));
+    let mut search = dfpn::Dfpn::try_new(&root, guide, deadline, (table, proof_mb))
+        .map_err(|error| format!("the search's memory: {error}"))?;
     search.set_seed(seed);
     if let Some(evals) = evals {
         search.set_eval_limit(evals);
@@ -211,7 +280,7 @@ fn line(args: &[String]) -> Result<(), String> {
         let mut value = || args.next().ok_or(format!("{arg} needs a value"));
         match arg.as_str() {
             "--pgn" => pgn = Some(value()?.to_owned()),
-            "--until" => until = Some(value()?.parse().map_err(|_| "bad --until")?),
+            "--until" => until = Some(parse_positive_u32(value()?, "--until")?),
             unknown if unknown.starts_with("--") => {
                 return Err(format!("unknown option {unknown}: see 470m1 --help"));
             }
@@ -271,10 +340,17 @@ fn bench(args: &[String]) -> Result<(), String> {
         match arg.as_str() {
             "--out" => out = Some(value()?.to_owned()),
             "--reference" => reference = Some(value()?.to_owned()),
-            "--seconds" => seconds = value()?.parse().map_err(|_| "bad --seconds")?,
-            "--memory" => memory = value()?.parse().map_err(|_| "bad --memory")?,
+            "--seconds" => seconds = parse_seconds(value()?, "--seconds")?,
+            "--memory" => memory = parse_memory(value()?, "--memory")?,
             "--guide" => guide = value()?.to_owned(),
-            "--repeats" => repeats = value()?.parse().map_err(|_| "bad --repeats")?,
+            "--repeats" => {
+                repeats = parse_positive_usize(value()?, "--repeats")?;
+                if repeats > MOST_REPEATS {
+                    return Err(format!(
+                        "--repeats is at most {MOST_REPEATS}, not {repeats}"
+                    ));
+                }
+            }
             unknown if unknown.starts_with("--") => {
                 return Err(format!("unknown option {unknown}: see 470m1 --help"));
             }

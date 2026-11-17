@@ -227,7 +227,7 @@ pub struct Dfpn<'a> {
     drop_mates_at: usize,
     /// The root's proof and disproof numbers as the search last combined them.
     root: (u32, u32),
-    /// The perturbation's seed, spread over all bits; 0 for none.
+    /// The tie-break seed, spread over all bits; 0 for none.
     seed: u64,
     /// The most attacker moves a win may take, if limited.
     most: Option<u32>,
@@ -298,9 +298,9 @@ impl<'a> Dfpn<'a> {
         self.attacker = attacker;
     }
 
-    /// Perturbs the search: each position's step moves by up to 1% either
-    /// way, by the position and the seed (a model's through its odds). 0
-    /// leaves it alone.
+    /// Perturbs the search's tie-breaks: among children with equal deciding
+    /// numbers and equal history, the seed picks one by a hash of its
+    /// position. 0 leaves every tie as it was.
     pub fn set_seed(&mut self, seed: u64) {
         self.seed = seed.wrapping_mul(0xD1B5_4A32_D192_ED03);
     }
@@ -484,7 +484,7 @@ impl<'a> Dfpn<'a> {
         self.path.push(hash);
         let mut opened = None;
         let (value, best) = loop {
-            let (value, best, second) = combine(&children, attacking);
+            let (value, best, second) = combine(&children, attacking, self.seed);
             let numbers = value.numbers;
             if depth == 0 {
                 self.root = (numbers.proof, numbers.disproof);
@@ -718,19 +718,6 @@ impl<'a> Dfpn<'a> {
                 Some(self.band(pos, value, HAND_DECISIVE))
             }
         }
-        .map(|step| self.perturb(pos, step))
-    }
-
-    /// The step moved by up to 1% either way when a seed is set, by a hash of
-    /// the position and the seed, so that every expansion of a position
-    /// agrees.
-    fn perturb(&self, pos: &Position, step: f32) -> f32 {
-        if self.seed == 0 {
-            return step;
-        }
-        let mixed = (pos.hash() ^ self.seed).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-        let unit = (mixed >> 40) as f32 / (1 << 23) as f32 - 1.0;
-        step * (1.0 + 0.01 * unit)
     }
 
     /// An evaluation for the side to move, squashed for the attacker to 0
@@ -1741,10 +1728,21 @@ fn scale(children: &mut [Child], attacking: bool, step: Option<f32>) {
     }
 }
 
+/// How a seed breaks an otherwise exact tie: lower wins, and 0 is no seed,
+/// which leaves the first child the best.
+fn tie(hash: u64, seed: u64) -> u64 {
+    if seed == 0 {
+        0
+    } else {
+        hash.wrapping_add(seed).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+    }
+}
+
 /// Combines the children: the position's value, the child to search, and the
 /// second-best child's deciding number.
-fn combine(children: &[Child], attacking: bool) -> (Value, usize, u32) {
+fn combine(children: &[Child], attacking: bool, seed: u64) -> (Value, usize, u32) {
     let mut best_score = 0;
+    let mut best_tie = 0;
     let mut best = 0;
     let mut first = u32::MAX;
     let mut second = u32::MAX;
@@ -1764,12 +1762,18 @@ fn combine(children: &[Child], attacking: bool) -> (Value, usize, u32) {
             (numbers.disproof, numbers.proof)
         };
         sum = sum.saturating_add(summed);
-        // Ties go to the move with more history.
-        if deciding < first || (deciding == first && child.score > best_score) {
+        // Ties go to the move with more history, then to the seed's pick.
+        let child_tie = tie(child.hash, seed);
+        if deciding < first
+            || (deciding == first
+                && (child.score > best_score
+                    || (child.score == best_score && child_tie < best_tie)))
+        {
             second = first;
             first = deciding;
             best = index;
             best_score = child.score;
+            best_tie = child_tie;
         } else if deciding < second {
             second = deciding;
         }
@@ -1883,10 +1887,10 @@ mod tests {
     use super::{Child, Dfpn, Guide, INFINITY, Numbers, Value, combine, share, widen};
     use crate::board::Position;
 
-    fn child(proof: u32, disproof: u32) -> Child {
+    fn child_at(hash: u64, proof: u32, disproof: u32) -> Child {
         Child {
             m: Default::default(),
-            hash: 0,
+            hash,
             counter: 0,
             value: Value::open(Numbers { proof, disproof }),
             exploded: false,
@@ -1898,21 +1902,115 @@ mod tests {
         }
     }
 
+    fn child(proof: u32, disproof: u32) -> Child {
+        child_at(0, proof, disproof)
+    }
+
     #[test]
     fn values_and_thresholds() {
-        let won = combine(&[child(0, INFINITY)], true);
+        let won = combine(&[child(0, INFINITY)], true, 0);
         assert_eq!((won.0.numbers.proof, won.0.numbers.disproof), (0, INFINITY));
-        let lost = combine(&[child(INFINITY, 0)], true);
+        let lost = combine(&[child(INFINITY, 0)], true, 0);
         assert_eq!(
             (lost.0.numbers.proof, lost.0.numbers.disproof),
             (INFINITY, 0)
         );
-        let open = combine(&[child(3, 5), child(7, 2)], true);
+        let open = combine(&[child(3, 5), child(7, 2)], true, 0);
         assert_eq!((open.0.numbers.proof, open.0.numbers.disproof), (3, 7));
         assert_eq!(widen(8), 10);
         assert_eq!(widen(INFINITY), INFINITY);
         assert_eq!(share(INFINITY, 5, 2), INFINITY);
         assert_eq!(share(20, 5, 2), 17);
+    }
+
+    #[test]
+    fn a_seed_breaks_only_exact_ties() {
+        let children = [child_at(1, 3, 5), child_at(2, 3, 5)];
+        let (_, first, _) = combine(&children, true, 0);
+        assert_eq!(first, 0, "seed 0 keeps the first child");
+        let mut reordered = false;
+        for seed in 1..=20u64 {
+            let (_, best, _) = combine(&children, true, seed.wrapping_mul(0xD1B5_4A32_D192_ED03));
+            reordered |= best == 1;
+        }
+        assert!(
+            reordered,
+            "a seed can reorder children with equal numbers and history"
+        );
+    }
+
+    fn core_counters(
+        seed: u64,
+        limit: Option<u64>,
+    ) -> (Option<u32>, u64, u64, u64, Option<(u32, u32)>) {
+        let root =
+            crate::position("r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1")
+                .unwrap();
+        let mut search = Dfpn::new(
+            &root,
+            Guide::Hand,
+            Instant::now() + Duration::from_secs(10),
+            (16, 16),
+        );
+        search.set_seed(seed);
+        if let Some(limit) = limit {
+            search.set_limit(limit);
+        }
+        let moves = search.solve(&root);
+        (
+            moves,
+            search.nodes,
+            search.evals,
+            search.expansions,
+            search.root_numbers,
+        )
+    }
+
+    #[test]
+    fn seed_zero_keeps_the_core_tree_unchanged() {
+        // One deterministic node budget, pinned so that a guide or tie-break
+        // change cannot slip through unnoticed.
+        assert_eq!(
+            core_counters(0, Some(100_000)),
+            (None, 100_016, 1_161_335, 57_100, Some((370, 24_825)))
+        );
+    }
+
+    #[test]
+    fn seeds_are_deterministic() {
+        for seed in 1..=2 {
+            assert_eq!(
+                core_counters(seed, Some(100_000)),
+                core_counters(seed, Some(100_000))
+            );
+        }
+    }
+
+    #[test]
+    fn a_seed_does_not_change_a_proof() {
+        let root =
+            crate::position("r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1")
+                .unwrap();
+        for seed in 1..=2 {
+            let mut search = Dfpn::new(
+                &root,
+                Guide::Hand,
+                Instant::now() + Duration::from_secs(10),
+                (16, 16),
+            );
+            search.set_seed(seed);
+            let moves = search.solve(&root);
+            assert!(moves.is_some(), "seed {seed}: no win");
+            let (_, bytes) = crate::format::encode(&root, root.turn(), |pos| {
+                let key = (pos.hash(), pos.halfmoves());
+                search
+                    .winning_move(&pos.to_atomic(), &key)
+                    .and_then(|m| crate::format::board_move(pos, &m))
+            })
+            .unwrap();
+            let checked = crate::check::check_proof("core", &bytes);
+            assert_eq!(checked["valid"], true, "seed {seed}: {checked}");
+        }
     }
 
     #[test]

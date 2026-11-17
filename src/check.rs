@@ -54,6 +54,8 @@ use shakmaty::{
 
 /// The stack of a checking thread, for proofs with long lines.
 const STACK: usize = 64 << 20;
+/// The most checking threads one command may start.
+const MOST_WORKERS: usize = 1 << 10;
 
 /// The compact format's version.
 const VERSION: u64 = 1;
@@ -120,8 +122,25 @@ pub fn run(args: &[String]) -> Result<bool, String> {
     while let Some(arg) = args.next() {
         let mut value = || args.next().ok_or(format!("{arg} needs a value"));
         match arg.as_str() {
-            "--workers" => workers = value()?.parse().map_err(|_| "bad --workers")?,
-            "--seconds" => limits.seconds = Some(value()?.parse().map_err(|_| "bad --seconds")?),
+            "--workers" => {
+                let parsed: usize = value()?.parse().map_err(|_| "bad --workers")?;
+                if parsed == 0 || parsed > MOST_WORKERS {
+                    return Err(format!("--workers is 1..={MOST_WORKERS}, not {parsed}"));
+                }
+                workers = parsed;
+            }
+            "--seconds" => {
+                let seconds: f64 = value()?.parse().map_err(|_| "bad --seconds")?;
+                if !seconds.is_finite() || seconds <= 0.0 {
+                    return Err(format!(
+                        "--seconds must be finite and positive, not {seconds}"
+                    ));
+                }
+                if Duration::try_from_secs_f64(seconds).is_err() {
+                    return Err(format!("--seconds is too large: {seconds}"));
+                }
+                limits.seconds = Some(seconds);
+            }
             "--compact-only" => limits.compact_only = true,
             unknown if unknown.starts_with("--") => {
                 return Err(format!("unknown option {unknown}: see 470m1 --help"));
@@ -136,9 +155,10 @@ pub fn run(args: &[String]) -> Result<bool, String> {
     }
     let next = AtomicUsize::new(0);
     let results = Mutex::new(vec![None; proofs.len()]);
-    std::thread::scope(|scope| {
-        for _ in 0..workers.max(1) {
-            std::thread::Builder::new()
+    std::thread::scope(|scope| -> Result<(), String> {
+        let mut started = Vec::with_capacity(workers);
+        for _ in 0..workers {
+            let handle = std::thread::Builder::new()
                 .stack_size(STACK)
                 .spawn_scoped(scope, || {
                     loop {
@@ -147,18 +167,29 @@ pub fn run(args: &[String]) -> Result<bool, String> {
                             break;
                         };
                         let result = check_file(path, limits);
-                        results.lock().unwrap()[index] = Some(result);
+                        let Ok(mut slots) = results.lock() else {
+                            return;
+                        };
+                        slots[index] = Some(result);
                     }
                 })
-                .expect("cannot start a checking thread");
+                .map_err(|error| format!("cannot start a checking thread: {error}"))?;
+            started.push(handle);
         }
-    });
+        for handle in started {
+            handle
+                .join()
+                .map_err(|_| "a checking thread stopped unexpectedly".to_owned())?;
+        }
+        Ok(())
+    })?;
+    let results = results
+        .into_inner()
+        .map_err(|_| "a checking thread stopped unexpectedly".to_owned())?;
     let mut all_valid = true;
-    for (path, result) in proofs.iter().zip(results.into_inner().unwrap()) {
-        let line = verdict(
-            &path.display().to_string(),
-            result.expect("every proof is checked"),
-        );
+    for (path, result) in proofs.iter().zip(results) {
+        let result = result.ok_or("a proof was not checked")?;
+        let line = verdict(&path.display().to_string(), result);
         all_valid &= line["valid"] == true;
         println!("{line}");
     }

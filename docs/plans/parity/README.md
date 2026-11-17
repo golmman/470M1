@@ -19,6 +19,8 @@ a decision record, a measurement record, or a historical plan/report.
 | [`report2.md`](report2.md) | Plan 2 result: search core, 120 s and 10 s matrices |
 | [`plan3.md`](plan3.md) | P2: parity measurement and gap closure |
 | [`report3.md`](report3.md) | Plan 3 result: `P4`/`P5` measured, levers closed, ledger row at 10 s |
+| [`plan4.md`](plan4.md) | P3: D8 seed correction, error handling, CLI, slow and licence gates |
+| [`report4.md`](report4.md) | Plan 4 result: hardening gates green, corrected seed row, handoff |
 | `measurements/planN/` | Committed drivers, parsed results, `env.json`, provenance READMEs |
 
 ## Current state (2026-11-17)
@@ -31,12 +33,18 @@ a decision record, a measurement record, or a historical plan/report.
   untimed counters identical); `P5` recorded as met on the protocol (median
   geomean 0.983 over four same-session passes, range 0.964–1.013). No lever
   adopted; the `core` gap is the seed protocol's tree plus the proof export.
+- Plan 4 complete: D8 seed fixed to break only exact ties (seed 0 unchanged),
+  CLI flag validation and exit codes, no user-triggerable panic on allocation
+  or thread setup, ignored 10 s bench-cell test in `make test-full`, licence
+  and docs gates. The corrected three-seed 10 s row is 1.016 (seed 0: 0.965);
+  it is a regression row, not a speed claim.
 - Measurements are in [`measurements/plan1/`](measurements/plan1/),
-  [`measurements/plan2/`](measurements/plan2/) and
-  [`measurements/plan3/`](measurements/plan3/); ledger rows are in
+  [`measurements/plan2/`](measurements/plan2/),
+  [`measurements/plan3/`](measurements/plan3/) and
+  [`measurements/plan4/`](measurements/plan4/); ledger rows are in
   [`../../bench.md`](../../bench.md).
-- Next: the kill review (plans 2–3 since the last one); it decides between
-  closing `parity` for `movegen` and buying `core` margin first.
+- Next: the owner's `movegen` handoff decision; the next scheduled kill review
+  follows plans 4–5.
 
 ## Conventions
 

@@ -8,8 +8,11 @@ reproducible bench set. The second, [`movegen`](docs/plans/movegen/initiative.md
 replaces the parity rules dependency with `atomic-movegen` after parity is
 reached.
 
-**Status:** plan 1 complete (P0 foundation: rules, proof format, independent
-checker, `line`, reference bench, oracle/veto). The search core is plan 2.
+**Status:** plan 4 complete (P3 hardening). `P4` is reached at 10 s and `P5`
+is met on the product default (seed 0). The D8 seed now perturbs only
+tie-breaks; error handling, flag validation, exit codes, help text, the
+ignored 10 s bench-cell test and the docs gates are closed. Next: close
+`parity` and open `movegen`.
 
 ## Documents
 

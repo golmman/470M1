@@ -4,6 +4,7 @@ test: lint licence
 	cargo test
 
 test-full: test
+	cargo test -- --ignored
 	$(MAKE) veto
 
 licence:
