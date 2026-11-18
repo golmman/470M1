@@ -164,6 +164,7 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 | plan2 | 2026-11-17 | `8f5ca2f2750a` | hand, single-thread | **1.091** | **0.987** | **0.887** | **0.985** | 120 s |
 | plan3 | 2026-11-17 | `8f5ca2f2750a` | hand, single-thread | **1.062** | **0.988** | **0.854** | **0.964** | 10 s |
 | plan4 | 2026-11-17 | `8f5ca2f2750a` | hand, tie-break seed (0–2) | **1.055** | **1.106** | **0.900** | **1.016** | 10 s |
+| plan5 | 2026-11-17 | `8f5ca2f2750a` | hand, product default (seed 0) | **0.936** | **0.962** | **0.938** | **0.945** | 10 s |
 
 
 Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
@@ -197,6 +198,14 @@ lengths at the median run 17 / 18 / 21 against same-session reference mates
 56,145,712. No cap, cell or memory split changed. See
 `plans/parity/report4.md` and `plans/parity/measurements/plan4/`.
 
+Plan5 footnote: **`P5` closure, product default.** Coverage 3/3, seed 0,
+three repeats, every proof accepted by `470m1 check` and `provari check`
+(9/9), `D14` timed and untimed counters identical for all three cells.
+Candidate proof lengths 17 / 15 / 22 against same-session reference mates
+17 / 15 / 22; `child_evals` 3,823,765 / 897,937 / 58,229,418. No cap, cell,
+memory split or source changed. See `plans/parity/report5.md` and
+`plans/parity/measurements/plan5/`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -213,6 +222,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470m1@<sha>` | _owner commits the plan2 tree_ | plan2 |
 | `470m1@<sha>` | _owner commits the plan3 tree_ | plan3 |
 | `470m1@<sha>` | _owner commits the plan4 tree_ | plan4 |
+| `470m1@<sha>` | _owner commits the plan5 tree_ | plan5 |
 
 ## History
 

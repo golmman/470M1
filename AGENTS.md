@@ -17,18 +17,16 @@ claim.
 
 ## Current state
 
-Plan 4 complete (2026-11-17). The crate, rules layer, proof format,
-independent checker, `line`, bench harness, oracle/veto and the DF-PN search
-core with the hand guide are in place. `P4` is reached at 10 s (all three
-cells, 9/9, both checkers, timed and untimed counters identical). `P5` is met
-on the product default (seed 0; 0.965 this session, all cells below 1.0).
-The D8 seed defect is fixed: a seed now perturbs only exact tie-breaks, never
-a guide step's magnitude, and seed 0 is unchanged. The corrected three-seed
-10 s row is 1.016 because tie-break seeding still reorders `core`'s equal
-scores; it is a regression row, not a speed claim. CLI flags, errors, exit
-codes, help, the ignored bench-cell test, licence and docs gates are closed.
-The next step is the owner's `movegen` handoff decision. See
-[`docs/plans/parity/report4.md`](docs/plans/parity/report4.md).
+`parity` is closed (2026-11-17). Plan 5 recorded the `P5` closure row on the
+product default (seed 0) at 10 s: all three cells, 3/3 coverage, geomean
+**0.945**, 9/9 proofs accepted by both checkers, `D14` timed and untimed
+counters identical. The crate, rules layer, proof format, independent checker,
+`line`, bench harness, oracle/veto and the DF-PN search core with the hand
+guide are in place. `movegen` is open with a documented rules surface and a
+candidate `atomic-movegen` pin (`6e04488`, v2.8.0, MIT); its first plan starts
+with the differential harness. See
+[`docs/plans/parity/report5.md`](docs/plans/parity/report5.md) and
+[`docs/plans/movegen/initiative.md`](docs/plans/movegen/initiative.md).
 
 ## Collaboration
 

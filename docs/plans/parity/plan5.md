@@ -1,7 +1,7 @@
 # Plan 5 — Movegen handoff
 
-**Item:** 5 (Movegen handoff). **Status:** proposed; execution needs the
-owner's go. **Session type:** execution.
+**Item:** 5 (Movegen handoff). **Status:** executed 2026-11-17; see
+[`report5.md`](report5.md). **Session type:** execution.
 **Predecessor:** [`plan4.md`](plan4.md), [`report4.md`](report4.md),
 [`kill-review1.md`](kill-review1.md). **Successor:** kill review 2, then
 `movegen` plan 1.

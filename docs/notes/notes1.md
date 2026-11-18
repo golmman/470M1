@@ -39,3 +39,7 @@ In particular i like to have:
 Your task is build only the documentational scaffolding now, no coding in this session.
 Get a thorough understanding of provari, atomi, atomic_solver and then
 set up the directory and file structure, add the initiatives, add the first plans in the `parity` initiative, add an AGENTS.md, etc.
+
+---
+
+kill review, then movegen

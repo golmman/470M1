@@ -8,11 +8,10 @@ reproducible bench set. The second, [`movegen`](docs/plans/movegen/initiative.md
 replaces the parity rules dependency with `atomic-movegen` after parity is
 reached.
 
-**Status:** plan 4 complete (P3 hardening). `P4` is reached at 10 s and `P5`
-is met on the product default (seed 0). The D8 seed now perturbs only
-tie-breaks; error handling, flag validation, exit codes, help text, the
-ignored 10 s bench-cell test and the docs gates are closed. Next: close
-`parity` and open `movegen`.
+**Status:** `parity` is closed. Plan 5 recorded the `P5` closure row on the
+product default (seed 0) at 10 s: 3/3 coverage, geomean 0.945, 9/9 proofs
+accepted by both checkers, `D14` counters identical. `movegen` is open; its
+first plan starts with the differential harness.
 
 ## Documents
 

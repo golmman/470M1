@@ -2,8 +2,11 @@
 
 ## Status
 
-**Not started (2026-11-17).** This initiative begins only after `parity`
-reaches `P5` and the result is recorded in the ledger. No plans yet.
+**Open (2026-11-17).** `parity` reached `P5` and its closure row is recorded
+in [`../../bench.md`](../../bench.md). The prover's rules surface is documented
+in [`rules-surface.md`](rules-surface.md), and the candidate dependency is
+pinned: `golmman/atomic_movegen` `6e04488fd737af17b2edbe101038f3f69754f3c6`
+(v2.8.0, MIT). No plans yet; plan 1 starts with the differential harness.
 
 ## Goal
 
@@ -18,14 +21,16 @@ independent, so a movegen bug cannot hide in both the prover and the checker.
 
 - `parity` `P5` is recorded: all three bench cells proved at 10 s, geomean
   wall `<= 1.0` against `provari --guide hand`, every claim accepted by our
-  checker and `provari check`.
+  checker and `provari check`. **Met:** plan 5 closure row, geomean 0.945.
 - The parity prover's rules surface is documented: position parsing, legal
   moves, terminal outcomes, hashes, en passant, castling, promotions and
-  insufficient material.
+  insufficient material. **Met:** [`rules-surface.md`](rules-surface.md).
 - A pinned `atomic-movegen` version is chosen and recorded in
-  `PROVENANCE.md`/`Cargo.toml`.
+  `PROVENANCE.md`/`Cargo.toml`. **Pin recorded in `PROVENANCE.md`; not yet a
+  dependency.**
 - A differential harness exists that compares the two rules implementations
-  on the fixtures, the bench corpus and random play-out positions.
+  on the fixtures, the bench corpus and random play-out positions. **Remaining:
+  plan 1's first phase.**
 
 ## Non-goals
 
@@ -77,4 +82,6 @@ after the parity handoff.
 
 ## History
 
-- **2026-11-17** — initiative opened as a placeholder. No plans, no code.
+- **2026-11-17** — initiative opened after `parity` closed at `P5`. Rules
+  surface documented; `atomic-movegen` `6e04488` (v2.8.0, MIT) recorded as the
+  candidate pin. No plans, no code, no dependency yet.

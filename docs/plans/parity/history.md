@@ -28,6 +28,12 @@ a second initiative so search and rules effects are not confounded.
 
 ## History
 
+- **2026-11-17** — plan 5 executed. Recorded the `P5` closure row on the
+  product default (seed 0) at 10 s: coverage 3/3, geomean 0.945, 9/9 proofs
+  accepted by both checkers, `D14` counters identical. Closed `parity` and
+  opened `movegen` with a documented rules surface and a candidate
+  `atomic-movegen` pin (`6e04488`, v2.8.0, MIT). No source, dependency or
+  proof-format change. See [`report5.md`](report5.md).
 - **2026-11-17** — plan 4 executed. Fixed D8: `Dfpn::perturb`'s ±1% guide
   step scaling is gone; a seed now picks only among children with equal
   deciding number and equal history, and seed 0 is byte-for-byte the old
