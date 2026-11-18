@@ -50,5 +50,5 @@ If this was not known we should add it to the `AGENTS.md` or `movegen` initiativ
 
 ---
 
-Note that the items of `docs/plans/movegen/wishlist1.md` have been added upstream and `atomic-movegen` is not at version `2.9.0`.
+Note that the items of `docs/plans/movegen/wishlist1.md` have been added upstream and `atomic-movegen` is now at version `2.9.0`.
 Check the changelog then draft the first plan in the initiative.
