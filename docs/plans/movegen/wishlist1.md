@@ -1,7 +1,8 @@
 # Wishlist 1 — upstream changes for the `movegen` handoff
 
-**Status:** open; a request list, not a plan. Baseline `atomic-movegen`
-`6e04488fd737af17b2edbe101038f3f69754f3c6` (v2.8.0, MIT). The crate's own
+**Status:** a request list, not a plan. Baseline `atomic-movegen`
+`af3faf0dd80f48cc7fa0cb737f4944bca8f6bf85` (v2.9.0, MIT); W1-W3 landed, W4
+W5 proposed; the crate's own
 `docs/plans/feedback/handoff3.md` in the `golmman/atomic_movegen` repository
 remains the live cost wishlist (MG19/MG20); this file records the asks that
 follow from [`rules-surface.md`](rules-surface.md). It does not supersede that
@@ -22,6 +23,7 @@ committed here.
 | W2 | **Lichess-style FEN acceptance** | parser parity | differential against shakmaty on corpus plus malformed FENs | P2 |
 | W3 | **Immediate-explosion query on a child** | one-ply fact | compare with the prover's `Mover::exposes` on random play-outs | P2/P3 |
 | W4 | **Node-constant analysis view** | guide geometry | profile `Mover::new` before asking for it | P3 |
+| W5 | **Shakmaty-compatible Zobrist table** | key parity | plan 1's harness: zero numeric key differences | P1 |
 
 ## W1 — legal-EP child key on the effect path
 
@@ -123,6 +125,21 @@ mutable `StateInfo` internals or tie the API to one search design.
 **Acceptance.** Equal to the prover's `Mover` fields on random play-outs;
 `Mover::new`'s share of the profile is measured first. If it is small, this
 item stays a watchlist entry and is not implemented.
+
+## W5 — shakmaty-compatible Zobrist table
+
+**Why.** Plan 1 found the tables differ: start `0x463b96181691fc9c` (ours)
+against `0x5ab84d1cfc77f79e` (2.9.0). The schema and legal-EP
+canonicalization agree, but numeric key parity is required and an adapter
+cannot mix keys.
+
+**Proposal.** A feature, constructor or public translation hook that uses
+shakmaty's `Zobrist64` values. Keep the default table, `EnPassantMode`
+semantics and `ZOBRIST_VERSION`; a default-table change is a version bump.
+
+**Acceptance.** Plan 1's differential reports zero numeric key differences on
+the fixtures, corpus and play-outs; each engine's own child key and legal-EP
+gating stay unchanged.
 
 ## Formulation option — keep the parser outside
 

@@ -4,11 +4,14 @@
 
 **Open (2026-11-17).** `parity` reached `P5` and its closure row is recorded
 in [`../../bench.md`](../../bench.md). The prover's rules surface is documented
-in [`rules-surface.md`](rules-surface.md), and the candidate dependency is
-pinned: `golmman/atomic_movegen` `6e04488fd737af17b2edbe101038f3f69754f3c6`
-(v2.8.0, MIT). No plans yet; plan 1 starts with the differential harness.
-[`wishlist1.md`](wishlist1.md) records the integration asks against that pin.
-We own the upstream crate; a release is integrated only by an owner-triggered
+in [`rules-surface.md`](rules-surface.md), and `golmman/atomic_movegen`
+`af3faf0dd80f48cc7fa0cb737f4944bca8f6bf85` (v2.9.0, MIT) is a pinned
+default-feature dependency. Plan 1 delivered the differential harness; it is
+**blocked**: the prover misses en-passant immediate explosions (86 cases) and
+the two crates' Zobrist tables differ, so numeric key parity cannot be
+asserted. See [`report1.md`](report1.md) and
+[`wishlist1.md`](wishlist1.md) (W1-W3 landed, W4 open, W5 proposed). We own
+the upstream crate; a release is integrated only by an owner-triggered
 plan/report.
 
 ## Goal
@@ -29,11 +32,11 @@ independent, so a movegen bug cannot hide in both the prover and the checker.
   moves, terminal outcomes, hashes, en passant, castling, promotions and
   insufficient material. **Met:** [`rules-surface.md`](rules-surface.md).
 - A pinned `atomic-movegen` version is chosen and recorded in
-  `PROVENANCE.md`/`Cargo.toml`. **Pin recorded in `PROVENANCE.md`; not yet a
-  dependency.**
+  `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.9.0 (`af3faf0`), default features.
 - A differential harness exists that compares the two rules implementations
-  on the fixtures, the bench corpus and random play-out positions. **Remaining:
-  plan 1's first phase.**
+  on the fixtures, the bench corpus and random play-out positions. **Met, but
+  red:** [`tests/differential.rs`](../../../tests/differential.rs) finds the
+  en-passant explosion gap; see [`report1.md`](report1.md).
 
 ## Non-goals
 
@@ -100,6 +103,10 @@ after the parity handoff.
 
 ## History
 
+- **2026-11-18** — plan 1 pinned 2.9.0 (`af3faf0`), added the differential
+  harness and stopped on two findings: the prover misses en-passant immediate
+  explosions (minimal FEN `8/6kp/8/6P1/8/8/8/K7 b - - 0 1`, `h7h5`), and
+  numeric Zobrist keys differ. [`report1.md`](report1.md); no adapter.
 - **2026-11-18** — recorded upstream ownership and the wishlist protocol;
   opened [`wishlist1.md`](wishlist1.md) with the legal-EP child key,
   Lichess-style FEN acceptance, immediate-explosion query and analysis-view

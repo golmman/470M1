@@ -9,9 +9,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
+name = "atomic-movegen"
+version = "2.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86a8b5d727370f081df9b504971e2e6b3bc6f600c584fb4993af13ec1818ec45"
+
+[[package]]
 name = "atomic470m1"
 version = "0.1.0"
 dependencies = [
+ "atomic-movegen",
  "serde_json",
  "shakmaty",
  "zstd",

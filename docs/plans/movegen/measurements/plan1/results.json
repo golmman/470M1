@@ -1,0 +1,86 @@
+{
+  "plan": "plan1",
+  "harness": "tests/differential.rs",
+  "outcome": "blocked",
+  "deterministic": true,
+  "elapsed_seconds": [1.479, 1.545],
+  "runs": [
+    {
+      "label": "full",
+      "fen_accepted": 79,
+      "fen_rejected": 11,
+      "positions": 26869,
+      "legal_moves": 538453,
+      "child_keys": 538453,
+      "explosions": 71971,
+      "explosion_skipped_decided": 6644,
+      "games": 384,
+      "plies": 26406,
+      "playout_nodes": 26406,
+      "material_exempt": 640,
+      "key_table_differences": 26869,
+      "mismatches": 167
+    },
+    {
+      "label": "full",
+      "fen_accepted": 79,
+      "fen_rejected": 11,
+      "positions": 26869,
+      "legal_moves": 538453,
+      "child_keys": 538453,
+      "explosions": 71971,
+      "explosion_skipped_decided": 6644,
+      "games": 384,
+      "plies": 26406,
+      "playout_nodes": 26406,
+      "material_exempt": 640,
+      "key_table_differences": 26869,
+      "mismatches": 167
+    }
+  ],
+  "smoke": {
+    "label": "smoke",
+    "fen_accepted": 79,
+    "fen_rejected": 11,
+    "positions": 168,
+    "legal_moves": 3467,
+    "child_keys": 3467,
+    "explosions": 156,
+    "explosion_skipped_decided": 152,
+    "games": 4,
+    "plies": 85,
+    "playout_nodes": 85,
+    "material_exempt": 6,
+    "key_table_differences": 168,
+    "mismatches": 0
+  },
+  "mismatch_categories": {
+    "immediate_explosion_per_move": 81,
+    "immediate_explosion_node": 5,
+    "immediate_explosion_en_passant": 86,
+    "immediate_explosion_other": 0,
+    "exposes_en_passant": 81,
+    "exposes_other": 0,
+    "key_table_numeric": 26869,
+    "material_exempt": 640,
+    "rules_other": 0
+  },
+  "minimal_findings": [
+    {
+      "id": "ep-immediate-explosion",
+      "fen": "8/6kp/8/6P1/8/8/8/K7 b - - 0 1",
+      "move": "h7h5",
+      "atomic_witness": "g5h6",
+      "our_exploding_capture": null,
+      "our_exposes": false,
+      "note": "White's en-passant capture g5h6 explodes the black commoner on g7. Both prover helpers miss it because the captured pawn is not beside the commoner; the blast square h6 is."
+    },
+    {
+      "id": "zobrist-key-table",
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "our_key_hex": "463b96181691fc9c",
+      "callback_key_hex": "5ab84d1cfc77f79e",
+      "note": "atomic-movegen 2.9.0 ships its own splitmix64-generated key table. The schema and EnPassantMode::Legal canonicalization agree, but numeric values do not match shakmaty's."
+    }
+  ]
+}

@@ -22,11 +22,14 @@ FEN/UCI/SAN display even if the search uses `atomic-movegen`.
 
 ## Candidate dependency
 
-`golmman/atomic_movegen` `6e04488fd737af17b2edbe101038f3f69754f3c6` (v2.8.0,
+`golmman/atomic_movegen` `af3faf0dd80f48cc7fa0cb737f4944bca8f6bf85` (v2.9.0,
 MIT) covers FEN/`Setup`, 16-bit moves, legal generation, `EffectContext`,
-legal-en-passant hashing, outcomes, terminality, checkers and pins. Plan 1
-still needs a differential harness over fixtures, corpus and random play-outs,
-with the insufficient-material divergence treated as an explicit prover-side
-rule, not a movegen result. Open upstream gaps are tracked in
-[`wishlist1.md`](wishlist1.md); the parser and legal-en-passant key are the two
-that keep a shakmaty path in the prover.
+legal-en-passant hashing, outcomes, terminality, checkers and pins; W1-W3
+landed in this pin. Plan 1's harness is in
+[`../../../tests/differential.rs`](../../../tests/differential.rs) and
+[`report1.md`](report1.md). It finds two blockers: `moves.rs::exploding_capture`
+and `Mover::exposes` miss en-passant immediate explosions (the captured pawn is
+not beside the commoner; the destination is), and the two crates' numeric
+Zobrist tables differ although the schema and legal-EP gating agree. The
+prover-side material rule remains explicit, not a movegen result. Open upstream
+gaps are tracked in [`wishlist1.md`](wishlist1.md) (W4, W5).

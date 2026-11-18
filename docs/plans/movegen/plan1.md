@@ -1,7 +1,7 @@
 # Plan 1 — `atomic-movegen` 2.9.0 pin and rules differential
 
-**Item:** 1 (`M5` harness, `M7` pin). **Status:** drafted
-2026-11-18. **Session type:** execution. **Predecessor:**
+**Item:** 1 (`M5` harness, `M7` pin). **Status:** executed 2026-11-18;
+**blocked** ([report1](report1.md)). **Session type:** execution. **Predecessor:**
 [`initiative.md`](initiative.md), [`rules-surface.md`](rules-surface.md),
 [`wishlist1.md`](wishlist1.md). **Successor:** plan 2, the rules adapter.
 
@@ -13,8 +13,8 @@ the fixtures, the bench corpus and seeded play-outs. The harness gates every
 later adapter step.
 
 **Not in this plan:** no prover source change, no adapter, no parser
-replacement, no movegen in `format.rs`/`check.rs`, no search/table/proof/
-checker change, no `unsafe-optimizations`, no bench claim, no ledger row.
+replacement, no movegen in `format.rs`/`check.rs`, no search/table/proof
+change, no `unsafe-optimizations`, no bench claim or row.
 
 ## Context
 

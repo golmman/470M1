@@ -16,7 +16,7 @@ licence. A copied file keeps its upstream copyright and licence notice.
 | `aiorla/provari` | `v0.1.0` (`48686bc6c786d6ea70568f0b2ad4002cf0520206`) | GPL-3.0-or-later | Single-threaded search core copied/adapted in plan2; see the rows below |
 | `golmman/atomi` | `a4802e7cbe7ea6338e99dd21d3b84dbd6f871f76` | MIT | Ideas, measured levers, bench/planning structure; code/data may be copied with provenance |
 | `golmman/atomic_solver` | `14abcf27ae34ec71f46d8bc82f300d44e02f5f57` | MIT | Ideas, fixtures, bench driver; code/data may be copied with provenance |
-| `golmman/atomic_movegen` | `6e04488fd737af17b2edbe101038f3f69754f3c6` (`v2.8.0`) | MIT | Movegen dependency (planned); not yet in `Cargo.toml` |
+| `golmman/atomic_movegen` | `af3faf0dd80f48cc7fa0cb737f4944bca8f6bf85` (`v2.9.0`) | MIT | Movegen dependency (plan 1 pin); differential harness and tests only, not yet used by the prover |
 
 ## Copied material
 
