@@ -24,7 +24,9 @@ counters identical. The crate, rules layer, proof format, independent checker,
 `line`, bench harness, oracle/veto and the DF-PN search core with the hand
 guide are in place. `movegen` is open with a documented rules surface and a
 candidate `atomic-movegen` pin (`6e04488`, v2.8.0, MIT); its first plan starts
-with the differential harness. See
+with the differential harness. We own the upstream `golmman/atomic_movegen`
+crate; changes are requested in `docs/plans/movegen/wishlistN.md`, and a new
+release is integrated only by an owner-triggered plan/report. See
 [`docs/plans/parity/report5.md`](docs/plans/parity/report5.md) and
 [`docs/plans/movegen/initiative.md`](docs/plans/movegen/initiative.md).
 
@@ -34,6 +36,10 @@ with the differential harness. See
   else (milestones, working agreement, decisions) is a means; challenge it.
 - Push back first when a plan, decision or request conflicts with the goal or
   rests on an untested assumption.
+- Upstream `atomic-movegen` is ours. A needed rules-layer change goes in
+  `docs/plans/movegen/wishlistN.md`, never a private fork or path dependency.
+  A new release is integrated only by an owner-triggered `planN.md`/`reportN.md`,
+  with the pin and `PROVENANCE.md` updated.
 - Ideation: include at least one option that changes the problem formulation,
   plus an estimated gain and the cheapest decisive experiment.
 - "Should we X?": answer yes/no first, give the strongest case each way, then

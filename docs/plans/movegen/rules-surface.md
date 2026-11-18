@@ -27,4 +27,6 @@ MIT) covers FEN/`Setup`, 16-bit moves, legal generation, `EffectContext`,
 legal-en-passant hashing, outcomes, terminality, checkers and pins. Plan 1
 still needs a differential harness over fixtures, corpus and random play-outs,
 with the insufficient-material divergence treated as an explicit prover-side
-rule, not a movegen result.
+rule, not a movegen result. Open upstream gaps are tracked in
+[`wishlist1.md`](wishlist1.md); the parser and legal-en-passant key are the two
+that keep a shakmaty path in the prover.

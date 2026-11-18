@@ -42,4 +42,13 @@ set up the directory and file structure, add the initiatives, add the first plan
 
 ---
 
-kill review, then movegen
+Bookkeeping/Brainstorming session, no code changes.
+
+Note that we own `atomic-movegen`, i.e. if needed we can propose changes.
+Wishlists of changes should be added as `wishlistN.md` files in the `movegen` initative. integration of new releases is triggered by the owner and follows the usual `planN.md` and `reportN.md` cycle.
+If this was not known we should add it to the `AGENTS.md` or `movegen` initiative file.
+
+---
+
+Note that the items of `docs/plans/movegen/wishlist1.md` have been added upstream and `atomic-movegen` is not at version `2.9.0`.
+Check the changelog then draft the first plan in the initiative.
