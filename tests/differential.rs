@@ -195,6 +195,21 @@ fn mutation_fens() -> Vec<String> {
     fens
 }
 
+/// En passant explosion fixtures: the reported witness, its mirror, no taker,
+/// a passed square beside both commoners, and a position with a piece target
+/// that must stay first in witness order.
+fn ep_fens() -> Vec<String> {
+    [
+        "8/6kp/8/6P1/8/8/8/K7 b - - 0 1",
+        "k7/8/8/8/6p1/6K1/7P/8 w - - 0 1",
+        "8/6kp/8/8/8/8/8/K7 b - - 0 1",
+        "8/8/8/8/2k1p3/8/3PK3/8 w - - 0 1",
+        "8/6kp/5n2/6P1/4N3/8/8/K7 b - - 0 1",
+    ]
+    .map(str::to_owned)
+    .to_vec()
+}
+
 /// Remove the piece on `square` from a FEN's placement field.
 fn without_piece(fen: &str, square: &str) -> String {
     let mut fields: Vec<String> = fen.split(' ').map(str::to_owned).collect();
@@ -751,8 +766,13 @@ fn accepted_starts() -> Vec<String> {
         .collect()
 }
 
-fn run_playouts(seeds: &[u64], games: usize, max_plies: usize, stats: &mut Stats) {
-    let starts = accepted_starts();
+fn run_playouts(
+    starts: &[String],
+    seeds: &[u64],
+    games: usize,
+    max_plies: usize,
+    stats: &mut Stats,
+) {
     assert!(!starts.is_empty(), "no play-out start position");
     for (seed_index, &seed) in seeds.iter().enumerate() {
         for game in 0..games {
@@ -800,9 +820,61 @@ fn fen_acceptance_and_rules_smoke() {
     let mut stats = Stats::default();
     run_acceptance_set(&base_fens(), &mut stats);
     run_acceptance_set(&mutation_fens(), &mut stats);
-    run_playouts(&[0x2545_f491_4f6c_dd1d], 4, 24, &mut stats);
+    run_acceptance_set(&ep_fens(), &mut stats);
+    run_playouts(
+        &accepted_starts(),
+        &[0x2545_f491_4f6c_dd1d],
+        4,
+        24,
+        &mut stats,
+    );
     println!("{}", stats.json("smoke"));
     assert_eq!(stats.mismatches, 0);
+}
+
+/// En passant explosions, move by move: presence and witness destination agree
+/// with movegen, and `Mover::exposes` agrees with the same child query.
+#[test]
+fn en_passant_explosion_regression() {
+    for fen in ep_fens() {
+        let shak = position(&fen).expect("an accepted en passant FEN");
+        let our = OurPosition::from_atomic(&shak);
+        let board = Board::from_fen_with(&fen, FenPolicy::Lichess).expect("an accepted FEN");
+        let ctx = board.effect_context();
+        let mover = Mover::new(&our);
+        for &m in our.pseudo_legal().as_slice() {
+            if !mover.legal(m) {
+                continue;
+            }
+            let am = to_their_move(m);
+            // A decided child has no explosion question; movegen documents
+            // `None` there, and the search never asks.
+            if ctx.terminal_after(&board, am).is_some() {
+                continue;
+            }
+            let child = our.play(m);
+            let effect = mover.full_effect(m);
+            let our_witness = moves::exploding_capture(&child, child.turn());
+            let their_witness = ctx.exploding_capture_after(&board, am);
+            assert_eq!(
+                our_witness.is_some(),
+                their_witness.is_some(),
+                "{fen} after {am}: explosion presence differs"
+            );
+            if let (Some(ours), Some(theirs)) = (our_witness, their_witness) {
+                assert_eq!(
+                    ours.to() as u8,
+                    theirs.to_sq() as u8,
+                    "{fen} after {am}: witness destination differs"
+                );
+            }
+            assert_eq!(
+                mover.exposes(m, &effect),
+                their_witness.is_some(),
+                "{fen} after {am}: exposes differs"
+            );
+        }
+    }
 }
 
 #[test]
@@ -811,7 +883,9 @@ fn rules_differential_full() {
     let mut stats = Stats::default();
     run_acceptance_set(&base_fens(), &mut stats);
     run_acceptance_set(&mutation_fens(), &mut stats);
+    run_acceptance_set(&ep_fens(), &mut stats);
     run_playouts(
+        &accepted_starts(),
         &[
             0x9e37_79b9_7f4a_7c15,
             0x2545_f491_4f6c_dd1d,
@@ -821,6 +895,7 @@ fn rules_differential_full() {
         200,
         &mut stats,
     );
+    run_playouts(&ep_fens(), &[0x005e_ed0f_e99a_11ce], 8, 200, &mut stats);
     println!("{}", stats.json("full"));
     assert_eq!(stats.mismatches, 0);
 }

@@ -6,10 +6,11 @@
 in [`../../bench.md`](../../bench.md). The prover's rules surface is documented
 in [`rules-surface.md`](rules-surface.md), and `golmman/atomic_movegen`
 `af3faf0dd80f48cc7fa0cb737f4944bca8f6bf85` (v2.9.0, MIT) is a pinned
-default-feature dependency. Plan 1 delivered the differential harness; it is
-**blocked**: the prover misses en-passant immediate explosions (86 cases) and
-the two crates' Zobrist tables differ, so numeric key parity cannot be
-asserted. See [`report1.md`](report1.md) and
+default-feature dependency. Plan 1 delivered the differential harness and found
+two blockers; plan 2 fixed the en-passant immediate-explosion gap and the full
+sweep is now green (`mismatches: 0`). The two crates' Zobrist tables still
+differ numerically, so key parity is a plan 3 decision, not a rules
+assertion. See [`report1.md`](report1.md), [`report2.md`](report2.md) and
 [`wishlist1.md`](wishlist1.md) (W1-W3 landed, W4 open, W5 proposed). We own
 the upstream crate; a release is integrated only by an owner-triggered
 plan/report.
@@ -34,9 +35,10 @@ independent, so a movegen bug cannot hide in both the prover and the checker.
 - A pinned `atomic-movegen` version is chosen and recorded in
   `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.9.0 (`af3faf0`), default features.
 - A differential harness exists that compares the two rules implementations
-  on the fixtures, the bench corpus and random play-out positions. **Met, but
-  red:** [`tests/differential.rs`](../../../tests/differential.rs) finds the
-  en-passant explosion gap; see [`report1.md`](report1.md).
+  on the fixtures, the bench corpus and random play-out positions. **Met:**
+  [`tests/differential.rs`](../../../tests/differential.rs) is green after
+  plan 2; numeric keys stay a recorded divergence, see
+  [`report2.md`](report2.md).
 
 ## Non-goals
 
@@ -103,6 +105,10 @@ after the parity handoff.
 
 ## History
 
+- **2026-11-18** — plan 2 fixed en-passant immediate explosions in
+  `moves::exploding_capture` and `Mover::exposes`; full sweep green (0
+  mismatches), gates green, 10 s row 3/3 geomean 0.972, 9/9 accepted.
+  [`report2.md`](report2.md); numeric Zobrist keys remain a plan 3 decision.
 - **2026-11-18** — plan 1 pinned 2.9.0 (`af3faf0`), added the differential
   harness and stopped on two findings: the prover misses en-passant immediate
   explosions (minimal FEN `8/6kp/8/6P1/8/8/8/K7 b - - 0 1`, `h7h5`), and

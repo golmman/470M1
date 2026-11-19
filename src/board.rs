@@ -239,6 +239,17 @@ impl Position {
         self.turn
     }
 
+    /// The square a pawn just passed over moving two squares, if any. Only
+    /// meaningful for the side to move.
+    pub fn maybe_ep_square(&self) -> Option<Square> {
+        self.ep
+    }
+
+    /// An en passant capture from the capturing pawn to the passed square.
+    pub fn en_passant_move(&self, from: Square, to: Square) -> Move {
+        Move::new(from, to, EN_PASSANT)
+    }
+
     pub fn halfmoves(&self) -> u32 {
         self.halfmoves
     }

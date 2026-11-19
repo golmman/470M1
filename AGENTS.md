@@ -23,11 +23,12 @@ product default (seed 0) at 10 s: all three cells, 3/3 coverage, geomean
 counters identical. The crate, rules layer, proof format, independent checker,
 `line`, bench harness, oracle/veto and the DF-PN search core with the hand
 guide are in place. `movegen` is open with a documented rules surface and
-`atomic-movegen` 2.9.0 (`af3faf0`, MIT) pinned. Plan 1's differential harness is
-red: the prover misses en-passant immediate explosions (86 cases) and numeric
-Zobrist keys differ; fix the prover gap before the adapter
-([`docs/plans/movegen/report1.md`](docs/plans/movegen/report1.md)). We own the
-upstream `golmman/atomic_movegen`
+`atomic-movegen` 2.9.0 (`af3faf0`, MIT) pinned. Plan 2 fixed the en-passant
+immediate-explosion gap: the differential sweep is green, the gates pass, and
+its 10 s row is 3/3, geomean **0.972**, 9/9 accepted
+([`docs/plans/movegen/report2.md`](docs/plans/movegen/report2.md)). Numeric
+Zobrist keys still differ; the plan 3 adapter must decide the key strategy. We
+own the upstream `golmman/atomic_movegen`
 crate; changes are requested in `docs/plans/movegen/wishlistN.md`, and a new
 release is integrated only by an owner-triggered plan/report. See
 [`docs/plans/parity/report5.md`](docs/plans/parity/report5.md) and

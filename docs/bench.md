@@ -165,6 +165,7 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 | plan3 | 2026-11-17 | `8f5ca2f2750a` | hand, single-thread | **1.062** | **0.988** | **0.854** | **0.964** | 10 s |
 | plan4 | 2026-11-17 | `8f5ca2f2750a` | hand, tie-break seed (0–2) | **1.055** | **1.106** | **0.900** | **1.016** | 10 s |
 | plan5 | 2026-11-17 | `8f5ca2f2750a` | hand, product default (seed 0) | **0.936** | **0.962** | **0.938** | **0.945** | 10 s |
+| movegen plan2 | 2026-11-18 | `f043976fff92` | hand, product default (seed 0) | **0.981** | **0.978** | **0.958** | **0.972** | 10 s |
 
 
 Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
@@ -206,6 +207,17 @@ Candidate proof lengths 17 / 15 / 22 against same-session reference mates
 memory split or source changed. See `plans/parity/report5.md` and
 `plans/parity/measurements/plan5/`.
 
+Movegen plan2 footnote: **en-passant immediate-explosion fix, product
+default.** Coverage 3/3, seed 0, three repeats, protocol `a`, every proof
+accepted by `470m1 check` and `provari check` (9/9), `D14` timed and untimed
+counters identical for all three cells. Candidate proof lengths 17 / 15 / 19
+against same-session reference mates 17 / 15 / 22; `child_evals` 3,823,720 /
+897,937 / 54,633,842. The pre-fix binary in the same session reads 1.016 /
+0.992 / 1.025, geomean 1.011, with `deep-win` at mate 22; the corrected EP
+explosion finds the accepted 19-move proof there. No cap, cell, memory split,
+hash, checker or proof format changed. See `plans/movegen/report2.md` and
+`plans/movegen/measurements/plan2/`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -223,6 +235,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470m1@<sha>` | _owner commits the plan3 tree_ | plan3 |
 | `470m1@<sha>` | _owner commits the plan4 tree_ | plan4 |
 | `470m1@<sha>` | _owner commits the plan5 tree_ | plan5 |
+| `470m1@<sha>` | _owner commits the movegen plan2 tree_ | movegen plan2 |
 
 ## History
 

@@ -261,16 +261,17 @@ impl<'a> Mover<'a> {
             } else {
                 self.exposed.without(from) | (self.beside_us & Bitboard::from(to))
             };
-            if (exposed & self.their_steps).any() {
-                return true;
-            }
-            if !self.their_reach.contains(from) && !self.their_reach.contains(to) {
-                return (exposed & self.their_reach).any();
-            }
-            return exposed.into_iter().any(|square| {
-                (attacks::bishop_attacks(square, occupied) & self.their_diagonal).any()
-                    || (attacks::rook_attacks(square, occupied) & self.their_straight).any()
-            });
+            let covered = if (exposed & self.their_steps).any() {
+                true
+            } else if !self.their_reach.contains(from) && !self.their_reach.contains(to) {
+                (exposed & self.their_reach).any()
+            } else {
+                exposed.into_iter().any(|square| {
+                    (attacks::bishop_attacks(square, occupied) & self.their_diagonal).any()
+                        || (attacks::rook_attacks(square, occupied) & self.their_straight).any()
+                })
+            };
+            return covered || (effect.en_passant && self.ep_exposes(m, effect));
         }
         // A capture or castling: judge the board it leaves.
         let Some(our_king) = self
@@ -288,6 +289,17 @@ impl<'a> Mover<'a> {
         exposed
             .into_iter()
             .any(|square| (self.pos.attackers_to(square, occupied) & capturers).any())
+    }
+
+    /// Whether the en passant capture a double push `m` allows explodes our
+    /// king: the passed square is beside our king and away from theirs.
+    fn ep_exposes(&self, m: Move, effect: &Effect) -> bool {
+        let (from, to) = (m.from(), m.to());
+        let passed = Square::new((from as u32 + to as u32) / 2);
+        let victim = self
+            .our_king_after(m)
+            .filter(|king| effect.occupied.contains(*king));
+        ep_explodes(passed, victim, self.their_king)
     }
 
     /// Whether after a legal move their king touches ours, or can step beside
@@ -496,10 +508,37 @@ pub fn exploding_capture(pos: &Position, side: Color) -> Option<Move> {
         .map_or(Bitboard::EMPTY, attacks::king_attacks);
     let targets = attacks::king_attacks(king) & pos.by_color(!side) & !own;
     let capturers = pos.by_color(side) & !pos.by_role(Role::King);
-    targets.into_iter().find_map(|to| {
-        let from = (pos.attackers_to(to, pos.occupied()) & capturers).first()?;
-        Some(pos.capture_move(from, to))
-    })
+    targets
+        .into_iter()
+        .find_map(|to| {
+            let from = (pos.attackers_to(to, pos.occupied()) & capturers).first()?;
+            Some(pos.capture_move(from, to))
+        })
+        .or_else(|| exploding_en_passant(pos, side, king))
+}
+
+/// An en passant capture by `side` that explodes the other king beside the
+/// passed square, which is empty and so not among the piece targets.
+fn exploding_en_passant(pos: &Position, side: Color, king: Square) -> Option<Move> {
+    if pos.turn() != side {
+        return None;
+    }
+    let to = pos.maybe_ep_square()?;
+    let takers = pos.attackers_to(to, pos.occupied()) & pos.by_piece(side.pawn());
+    let from = takers.first()?;
+    if !ep_explodes(to, Some(king), pos.king(side)) {
+        return None;
+    }
+    let m = pos.en_passant_move(from, to);
+    pos.legal(m).then_some(m)
+}
+
+/// Whether an en passant capture on `to` explodes `victim`: the blast there
+/// takes the victim and, beside the taker's own king, would take it too.
+fn ep_explodes(to: Square, victim: Option<Square>, taker: Option<Square>) -> bool {
+    let beside =
+        |king: Option<Square>| king.is_some_and(|king| attacks::king_attacks(king).contains(to));
+    beside(victim) && !beside(taker)
 }
 
 /// Whether `color` can no longer win, by shakmaty's Atomic rule.
@@ -577,10 +616,10 @@ pub fn has_legal_move(pos: &Position) -> bool {
 mod tests {
     use shakmaty::{Color, EnPassantMode, Position as _, fen::Fen};
 
-    use shakmaty::{Bitboard, Role, attacks};
+    use shakmaty::{Bitboard, Role, Square, attacks};
 
     use super::{Mover, cannot_win, exploding_capture, has_legal_move, replies};
-    use crate::board::{Position, from_fen};
+    use crate::board::{Move, Position, from_fen};
 
     /// How many of the other side's pieces `side` could take to explode its
     /// king: the plain count the scoring has to match.
@@ -598,6 +637,86 @@ mod tests {
             .count() as u32
     }
 
+    fn pushed(pos: &Position, from: Square, to: Square) -> Move {
+        *pos.pseudo_legal()
+            .as_slice()
+            .iter()
+            .find(|m| m.from() == from && m.to() == to)
+            .expect("a push in the list")
+    }
+
+    /// An en passant capture whose blast takes the commoner beside the passed
+    /// square: both helpers see it, and the witness is legal.
+    #[test]
+    fn en_passant_explosion() {
+        for (fen, (from, to), passed, (witness_from, witness_to)) in [
+            (
+                "8/6kp/8/6P1/8/8/8/K7 b - - 0 1",
+                (Square::H7, Square::H5),
+                Square::H6,
+                (Square::G5, Square::H6),
+            ),
+            (
+                "k7/8/8/8/6p1/6K1/7P/8 w - - 0 1",
+                (Square::H2, Square::H4),
+                Square::H3,
+                (Square::G4, Square::H3),
+            ),
+        ] {
+            let pos = from_fen(fen).unwrap();
+            let mover = Mover::new(&pos);
+            let m = pushed(&pos, from, to);
+            assert!(mover.legal(m), "{fen}");
+            let effect = mover.effect(m);
+            assert!(effect.en_passant, "{fen}");
+            assert!(mover.exposes(m, &effect), "{fen}");
+            let child = pos.play(m);
+            assert_eq!(child.maybe_ep_square(), Some(passed), "{fen}");
+            let witness = exploding_capture(&child, child.turn()).expect("an explosion");
+            assert_eq!(
+                (witness.from(), witness.to()),
+                (witness_from, witness_to),
+                "{fen}"
+            );
+            assert!(witness.is_en_passant(), "{fen}");
+            assert!(Mover::new(&child).legal(witness), "{fen}");
+            assert!(child.play(witness).king(!child.turn()).is_none(), "{fen}");
+        }
+    }
+
+    /// No taker, and a passed square beside both commoners: no explosion.
+    #[test]
+    fn en_passant_explosion_negatives() {
+        let quiet = from_fen("8/6kp/8/8/8/8/8/K7 b - - 0 1").unwrap();
+        let mover = Mover::new(&quiet);
+        let m = pushed(&quiet, Square::H7, Square::H5);
+        let effect = mover.effect(m);
+        assert!(!effect.en_passant);
+        assert!(!mover.exposes(m, &effect));
+        assert!(exploding_capture(&quiet.play(m), Color::White).is_none());
+
+        let both = from_fen("8/8/8/8/2k1p3/8/3PK3/8 w - - 0 1").unwrap();
+        let mover = Mover::new(&both);
+        let m = pushed(&both, Square::D2, Square::D4);
+        let effect = mover.effect(m);
+        assert!(effect.en_passant);
+        assert!(!mover.exposes(m, &effect));
+        let child = both.play(m);
+        assert_eq!(child.maybe_ep_square(), Some(Square::D3));
+        assert!(exploding_capture(&child, Color::Black).is_none());
+    }
+
+    /// A piece target beside their commoner is found before the en passant
+    /// explosion. Witness order is proof contract.
+    #[test]
+    fn en_passant_witness_order() {
+        let pos = from_fen("8/6kp/5n2/6P1/4N3/8/8/K7 b - - 0 1").unwrap();
+        let m = pushed(&pos, Square::H7, Square::H5);
+        let witness = exploding_capture(&pos.play(m), Color::White).expect("an explosion");
+        assert_eq!(witness.to(), Square::F6);
+        assert!(!witness.is_en_passant());
+    }
+
     /// Random games, checking every move's scoring against the position it
     /// leads to, and that against shakmaty.
     #[test]
@@ -610,6 +729,11 @@ mod tests {
             "r3k2r/8/8/3qQ3/8/8/8/R3K2R b KQkq - 0 1",
             "8/2P5/8/3k4/8/3K4/5p2/8 w - - 0 1",
             "rnb1kb1r/p1qppp1p/1pp5/6p1/P2P1QnP/N1P2P2/1P2P1P1/R1B1KBNR b KQkq - 1 10",
+            "8/6kp/8/6P1/8/8/8/K7 b - - 0 1",
+            "k7/8/8/8/6p1/6K1/7P/8 w - - 0 1",
+            "8/6kp/8/8/8/8/8/K7 b - - 0 1",
+            "8/8/8/8/2k1p3/8/3PK3/8 w - - 0 1",
+            "8/6kp/5n2/6P1/4N3/8/8/K7 b - - 0 1",
         ];
         let mut seed = 0x2545_f491_4f6c_dd1d_u64;
         let mut moves = 0;

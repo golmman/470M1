@@ -56,3 +56,7 @@ Check the changelog then draft the first plan in the initiative.
 ---
 
 Plan session. Read AGENTS.md, docs/plans/movegen/{initiative,report1,rules-surface}.md and tests/differential.rs. Write docs/plans/movegen/plan2.md (<= 8 KB) to fix the en-passant immediate-explosion gap in moves::exploding_capture and Mover::exposes, starting from FEN "8/6kp/8/6P1/8/8/8/K7 b - - 0 1" move h7h5 witness g5h6. Include the differential harness, checker/veto gates and a same-session 10 s bench row; no adapter and no key-table change. Run only read-only probes; do not implement.
+
+---
+
+open decisions?
