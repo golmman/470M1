@@ -63,7 +63,7 @@ impl Entry {
             proof.length < 1 << LENGTH_BITS,
             "a proof fits in 1,023 moves"
         );
-        let m = u32::from(proof.m.map_or(0, Move::bits));
+        let m = u32::from(proof.m.map_or(0, Move::proof_bits));
         debug_assert!(m < 1 << MOVE_BITS);
         let limit = if mate { MATE } else { proof.limit.min(ANY) };
         Entry {
@@ -104,7 +104,7 @@ impl Entry {
         let rest = self.rest;
         let m = (rest & ((1 << MOVE_BITS) - 1)) as u16;
         Proof {
-            m: (m != 0).then(|| Move::from_bits(m)),
+            m: (m != 0).then(|| Move::from_proof_bits(m)),
             length: self.length(),
             limit: match self.limit() {
                 ANY => u32::MAX,
@@ -357,14 +357,14 @@ mod tests {
     fn keeps_proofs_whole() {
         let mut proofs = Proofs::new(1).unwrap();
         let whole = Proof {
-            m: Some(Move::from_bits(0x7fff)),
+            m: Some(Move::from_bits(0x0001)),
             length: 1023,
             limit: 0,
         };
         assert!(proofs.add(3, whole));
         assert_eq!(proofs.get(3, 0), Some(whole));
         let any = Proof {
-            m: Some(Move::from_bits(1)),
+            m: Some(Move::from_bits(0xddff)),
             length: 300,
             limit: u32::MAX,
         };

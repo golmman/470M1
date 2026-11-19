@@ -15,65 +15,97 @@ use std::mem::MaybeUninit;
 use std::ops::ControlFlow;
 
 use atomic_movegen::{
-    Board as NativeBoard, Color as NativeColor, EnPassantMode, Move as NativeMove, PieceType,
-    Setup as NativeSetup, Square as NativeSquare, movegen, types::MoveType,
+    Board as NativeBoard, Color as NativeColor, Counts, EnPassantMode, Move as NativeMove,
+    PieceType, Setup as NativeSetup, Square as NativeSquare, movegen,
 };
 use shakmaty::{Bitboard, CastlingSide, Color, Piece, Position as _, Role, Setup, Square, attacks};
 
-/// A move in 16 bits: from, to, and kind. Castling goes from the king to the
-/// rook, as shakmaty's does.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub struct Move(u16);
+/// A move in `atomic-movegen`'s stable 16-bit wire encoding. The native value
+/// is kept whole, so the move list, legality and effect calls need no
+/// translation; the proof table projects it to 15 bits at its own boundary.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Move(NativeMove);
 
-const NORMAL: u16 = 0;
-const EN_PASSANT: u16 = 1;
-const CASTLE: u16 = 2;
-/// Promotions to the knight, bishop, rook, and queen follow.
-const PROMOTION: u16 = 3;
+impl Default for Move {
+    fn default() -> Move {
+        Move(NativeMove::NONE)
+    }
+}
 
 impl Move {
-    const fn new(from: Square, to: Square, kind: u16) -> Move {
-        Move(from as u16 | (to as u16) << 6 | kind << 12)
+    #[inline]
+    pub(crate) fn from_native(m: NativeMove) -> Move {
+        Move(m)
     }
 
-    fn promoting(from: Square, to: Square, role: Role) -> Move {
-        Move::new(from, to, PROMOTION + role as u16 - Role::Knight as u16)
-    }
-
-    /// The move's bits, 15 at most and never 0: no move goes from a square to
-    /// itself.
-    pub fn bits(self) -> u16 {
+    /// The native move; the sentinel for a malformed 16-bit value.
+    #[inline]
+    pub(crate) fn native(self) -> NativeMove {
         self.0
     }
 
+    /// The move's native bits: 0 for none, never from a square to itself.
+    pub fn bits(self) -> u16 {
+        self.0.to_bits()
+    }
+
     pub fn from_bits(bits: u16) -> Move {
-        Move(bits)
+        Move(NativeMove::from_bits(bits).unwrap_or(NativeMove::NONE))
     }
 
     pub fn from(self) -> Square {
-        Square::new(u32::from(self.0 & 63))
+        square(self.0.from_sq())
     }
 
     pub fn to(self) -> Square {
-        Square::new(u32::from((self.0 >> 6) & 63))
-    }
-
-    fn kind(self) -> u16 {
-        self.0 >> 12
+        square(self.0.to_sq())
     }
 
     pub fn promotion(self) -> Option<Role> {
-        let kind = self.kind();
-        (kind >= PROMOTION)
-            .then(|| Role::ALL[(Role::Knight as u16 + kind - PROMOTION) as usize - 1])
+        self.0.is_promotion().then(|| role(self.0.promotion_type()))
     }
 
     pub fn is_en_passant(self) -> bool {
-        self.kind() == EN_PASSANT
+        self.0.is_en_passant()
     }
 
     pub fn is_castle(self) -> bool {
-        self.kind() == CASTLE
+        self.0.is_castling()
+    }
+
+    /// The compact 15-bit form the proof tables keep: origin, destination and
+    /// a kind in `0..=6`, so a proof entry still fits its 32-bit field.
+    pub(crate) fn proof_bits(self) -> u16 {
+        let from = self.from() as u16;
+        let to = self.to() as u16;
+        let kind = match self.promotion() {
+            Some(Role::Knight) => 3,
+            Some(Role::Bishop) => 4,
+            Some(Role::Rook) => 5,
+            Some(Role::Queen) => 6,
+            Some(Role::Pawn | Role::King) => unreachable!("a promotion to pawn or king"),
+            None if self.is_en_passant() => 1,
+            None if self.is_castle() => 2,
+            None => 0,
+        };
+        from | to << 6 | kind << 12
+    }
+
+    /// The move from its proof bits, which only `proof_bits` writes.
+    pub(crate) fn from_proof_bits(bits: u16) -> Move {
+        let from = native_square(Square::new(u32::from(bits & 63)));
+        let to = native_square(Square::new(u32::from((bits >> 6) & 63)));
+        let native = match bits >> 12 {
+            0 => NativeMove::make_move(from, to),
+            1 => NativeMove::make_enpassant(from, to),
+            2 => NativeMove::make_castling(from, to),
+            3 => NativeMove::make_promotion(from, to, PieceType::Knight),
+            4 => NativeMove::make_promotion(from, to, PieceType::Bishop),
+            5 => NativeMove::make_promotion(from, to, PieceType::Rook),
+            6 => NativeMove::make_promotion(from, to, PieceType::Queen),
+            _ => unreachable!("a proof move kind"),
+        };
+        Move::from_native(native)
     }
 }
 
@@ -165,7 +197,7 @@ fn role(piece_type: PieceType) -> Role {
         PieceType::Rook => Role::Rook,
         PieceType::Queen => Role::Queen,
         PieceType::Commoner => Role::King,
-        _ => unreachable!("the movegen 2.9.0 piece types"),
+        _ => unreachable!("the movegen piece types"),
     }
 }
 
@@ -236,20 +268,6 @@ impl Position {
         &self.board
     }
 
-    pub(crate) fn native_move(&self, m: Move) -> NativeMove {
-        let from = native_square(m.from());
-        let to = native_square(m.to());
-        if m.is_castle() {
-            NativeMove::make_castling(from, to)
-        } else if m.is_en_passant() {
-            NativeMove::make_enpassant(from, to)
-        } else if let Some(role) = m.promotion() {
-            NativeMove::make_promotion(from, to, native_role(role))
-        } else {
-            NativeMove::make_move(from, to)
-        }
-    }
-
     pub fn turn(&self) -> Color {
         if self.board.side_to_move() == NativeColor::White {
             Color::White
@@ -266,7 +284,10 @@ impl Position {
 
     /// An en passant capture from the capturing pawn to the passed square.
     pub fn en_passant_move(&self, from: Square, to: Square) -> Move {
-        Move::new(from, to, EN_PASSANT)
+        Move::from_native(NativeMove::make_enpassant(
+            native_square(from),
+            native_square(to),
+        ))
     }
 
     pub fn halfmoves(&self) -> u32 {
@@ -331,41 +352,30 @@ impl Position {
             && (self.attackers_to(king, occupied) & theirs & !self.by_role(Role::King)).any()
     }
 
-    /// The squares a capture on `to` empties: the capturer, the captured piece,
-    /// and every piece but pawns beside them.
-    fn blast(&self, to: Square) -> Bitboard {
-        Bitboard::from(to)
-            | (attacks::king_attacks(to) & self.occupied() & !self.by_role(Role::Pawn))
-    }
-
     /// Whether a move is pseudo-legal and legal, as `atomic-movegen` judges
-    /// it.
+    /// it. The candidate loop reads only the two counts, never checkers.
     pub fn legal(&self, m: Move) -> bool {
-        self.board.is_legal(self.native_move(m))
-    }
-
-    pub(crate) fn legal_with(&self, m: Move, state: &atomic_movegen::StateInfo) -> bool {
-        self.board.legal(self.native_move(m), state)
+        let native = m.native();
+        let context = self.board.legality_context(self.board.counts());
+        self.board.is_pseudo_legal(native) && context.legal(native)
     }
 
     pub(crate) fn is_double_push(&self, m: Move) -> bool {
-        self.board.is_double_push(self.native_move(m))
+        self.board.is_double_push(m.native())
     }
 
     /// Whether `pseudo_legal` lists a move, without listing them all, as a
     /// replay needs for the one move it follows.
     pub fn is_pseudo_legal(&self, m: Move) -> bool {
-        if m.kind() > PROMOTION + Role::Queen as u16 - Role::Knight as u16 {
-            return false;
-        }
-        self.board.is_pseudo_legal(self.native_move(m))
+        let native = m.native();
+        native != NativeMove::NONE && self.board.is_pseudo_legal(native)
     }
 
     /// Every move that is legal but for where it leaves the mover's king.
     pub fn pseudo_legal(&self) -> Moves {
         let mut moves = Moves::new();
         let _ = movegen::for_each_pseudo_legal(&self.board, &mut |m| {
-            moves.push(from_native_move(m));
+            moves.push(Move::from_native(m));
             ControlFlow::<()>::Continue(())
         });
         moves
@@ -374,57 +384,39 @@ impl Position {
     /// The position with the other side to move, as if the side to move had
     /// passed: what a threat would win.
     pub fn null(&self) -> Position {
-        let mut setup = NativeSetup::new();
-        for (square, piece) in self.board.pieces() {
-            setup.place(square, piece);
-        }
-        setup
-            .set_side_to_move(native_color(!self.turn()))
-            .set_castling_rights(self.board.castling_rights())
-            .set_ep_square(None)
-            .set_rule50(self.board.rule50().saturating_add(1))
-            .set_game_ply(self.board.game_ply().saturating_add(1));
-        let board = NativeBoard::from_setup(&setup).expect("a passed position");
-        let hash = board.hash_with(EnPassantMode::Legal);
+        let board = self.board.null_for_advanced(native_color(!self.turn()));
+        let hash = board.hash();
         Position { board, hash }
     }
 
     /// What a legal move changes, as `play` would change it.
     pub fn effect(&self, m: Move) -> Effect {
-        let us = self.turn();
-        let (from, to) = (m.from(), m.to());
-        let native = self.native_move(m);
-        let occupied = self.occupied();
-        let (occupied, capture) = if m.is_castle() {
-            let castling_side = CastlingSide::from_queen_side(to < from);
-            let king_to = castling_side.king_to(us);
-            let rook_to = castling_side.rook_to(us);
-            let occupied = occupied
-                .without(from)
-                .without(to)
-                .with(king_to)
-                .with(rook_to);
-            (occupied, false)
-        } else if m.is_en_passant() {
-            let victim = Square::from_coords(to.file(), from.rank());
-            let occupied = occupied.without(from).with(to).without(victim);
-            (occupied & !self.blast(to), true)
-        } else if occupied.contains(to) {
-            (occupied.without(from).with(to) & !self.blast(to), true)
-        } else {
-            (occupied.without(from).with(to), false)
-        };
-        let (hash, counter) = self.board.hash_and_rule50_after(native);
-        let hash = if self.board.is_double_push(native) {
-            self.board.hash_after_with(native, EnPassantMode::Legal)
-        } else {
-            hash
-        };
+        let counts = self.board.counts();
+        self.effect_with_occupancy(m, self.occupied(), counts)
+    }
+
+    /// The child effect from a parent occupancy and counts the caller already
+    /// holds: one pass on the parent's bitboards, no child board or view.
+    pub(crate) fn effect_with_occupancy(
+        &self,
+        m: Move,
+        occupied: Bitboard,
+        counts: Counts,
+    ) -> Effect {
+        let child = self
+            .board
+            .child_effect_with_occupancy(
+                m.native(),
+                atomic_movegen::Bitboard(occupied.0),
+                counts,
+                EnPassantMode::Legal,
+            )
+            .expect("a well-formed move");
         Effect {
-            hash,
-            counter: u32::from(counter),
-            occupied,
-            capture,
+            hash: child.key,
+            counter: u32::from(child.rule50),
+            occupied: Bitboard(child.occupied.0),
+            capture: child.capture,
         }
     }
 
@@ -432,7 +424,7 @@ impl Position {
     pub fn play(&self, m: Move) -> Position {
         let mut board = self.board.clone();
         let mut state = atomic_movegen::StateInfo::new();
-        board.do_move(self.native_move(m), &mut state);
+        board.do_move(m.native(), &mut state);
         let hash = board.hash_with(EnPassantMode::Legal);
         Position { board, hash }
     }
@@ -451,9 +443,16 @@ impl Position {
     /// promoting to a queen.
     pub fn capture_move(&self, from: Square, to: Square) -> Move {
         if self.role_at(from) == Some(Role::Pawn) && Bitboard::BACKRANKS.contains(to) {
-            Move::promoting(from, to, Role::Queen)
+            Move::from_native(NativeMove::make_promotion(
+                native_square(from),
+                native_square(to),
+                PieceType::Queen,
+            ))
         } else {
-            Move::new(from, to, NORMAL)
+            Move::from_native(NativeMove::make_move(
+                native_square(from),
+                native_square(to),
+            ))
         }
     }
 
@@ -479,18 +478,6 @@ impl Position {
     }
 }
 
-fn from_native_move(m: NativeMove) -> Move {
-    let from = square(m.from_sq());
-    let to = square(m.to_sq());
-    match m.move_type() {
-        MoveType::Normal => Move::new(from, to, NORMAL),
-        MoveType::EnPassant => Move::new(from, to, EN_PASSANT),
-        MoveType::Castling => Move::new(from, to, CASTLE),
-        MoveType::Promotion => Move::promoting(from, to, role(m.promotion_type())),
-        _ => unreachable!("the movegen 2.9.0 move types"),
-    }
-}
-
 /// A position read from FEN.
 #[cfg(test)]
 pub fn from_fen(fen: &str) -> Result<Position, String> {
@@ -503,7 +490,7 @@ mod tests {
 
     use atomic_movegen::EnPassantMode;
     use shakmaty::Position as _;
-    use shakmaty::{Square, uci::UciMove};
+    use shakmaty::uci::UciMove;
 
     use super::{Move, Position, from_fen};
 
@@ -550,32 +537,20 @@ mod tests {
                         .collect();
                     assert_eq!(converted, expected);
                     positions += 1;
-                    // Single moves tested against the list, on one position
-                    // in 400 and the position passed to the other side: from
-                    // the side to move's pieces every kind of move (castling
-                    // only from the king), from other squares plain ones.
+                    // Every native 16-bit encoding tested against the list,
+                    // on one position in 400 and the position passed to the
+                    // other side.
                     if positions % 400 == 0 {
                         let passed = (!ours.in_check()).then(|| ours.null());
                         for pos in std::iter::once(&ours).chain(passed.as_ref()) {
-                            let mut listed = vec![false; 1 << 15];
+                            let mut listed = vec![false; 1 << 16];
                             for m in pos.pseudo_legal().as_slice() {
                                 listed[usize::from(m.bits())] = true;
                             }
-                            let mine = pos.by_color(pos.turn());
-                            let king = pos.king(pos.turn()).map(|king| king as u16);
-                            for from in 0..64u16 {
-                                let own = mine.contains(Square::new(u32::from(from)));
-                                for kind in if own { 0..8 } else { 0..1 } {
-                                    if kind == 2 && king != Some(from) {
-                                        continue;
-                                    }
-                                    for to in 0..64u16 {
-                                        let bits = from | to << 6 | kind << 12;
-                                        let m = Move::from_bits(bits);
-                                        let expected = listed[usize::from(bits)];
-                                        assert_eq!(pos.is_pseudo_legal(m), expected, "{m:?}");
-                                    }
-                                }
+                            for bits in 0..=u16::MAX {
+                                let m = Move::from_bits(bits);
+                                let expected = listed[usize::from(bits)];
+                                assert_eq!(pos.is_pseudo_legal(m), expected, "{m:?}");
                             }
                         }
                     }

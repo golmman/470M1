@@ -17,10 +17,16 @@ The owner rejected a rollback (`MD1` reaffirmed) and set the hot-path boundary
 (`MD5`) and the same-session bench bar (`MD6`); [`hot-path-audit.md`](hot-path-audit.md)
 measures where the 2.46e9 instructions go and records three negative designs.
 [`wishlist2.md`](wishlist2.md) is the narrower cost list (`W6`-`W9`).
-[`plan4.md`](plan4.md) adopts the next owner-triggered release; [`plan5.md`](plan5.md)
-measures it against the bar. See [`report3.md`](report3.md) and
-[`wishlist1.md`](wishlist1.md) (W1-W3 landed, W4 open, W5 proposed). The next
-step is the owner-triggered release; the checker stays on shakmaty.
+Plan 4 adopted the owner-triggered `atomic-movegen` **2.10.0**
+(`5083647`): `W6`-`W9` are on the rules path, the differential is green
+(0 mismatches, 0 key mismatches, EP 87/0/0), all gates and the veto pass, and
+the 10 s row is 3/3, 9/9 accepted, geomean **1.099** against a same-session
+plan 2 binary at **0.988**. The adoption is a near miss, not a pass: per-call
+legality is 121.9 (target ≤100) and effect+key 215.2 (target ≤120), and `core`
+is 8.004e9 instructions against plan 2's 6.569e9. [`plan5.md`](plan5.md)
+measures it against the `MD6` bar. See [`report3.md`](report3.md),
+[`report4.md`](report4.md) and [`wishlist2.md`](wishlist2.md). The checker
+stays on shakmaty.
 
 ## Goal
 
@@ -42,7 +48,7 @@ movegen bug cannot hide in both the prover and the checker.
   moves, terminal outcomes, hashes, en passant, castling, promotions and
   insufficient material. **Met:** [`rules-surface.md`](rules-surface.md).
 - A pinned `atomic-movegen` version is chosen and recorded in
-  `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.9.0 (`af3faf0`), default features.
+  `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.10.0 (`5083647`), default features.
 - A differential harness exists that compares the two rules implementations
   on the fixtures, the bench corpus and random play-out positions. **Met:**
   [`tests/differential.rs`](../../../tests/differential.rs) is green after
@@ -132,6 +138,13 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-19** — plan 4 pinned and adopted `atomic-movegen` 2.10.0
+  (`5083647`): native move storage, `LegalityContext`, `ChildEffect` and
+  `null_for_advanced`, with the `Setup` null rebuild and per-candidate
+  translators removed. Differential green, gates and veto green, 9/9
+  accepted; 10 s row 3/3, geomean **1.099** (old binary 0.988), a near miss
+  with the per-call `W7`/`W8` targets still open. `core` 8.004e9 vs plan 2's
+  6.569e9. [`report4.md`](report4.md), [`measurements/plan4/`](measurements/plan4/README.md).
 - **2026-11-19** — hot-path audit and cost wishlist. The shipped
   `EffectContext`/batch-key API is measured **slower** than the adapter's
   current path (394 vs ~200 instructions per candidate; +17.9% on `core`), as

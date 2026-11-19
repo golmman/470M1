@@ -9,6 +9,7 @@
 //! that check the other king, and attack maps, which settle most moves with
 //! a bit test; the rest are judged from the occupancy the move leaves.
 
+use atomic_movegen::{Counts, LegalityContext};
 use shakmaty::{Bitboard, ByRole, CastlingSide, Color, Role, Square, attacks};
 
 use crate::board::{Effect, Move, Position};
@@ -17,7 +18,11 @@ use crate::board::{Effect, Move, Position};
 pub struct Mover<'a> {
     pos: &'a Position,
     us: Color,
-    state: atomic_movegen::StateInfo,
+    /// The node-local legality context and the counts it was built from.
+    context: LegalityContext,
+    counts: Counts,
+    /// The parent's occupancy, shared by legality, the fast path and effects.
+    occupied: Bitboard,
     our_king: Option<Square>,
     their_king: Option<Square>,
     /// Our pieces whose quiet moves need a legality test: every piece while
@@ -61,6 +66,8 @@ impl<'a> Mover<'a> {
             (Some(ours), Some(theirs)) if attacks::king_attacks(ours).contains(theirs));
         let mut state = atomic_movegen::StateInfo::new();
         pos.board().populate_state(&mut state);
+        let counts = Counts::from(&state);
+        let context = pos.board().legality_context(counts);
         let tested = match our_king {
             _ if touching => Bitboard::EMPTY,
             _ if !state.checkers.is_empty() => ours,
@@ -99,7 +106,9 @@ impl<'a> Mover<'a> {
         Mover {
             pos,
             us,
-            state,
+            context,
+            counts,
+            occupied,
             our_king,
             their_king,
             tested,
@@ -122,7 +131,8 @@ impl<'a> Mover<'a> {
 
     #[inline]
     pub fn effect(&self, m: Move) -> Effect {
-        self.pos.effect(m)
+        self.pos
+            .effect_with_occupancy(m, self.occupied, self.counts)
     }
 
     /// A legal move's effect; the child's key already counts the en passant
@@ -136,7 +146,7 @@ impl<'a> Mover<'a> {
         let (from, to) = (m.from(), m.to());
         let quiet = !m.is_castle()
             && !m.is_en_passant()
-            && !self.pos.occupied().contains(to)
+            && !self.occupied.contains(to)
             && Some(from) != self.our_king;
         quiet.then_some((from, to))
     }
@@ -150,7 +160,7 @@ impl<'a> Mover<'a> {
         {
             return true;
         }
-        self.pos.legal_with(m, &self.state)
+        self.context.legal(m.native())
     }
 
     /// Whether a legal move explodes the other king.
@@ -336,7 +346,7 @@ impl<'a> Mover<'a> {
         if !self.touching && self.check_squares.get(role).contains(to) {
             return false;
         }
-        let occupied = self.pos.occupied() ^ Bitboard::from(from) ^ Bitboard::from(to);
+        let occupied = self.occupied ^ Bitboard::from(from) ^ Bitboard::from(to);
         (attacks::attacks(to, role.of(self.us), occupied) & self.targets).is_empty()
     }
 

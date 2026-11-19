@@ -28,14 +28,13 @@ the parser, boundary and checker. The differential is green (`mismatches: 0`,
 `key_mismatches: 0`; `MD3` census 87/0/0), but the 10 s bench **regressed** to
 3/3, geomean **1.206**, 9/9 accepted, `D14` identical. A same-session plan 2
 binary reads 0.987, so the loss is per-node adapter cost. Rollback was
-rejected (`MD1`); the boundary is `MD5`, the bar `MD6`. The audit's ceiling for
-a crate-led fix is ~1.12x plan 2. Plan 4 adopts the next owner-triggered release
-(`W6`-`W9`); plan 5 measures it. We own the upstream `golmman/atomic_movegen`;
-changes go in `docs/plans/movegen/wishlistN.md` and integrate only by an
-owner-triggered plan/report. See
-[`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
+rejected (`MD1`); the boundary is `MD5`, the bar `MD6`. Crate-led ceiling ~1.12x plan 2. Plan 4 adopted 2.10.0 (`W6`-`W9`):
+differential green, 9/9 accepted, 10 s geomean **1.099** vs old binary
+**0.988**; `W7`/`W8` per-call targets miss, so plan 5 decides. We own
+`golmman/atomic_movegen`; changes go in `wishlistN.md` and enter by an owner
+plan/report. See [`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
 [`wishlist2`](docs/plans/movegen/wishlist2.md) and
-[`initiative`](docs/plans/movegen/initiative.md).
+[`report4`](docs/plans/movegen/report4.md).
 
 ## Collaboration
 

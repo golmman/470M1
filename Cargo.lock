@@ -10,9 +10,9 @@ checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
 name = "atomic-movegen"
-version = "2.9.0"
+version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86a8b5d727370f081df9b504971e2e6b3bc6f600c584fb4993af13ec1818ec45"
+checksum = "cf06388f6cacd25fe70e2badbf8b2e60888b118351a8eaab99ef4adb53b25efd"
 
 [[package]]
 name = "atomic470mi"

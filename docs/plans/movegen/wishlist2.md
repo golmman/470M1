@@ -1,7 +1,9 @@
 # Wishlist 2 — hot-path cost asks for `atomic-movegen`
 
-**Status:** a request list, not a plan. **Baseline:** `atomic-movegen` 2.9.0
-(`af3faf0`, MIT). **Evidence:** [`hot-path-audit.md`](hot-path-audit.md);
+**Status:** a request list, not a plan. All four asks landed in `atomic-movegen`
+2.10.0 (`5083647`, MIT), adopted by [`plan4.md`](plan4.md); the acceptance
+numbers are measured in [`report4.md`](report4.md). **Baseline:** 2.9.0
+(`af3faf0`). **Evidence:** [`hot-path-audit.md`](hot-path-audit.md);
 per-call instruction counts on the ten-FEN probe, and whole-binary runs of the
 `core` cell. **Supersedes nothing:** [`wishlist1.md`](wishlist1.md) stays
 open (`W4` watchlist, `W5` only on a key-driven regression).
@@ -23,12 +25,12 @@ same facts.
 
 ## Priority
 
-| # | Ask | Expected saving | Priority |
-| --- | --- | ---: | --- |
-| `W6` | counts-only state, or documented `legal` precondition | ~0.05e9 | P3 |
-| `W7` | legality entry point at plan-2 occupancy cost | 0.3–0.4e9 | P1 |
-| `W8` | effect + child key from parent bitboards, no view materialisation | ~0.4e9 | P1 |
-| `W9` | null move with advanced clock, no `Setup` rebuild | ~0.1e9 | P2 |
+| # | Ask | Expected saving | Priority | 2.10.0 |
+| --- | --- | ---: | --- | --- |
+| `W6` | counts-only state, or documented `legal` precondition | ~0.05e9 | P3 | `counts`, `populate_counts` |
+| `W7` | legality entry point at plan-2 occupancy cost | 0.3–0.4e9 | P1 | `LegalityContext` |
+| `W8` | effect + child key from parent bitboards, no view materialisation | ~0.4e9 | P1 | `ChildEffect` |
+| `W9` | null move with advanced clock, no `Setup` rebuild | ~0.1e9 | P2 | `null_for_advanced` |
 
 Combined optimistic ceiling: ~0.95e9 of the 2.46e9 gap. With `plan4`'s
 prover-side native-move storage and the rest of the audit's list the channel

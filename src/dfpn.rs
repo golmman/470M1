@@ -1251,7 +1251,7 @@ impl<'a> Dfpn<'a> {
                 self.proofs.remove(hash);
                 // With a limit, the table's keys count the moves left.
                 if self.most.is_none() {
-                    self.table.put(hash, Known::Mate(m.bits()), 1);
+                    self.table.put(hash, Known::Mate(m.proof_bits()), 1);
                     self.refresh_filter();
                 }
             }
@@ -1446,7 +1446,7 @@ impl<'a> Dfpn<'a> {
     /// mate in one only where `mates` finds that its move mates.
     fn lookup(&self, hash: u64, counter: u32, mates: impl FnOnce(Move) -> bool) -> Option<Value> {
         match self.table.get(hash)? {
-            Known::Mate(bits) => mates(Move::from_bits(bits)).then_some(Value::WON),
+            Known::Mate(bits) => mates(Move::from_proof_bits(bits)).then_some(Value::WON),
             Known::Open { proof, disproof } => Some(Value::open(Numbers { proof, disproof })),
             Known::Refuted { cycle, from } => {
                 if counter < from {
