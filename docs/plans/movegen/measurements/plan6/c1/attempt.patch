@@ -1,0 +1,547 @@
+diff --git a/src/board.rs b/src/board.rs
+index 051952d..3b04ff9 100644
+--- a/src/board.rs
++++ b/src/board.rs
+@@ -331,6 +331,11 @@ impl Position {
+         (sq != NativeSquare::NONE).then(|| square(sq))
+     }
+ 
++    /// The node's rules geometry, read once from the board's public bitboards.
++    pub fn facts(&self) -> NodeFacts {
++        NodeFacts::of(self)
++    }
++
+     /// The pieces of every color attacking a square, with sliders seeing
+     /// through `occupied`.
+     pub fn attackers_to(&self, square: Square, occupied: Bitboard) -> Bitboard {
+@@ -478,6 +483,70 @@ impl Position {
+     }
+ }
+ 
++/// The rules geometry of one node, read once from the prover's board so the
++/// per-candidate queries do not re-enter it for the occupancy, the colour
++/// masks, the kings or the role masks. Built once per expanded node; a child's
++/// facts are never carried from its parent.
++#[derive(Clone, Copy)]
++pub struct NodeFacts {
++    occupied: Bitboard,
++    /// Pieces by colour, indexed by `Color`'s own discriminant.
++    colors: [Bitboard; 2],
++    /// Pieces by role, indexed by `Role`'s own discriminant; slot 0 is empty.
++    roles: [Bitboard; 7],
++    /// The two kings' squares, one bit per colour.
++    kings: [Bitboard; 2],
++}
++
++impl NodeFacts {
++    pub fn of(pos: &Position) -> NodeFacts {
++        let board = pos.board();
++        let mut roles = [Bitboard::EMPTY; 7];
++        for role in Role::ALL {
++            roles[role as usize] = Bitboard(board.pieces_pt(native_role(role)).0);
++        }
++        let mut colors = [Bitboard::EMPTY; 2];
++        for color in Color::ALL {
++            colors[color as usize] = Bitboard(board.pieces_color(native_color(color)).0);
++        }
++        let kings = roles[Role::King as usize];
++        NodeFacts {
++            occupied: Bitboard(board.occupied().0),
++            colors,
++            roles,
++            kings: [
++                kings & colors[Color::Black as usize],
++                kings & colors[Color::White as usize],
++            ],
++        }
++    }
++
++    #[inline]
++    pub fn occupied(&self) -> Bitboard {
++        self.occupied
++    }
++
++    #[inline]
++    pub fn by_color(&self, color: Color) -> Bitboard {
++        self.colors[color as usize]
++    }
++
++    #[inline]
++    pub fn by_role(&self, role: Role) -> Bitboard {
++        self.roles[role as usize]
++    }
++
++    #[inline]
++    pub fn by_piece(&self, piece: Piece) -> Bitboard {
++        self.by_color(piece.color) & self.by_role(piece.role)
++    }
++
++    #[inline]
++    pub fn king(&self, color: Color) -> Option<Square> {
++        self.kings[color as usize].first()
++    }
++}
++
+ /// A position read from FEN.
+ #[cfg(test)]
+ pub fn from_fen(fen: &str) -> Result<Position, String> {
+diff --git a/src/dfpn.rs b/src/dfpn.rs
+index ac16f31..9fe429a 100644
+--- a/src/dfpn.rs
++++ b/src/dfpn.rs
+@@ -64,7 +64,7 @@ use crate::clock::Instant;
+ 
+ use shakmaty::{Color, variant::Atomic};
+ 
+-use crate::board::{Effect, Move, Position};
++use crate::board::{Effect, Move, NodeFacts, Position};
+ use crate::moves::{self, Mover};
+ use crate::proofs::{Proof, Proofs};
+ use crate::search::{Key, Status, status};
+@@ -614,7 +614,8 @@ impl<'a> Dfpn<'a> {
+         children: &mut Vec<Child>,
+     ) -> Option<f32> {
+         let candidates = pos.pseudo_legal();
+-        let mover = Mover::new(pos);
++        let facts = pos.facts();
++        let mover = Mover::new(pos, &facts);
+         // The attacker's plain moves wait together.
+         let group = attacking;
+         let mut plain = 0;
+@@ -673,7 +674,7 @@ impl<'a> Dfpn<'a> {
+                 group: true,
+             });
+         }
+-        let step = self.step(pos);
++        let step = self.step(pos, &facts);
+         scale(children, attacking, step);
+         step
+     }
+@@ -710,11 +711,11 @@ impl<'a> Dfpn<'a> {
+     /// The expanded position's evaluation for the attacker, squashed to a
+     /// step from 0, the defender clearly ahead, to 2, the attacker clearly
+     /// ahead, when an evaluation guides the search.
+-    fn step(&mut self, pos: &Position) -> Option<f32> {
++    fn step(&mut self, pos: &Position, facts: &NodeFacts) -> Option<f32> {
+         match self.guide {
+             Guide::None => None,
+             Guide::Hand => {
+-                let value = crate::eval::evaluate(pos);
++                let value = crate::eval::evaluate(pos, facts);
+                 Some(self.band(pos, value, HAND_DECISIVE))
+             }
+         }
+@@ -746,7 +747,8 @@ impl<'a> Dfpn<'a> {
+         step: Option<f32>,
+     ) {
+         let first = children.len();
+-        let mover = Mover::new(pos);
++        let facts = pos.facts();
++        let mover = Mover::new(pos, &facts);
+         let left = remaining.saturating_sub(1);
+         // The moves first, their filter words' loads started, as in `children`.
+         let mut plain = std::mem::take(&mut self.scratch);
+@@ -1046,7 +1048,8 @@ impl<'a> Dfpn<'a> {
+         if counter > LAST || self.on_line(pos.hash(), line) {
+             return None;
+         }
+-        let mover = Mover::new(pos);
++        let facts = pos.facts();
++        let mover = Mover::new(pos, &facts);
+         let mut length = 0;
+         let mut limit = LAST;
+         let mut defences = 0;
+@@ -1125,7 +1128,8 @@ impl<'a> Dfpn<'a> {
+         if pos.halfmoves() >= LAST {
+             return None;
+         }
+-        let mover = Mover::new(pos);
++        let facts = pos.facts();
++        let mover = Mover::new(pos, &facts);
+         let mut any = false;
+         let mut limit = LAST;
+         for &reply in pos.pseudo_legal().as_slice() {
+@@ -1175,7 +1179,8 @@ impl<'a> Dfpn<'a> {
+         if pos.halfmoves() > LAST {
+             return None;
+         }
+-        let mover = Mover::new(pos);
++        let facts = pos.facts();
++        let mover = Mover::new(pos, &facts);
+         pos.pseudo_legal()
+             .as_slice()
+             .iter()
+@@ -1198,7 +1203,7 @@ impl<'a> Dfpn<'a> {
+         pos.turn() == self.attacker
+             && pos.halfmoves() <= LAST
+             && pos.is_pseudo_legal(m)
+-            && mates(&Mover::new(pos), pos, m)
++            && mates(&Mover::new(pos, &pos.facts()), pos, m)
+     }
+ 
+     /// The proof of the attacker exploding the king at once.
+@@ -1276,7 +1281,8 @@ impl<'a> Dfpn<'a> {
+             return;
+         }
+         if self.proof_at(passed.hash(), counter).is_none() {
+-            let mover = Mover::new(&passed);
++            let facts = passed.facts();
++            let mover = Mover::new(&passed, &facts);
+             let mut win = None;
+             // The moves first, their table reads started, as `children` does.
+             let mut moves = std::mem::take(&mut self.scratch);
+diff --git a/src/eval.rs b/src/eval.rs
+index e2f7d51..6079a39 100644
+--- a/src/eval.rs
++++ b/src/eval.rs
+@@ -8,7 +8,7 @@
+ 
+ use shakmaty::{Bitboard, Color, Role, attacks};
+ 
+-use crate::board::Position;
++use crate::board::{NodeFacts, Position};
+ 
+ /// Piece values by role, between Multi-Variant Stockfish's Atomic midgame and
+ /// endgame values: pawns survive blasts, so the pieces are worth fewer pawns.
+@@ -24,10 +24,10 @@ const PRESSURE: i32 = 20;
+ /// Each of our pieces that can check next move.
+ const CHECKER: i32 = 60;
+ 
+-/// The evaluation for the side to move.
+-pub fn evaluate(pos: &Position) -> i32 {
++/// The evaluation for the side to move, from the node's facts.
++pub fn evaluate(pos: &Position, facts: &NodeFacts) -> i32 {
+     let us = pos.turn();
+-    terms(pos, us).score() - terms(pos, !us).score()
++    terms(pos, facts, us).score() - terms(pos, facts, !us).score()
+ }
+ 
+ /// What one side has: its material and its attack on the other king.
+@@ -60,23 +60,23 @@ impl Terms {
+ }
+ 
+ /// One side's material at Atomic values, without its attack terms.
+-pub fn material(pos: &Position, color: Color) -> i32 {
+-    (pos.by_color(color) & !pos.by_role(Role::King))
++pub fn material(pos: &Position, facts: &NodeFacts, color: Color) -> i32 {
++    (facts.by_color(color) & !facts.by_role(Role::King))
+         .into_iter()
+         .map(|square| pos.role_at(square).map_or(0, |role| VALUES[role as usize]))
+         .sum()
+ }
+ 
+-pub fn terms(pos: &Position, color: Color) -> Terms {
+-    let ours = pos.by_color(color);
+-    let theirs = pos.by_color(!color);
+-    let occupied = pos.occupied();
+-    let kings = pos.by_role(Role::King);
++pub fn terms(pos: &Position, facts: &NodeFacts, color: Color) -> Terms {
++    let ours = facts.by_color(color);
++    let theirs = facts.by_color(!color);
++    let occupied = facts.occupied();
++    let kings = facts.by_role(Role::King);
+     let mut terms = Terms::default();
+     for square in ours & !kings {
+         terms.material += pos.role_at(square).map_or(0, |role| VALUES[role as usize]);
+     }
+-    let (Some(their_king), Some(our_king)) = (pos.king(!color), pos.king(color)) else {
++    let (Some(their_king), Some(our_king)) = (facts.king(!color), facts.king(color)) else {
+         return terms;
+     };
+     let ring = attacks::king_attacks(their_king);
+diff --git a/src/moves.rs b/src/moves.rs
+index 6b3ac1a..1d26c8b 100644
+--- a/src/moves.rs
++++ b/src/moves.rs
+@@ -12,11 +12,13 @@
+ use atomic_movegen::{Counts, LegalityContext};
+ use shakmaty::{Bitboard, ByRole, CastlingSide, Color, Role, Square, attacks};
+ 
+-use crate::board::{Effect, Move, Position};
++use crate::board::{Effect, Move, NodeFacts, Position};
+ 
+ /// Works out one position's moves.
+ pub struct Mover<'a> {
+     pos: &'a Position,
++    /// The node's geometry, read once, which the candidate queries share.
++    facts: &'a NodeFacts,
+     us: Color,
+     /// The node-local legality context and the counts it was built from.
+     context: LegalityContext,
+@@ -55,13 +57,13 @@ pub struct Mover<'a> {
+ }
+ 
+ impl<'a> Mover<'a> {
+-    pub fn new(pos: &'a Position) -> Mover<'a> {
++    pub fn new(pos: &'a Position, facts: &'a NodeFacts) -> Mover<'a> {
+         let us = pos.turn();
+-        let ours = pos.by_color(us);
+-        let theirs = pos.by_color(!us);
+-        let occupied = pos.occupied();
+-        let our_king = pos.king(us);
+-        let their_king = pos.king(!us);
++        let ours = facts.by_color(us);
++        let theirs = facts.by_color(!us);
++        let occupied = facts.occupied();
++        let our_king = facts.king(us);
++        let their_king = facts.king(!us);
+         let touching = matches!((our_king, their_king),
+             (Some(ours), Some(theirs)) if attacks::king_attacks(ours).contains(theirs));
+         let mut state = atomic_movegen::StateInfo::new();
+@@ -91,20 +93,21 @@ impl<'a> Mover<'a> {
+             check_squares.bishop = attacks::bishop_attacks(king, occupied);
+             check_squares.rook = attacks::rook_attacks(king, occupied);
+             check_squares.queen = check_squares.bishop | check_squares.rook;
+-            uncovering = blockers(pos, king, us) & ours;
++            uncovering = blockers(facts, king, us) & ours;
+         }
+         let beside = |king: Option<Square>| king.map_or(Bitboard::EMPTY, attacks::king_attacks);
+         let beside_us = beside(our_king) & !beside(their_king);
+         let targets = beside(their_king) & !beside(our_king) & theirs;
+-        let (their_steps, their_reach) = attack_map(pos, !us);
++        let (their_steps, their_reach) = attack_map(facts, !us);
+         let mut uncovering_targets = Bitboard::EMPTY;
+         for target in targets {
+-            uncovering_targets |= blockers(pos, target, us) & ours;
++            uncovering_targets |= blockers(facts, target, us) & ours;
+         }
+-        let diagonal = pos.by_role(Role::Bishop) | pos.by_role(Role::Queen);
+-        let straight = pos.by_role(Role::Rook) | pos.by_role(Role::Queen);
++        let diagonal = facts.by_role(Role::Bishop) | facts.by_role(Role::Queen);
++        let straight = facts.by_role(Role::Rook) | facts.by_role(Role::Queen);
+         Mover {
+             pos,
++            facts,
+             us,
+             context,
+             counts,
+@@ -247,7 +250,7 @@ impl<'a> Mover<'a> {
+         if m.is_castle() {
+             vacated.add(to);
+         }
+-        let stayed = self.ours & occupied & !vacated & !self.pos.by_role(Role::King);
++        let stayed = self.ours & occupied & !vacated & !self.facts.by_role(Role::King);
+         if (self.pos.attackers_to(their_king, occupied) & stayed).any() {
+             return true;
+         }
+@@ -293,7 +296,7 @@ impl<'a> Mover<'a> {
+         };
+         let ours = self.ours_after(m, effect);
+         let exposed = attacks::king_attacks(our_king) & ours & !attacks::king_attacks(their_king);
+-        let capturers = self.theirs & occupied & !self.pos.by_role(Role::King);
++        let capturers = self.theirs & occupied & !self.facts.by_role(Role::King);
+         exposed
+             .into_iter()
+             .any(|square| (self.pos.attackers_to(square, occupied) & capturers).any())
+@@ -306,7 +309,7 @@ impl<'a> Mover<'a> {
+         }
+         let (from, to) = (m.from(), m.to());
+         let passed = Square::new((from as u32 + to as u32) / 2);
+-        (attacks::pawn_attacks(self.us, passed) & self.pos.by_piece((!self.us).pawn())).any()
++        (attacks::pawn_attacks(self.us, passed) & self.facts.by_piece((!self.us).pawn())).any()
+     }
+ 
+     /// Whether the en passant capture a double push `m` allows explodes our
+@@ -367,14 +370,14 @@ impl<'a> Mover<'a> {
+         }
+         let theirs = self.theirs & occupied;
+         let capturers =
+-            self.pos.attackers_to(to, occupied) & theirs & !self.pos.by_role(Role::King);
++            self.pos.attackers_to(to, occupied) & theirs & !self.facts.by_role(Role::King);
+         if capturers.is_empty() {
+             return false;
+         }
+         let role = m
+             .promotion()
+             .unwrap_or_else(|| self.pos.role_at(from).expect("a piece to move"));
+-        let destroyed = ring & !self.pos.by_role(Role::Pawn);
++        let destroyed = ring & !self.facts.by_role(Role::Pawn);
+         let mut gain = piece_value(role);
+         for square in destroyed {
+             let value = self.pos.role_at(square).map_or(0, piece_value);
+@@ -431,7 +434,7 @@ impl<'a> Mover<'a> {
+         if m.is_castle() {
+             vacated.add(to);
+         }
+-        let stayed = self.ours & occupied & !vacated & !self.pos.by_role(Role::King);
++        let stayed = self.ours & occupied & !vacated & !self.facts.by_role(Role::King);
+         let landed = if m.is_castle() {
+             let side = CastlingSide::from_queen_side(to < from);
+             Some((side.rook_to(self.us), Role::Rook))
+@@ -457,9 +460,9 @@ impl<'a> Mover<'a> {
+     /// with at most two pieces besides its king, or bishops alone on the board,
+     /// can it be so. Anything else keeps a way to explode the other king.
+     pub fn might_end_material(&self, color: Color, effect: &Effect) -> bool {
+-        let kings = self.pos.by_role(Role::King);
+-        let pieces = self.pos.by_color(color) & effect.occupied & !kings;
+-        let bishops_only = (effect.occupied & !kings & !self.pos.by_role(Role::Bishop)).is_empty();
++        let kings = self.facts.by_role(Role::King);
++        let pieces = self.facts.by_color(color) & effect.occupied & !kings;
++        let bishops_only = (effect.occupied & !kings & !self.facts.by_role(Role::Bishop)).is_empty();
+         pieces.count() <= 2 || bishops_only
+     }
+ }
+@@ -477,14 +480,14 @@ fn piece_value(role: Role) -> i32 {
+ }
+ 
+ /// The pieces alone between a square and a slider of `sliders` aimed at it.
+-fn blockers(pos: &Position, square: Square, sliders: Color) -> Bitboard {
+-    let diagonal = pos.by_role(Role::Bishop) | pos.by_role(Role::Queen);
+-    let straight = pos.by_role(Role::Rook) | pos.by_role(Role::Queen);
++fn blockers(facts: &NodeFacts, square: Square, sliders: Color) -> Bitboard {
++    let diagonal = facts.by_role(Role::Bishop) | facts.by_role(Role::Queen);
++    let straight = facts.by_role(Role::Rook) | facts.by_role(Role::Queen);
+     let aimed = (attacks::rook_attacks(square, Bitboard::EMPTY) & straight)
+         | (attacks::bishop_attacks(square, Bitboard::EMPTY) & diagonal);
+     let mut blockers = Bitboard::EMPTY;
+-    for slider in aimed & pos.by_color(sliders) {
+-        let between = attacks::between(square, slider) & pos.occupied();
++    for slider in aimed & facts.by_color(sliders) {
++        let between = attacks::between(square, slider) & facts.occupied();
+         if !between.more_than_one() {
+             blockers |= between;
+         }
+@@ -493,23 +496,23 @@ fn blockers(pos: &Position, square: Square, sliders: Color) -> Bitboard {
+ }
+ 
+ /// What a side's pawns and knights attack, and what its sliders reach.
+-fn attack_map(pos: &Position, side: Color) -> (Bitboard, Bitboard) {
+-    let occupied = pos.occupied();
++fn attack_map(facts: &NodeFacts, side: Color) -> (Bitboard, Bitboard) {
++    let occupied = facts.occupied();
+     let mut steps = Bitboard::EMPTY;
+-    for from in pos.by_piece(side.pawn()) {
++    for from in facts.by_piece(side.pawn()) {
+         steps |= attacks::pawn_attacks(side, from);
+     }
+-    for from in pos.by_piece(side.knight()) {
++    for from in facts.by_piece(side.knight()) {
+         steps |= attacks::knight_attacks(from);
+     }
+     let mut reach = Bitboard::EMPTY;
+-    for from in pos.by_piece(side.bishop()) {
++    for from in facts.by_piece(side.bishop()) {
+         reach |= attacks::bishop_attacks(from, occupied);
+     }
+-    for from in pos.by_piece(side.rook()) {
++    for from in facts.by_piece(side.rook()) {
+         reach |= attacks::rook_attacks(from, occupied);
+     }
+-    for from in pos.by_piece(side.queen()) {
++    for from in facts.by_piece(side.queen()) {
+         reach |= attacks::queen_attacks(from, occupied);
+     }
+     (steps, reach)
+@@ -603,7 +606,8 @@ pub fn cannot_win(pos: &Position, color: Color) -> bool {
+ /// moves do not let the other side explode its king at once, counting up to
+ /// `most`: what a check's scoring needs, in one pass over the moves.
+ pub fn replies(pos: &Position, most: u32) -> (bool, u32) {
+-    let mover = Mover::new(pos);
++    let facts = pos.facts();
++    let mover = Mover::new(pos, &facts);
+     let mut any = false;
+     let mut safe = 0;
+     for &m in pos.pseudo_legal().as_slice() {
+@@ -622,7 +626,8 @@ pub fn replies(pos: &Position, most: u32) -> (bool, u32) {
+ 
+ /// Whether the side to move has a legal move, trying king moves first.
+ pub fn has_legal_move(pos: &Position) -> bool {
+-    let mover = Mover::new(pos);
++    let facts = pos.facts();
++    let mover = Mover::new(pos, &facts);
+     pos.pseudo_legal()
+         .as_slice()
+         .iter()
+@@ -682,7 +687,8 @@ mod tests {
+             ),
+         ] {
+             let pos = from_fen(fen).unwrap();
+-            let mover = Mover::new(&pos);
++            let facts = pos.facts();
++            let mover = Mover::new(&pos, &facts);
+             let m = pushed(&pos, from, to);
+             assert!(mover.legal(m), "{fen}");
+             let effect = mover.effect(m);
+@@ -697,7 +703,8 @@ mod tests {
+                 "{fen}"
+             );
+             assert!(witness.is_en_passant(), "{fen}");
+-            assert!(Mover::new(&child).legal(witness), "{fen}");
++            let child_facts = child.facts();
++            assert!(Mover::new(&child, &child_facts).legal(witness), "{fen}");
+             assert!(child.play(witness).king(!child.turn()).is_none(), "{fen}");
+         }
+     }
+@@ -706,7 +713,8 @@ mod tests {
+     #[test]
+     fn en_passant_explosion_negatives() {
+         let quiet = from_fen("8/6kp/8/8/8/8/8/K7 b - - 0 1").unwrap();
+-        let mover = Mover::new(&quiet);
++        let facts = quiet.facts();
++        let mover = Mover::new(&quiet, &facts);
+         let m = pushed(&quiet, Square::H7, Square::H5);
+         let effect = mover.effect(m);
+         assert!(quiet.is_double_push(m));
+@@ -715,7 +723,8 @@ mod tests {
+         assert!(exploding_capture(&quiet.play(m), Color::White).is_none());
+ 
+         let both = from_fen("8/8/8/8/2k1p3/8/3PK3/8 w - - 0 1").unwrap();
+-        let mover = Mover::new(&both);
++        let facts = both.facts();
++        let mover = Mover::new(&both, &facts);
+         let m = pushed(&both, Square::D2, Square::D4);
+         let effect = mover.effect(m);
+         assert!(both.is_double_push(m));
+@@ -760,7 +769,8 @@ mod tests {
+             for _ in 0..150 {
+                 let mut pos: Position = from_fen(start).unwrap();
+                 for _ in 0..150 {
+-                    let mover = Mover::new(&pos);
++                    let facts = pos.facts();
++                    let mover = Mover::new(&pos, &facts);
+                     let us = pos.turn();
+                     let threat_before = exploding_capture(&pos, us).is_some();
+                     let fen = Fen::from_position(&pos.to_atomic(), EnPassantMode::Legal);
+diff --git a/tests/differential.rs b/tests/differential.rs
+index af37822..7c26d8c 100644
+--- a/tests/differential.rs
++++ b/tests/differential.rs
+@@ -297,7 +297,8 @@ fn uci(m: shakmaty::Move) -> String {
+ }
+ 
+ fn our_legal(pos: &OurPosition) -> Vec<OurMove> {
+-    let mover = Mover::new(pos);
++    let facts = pos.facts();
++    let mover = Mover::new(pos, &facts);
+     pos.pseudo_legal()
+         .as_slice()
+         .iter()
+@@ -526,7 +527,8 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
+     stats.legal_moves += ours.len() as u64;
+ 
+     // Pseudo-legal membership agrees with the generated legal set both ways.
+-    let mover = Mover::new(our);
++    let facts = our.facts();
++    let mover = Mover::new(our, &facts);
+     for &m in our.pseudo_legal().as_slice() {
+         assert_eq!(
+             mover.legal(m),
+@@ -692,7 +694,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
+             if let Some(witness) = our_witness {
+                 stats.explosions += 1;
+                 assert!(
+-                    Mover::new(&child).legal(witness),
++                    Mover::new(&child, &child.facts()).legal(witness),
+                     "{}: our witness {witness:?} is not legal after {am}",
+                     context()
+                 );
+@@ -874,7 +876,8 @@ fn en_passant_explosion_regression() {
+         let our = OurPosition::from_atomic(&shak);
+         let board = Board::from_fen_with(&fen, FenPolicy::Lichess).expect("an accepted FEN");
+         let ctx = board.effect_context();
+-        let mover = Mover::new(&our);
++        let facts = our.facts();
++        let mover = Mover::new(&our, &facts);
+         for &m in our.pseudo_legal().as_slice() {
+             if !mover.legal(m) {
+                 continue;

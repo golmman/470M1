@@ -1,0 +1,52 @@
+# Plan 6 — core, perf stat -e instructions:u
+
+`core` = `r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1`,
+`prove FEN --seconds 10 --memory 192 --seed 0 --json`, no proof export, one
+process at a time. Host `c90face26537`.
+
+## Phase A pre-measurement (unchanged binaries)
+
+```
+# run 1 470m1
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":486,"nodes":342263,"seed":0}
+6569377272,,instructions:u
+# run 1 470MI
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":585,"nodes":350430,"seed":0}
+8004086093,,instructions:u
+# run 2 470m1
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":492,"nodes":342263,"seed":0}
+6569377210,,instructions:u
+# run 2 470MI
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":574,"nodes":350430,"seed":0}
+8004086052,,instructions:u
+```
+
+## C1 falsifier (interleaved, attempt patched on HEAD, base on HEAD)
+
+```
+# run 1 c1
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":586,"nodes":350430,"seed":0}
+8042341827,,instructions:u
+# run 1 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":588,"nodes":350430,"seed":0}
+8004085813,,instructions:u
+# run 2 c1
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":582,"nodes":350430,"seed":0}
+8042342020,,instructions:u
+# run 2 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":588,"nodes":350430,"seed":0}
+8004086242,,instructions:u
+# run 3 c1
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":583,"nodes":350430,"seed":0}
+8042342102,,instructions:u
+# run 3 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":576,"nodes":350430,"seed":0}
+8004085674,,instructions:u
+```
+
+C1: 8.0423e9 (spread 275 instructions), base 8.0041e9 (spread 429).
+C1 costs **+0.0382e9** instructions; the falsifier wanted a fall of ≥0.15e9.
+Counters (`child_evals`, `expansions`, `nodes`, mate) are identical in every
+run of both sides, so the attempt was behaviour-preserving and lost only on
+cost. C1 dropped; working tree reverted; the rebuilt binary is bit-identical
+to the plan 5 one (sha256 `14093d41…`).

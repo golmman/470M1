@@ -1,0 +1,216 @@
+diff -ruN a/src/board.rs b/src/board.rs
+--- a/src/board.rs	2026-11-19 22:41:27.186154497 +0000
++++ b/src/board.rs	2026-11-19 22:41:27.188150938 +0000
+@@ -334,6 +334,7 @@
+     /// The pieces of every color attacking a square, with sliders seeing
+     /// through `occupied`.
+     pub fn attackers_to(&self, square: Square, occupied: Bitboard) -> Bitboard {
++        crate::counts::bump(13);
+         Bitboard(
+             self.board
+                 .attackers_to(native_square(square), atomic_movegen::Bitboard(occupied.0))
+@@ -355,6 +356,7 @@
+     /// Whether a move is pseudo-legal and legal, as `atomic-movegen` judges
+     /// it. The candidate loop reads only the two counts, never checkers.
+     pub fn legal(&self, m: Move) -> bool {
++        crate::counts::bump(0);
+         let native = m.native();
+         let context = self.board.legality_context(self.board.counts());
+         self.board.is_pseudo_legal(native) && context.legal(native)
+@@ -373,6 +375,7 @@
+ 
+     /// Every move that is legal but for where it leaves the mover's king.
+     pub fn pseudo_legal(&self) -> Moves {
++        crate::counts::bump(2);
+         let mut moves = Moves::new();
+         let _ = movegen::for_each_pseudo_legal(&self.board, &mut |m| {
+             moves.push(Move::from_native(m));
+@@ -384,6 +387,7 @@
+     /// The position with the other side to move, as if the side to move had
+     /// passed: what a threat would win.
+     pub fn null(&self) -> Position {
++        crate::counts::bump(4);
+         let board = self.board.null_for_advanced(native_color(!self.turn()));
+         let hash = board.hash();
+         Position { board, hash }
+@@ -403,6 +407,7 @@
+         occupied: Bitboard,
+         counts: Counts,
+     ) -> Effect {
++        crate::counts::bump(1);
+         let child = self
+             .board
+             .child_effect_with_occupancy(
+@@ -422,6 +427,7 @@
+ 
+     /// The position after a legal move, with its key.
+     pub fn play(&self, m: Move) -> Position {
++        crate::counts::bump(3);
+         let mut board = self.board.clone();
+         let mut state = atomic_movegen::StateInfo::new();
+         board.do_move(m.native(), &mut state);
+diff -ruN a/src/counts.rs b/src/counts.rs
+--- a/src/counts.rs	1970-01-01 00:00:00.000000000 +0000
++++ b/src/counts.rs	2026-11-19 22:41:27.188548346 +0000
+@@ -0,0 +1,38 @@
++//! TEMPORARY measurement instrument (plan 6, Phase A): per-site call counters.
++//! Not for commit; timing must never be read from this build.
++
++use std::sync::atomic::{AtomicU64, Ordering};
++
++pub const SITES: [&str; 15] = [
++    "legal",
++    "effect",
++    "pseudo_legal",
++    "play",
++    "null",
++    "mover_new",
++    "plain",
++    "exposes",
++    "gives_check",
++    "threats",
++    "terms",
++    "replay_threat",
++    // supplementary: the hot entry points the 12 sites above only reach
++    "mover_legal",
++    "attackers_to",
++    "context_legal",
++];
++
++static COUNTS: [AtomicU64; 15] = [const { AtomicU64::new(0) }; 15];
++
++#[inline]
++pub fn bump(site: usize) {
++    COUNTS[site].fetch_add(1, Ordering::Relaxed);
++}
++
++pub fn snapshot() -> Vec<(&'static str, u64)> {
++    SITES
++        .iter()
++        .zip(COUNTS.iter())
++        .map(|(name, count)| (*name, count.load(Ordering::Relaxed)))
++        .collect()
++}
+diff -ruN a/src/dfpn.rs b/src/dfpn.rs
+--- a/src/dfpn.rs	2026-11-19 22:41:27.186359776 +0000
++++ b/src/dfpn.rs	2026-11-19 22:41:27.188246427 +0000
+@@ -1269,6 +1269,7 @@
+     /// number. Plain moves are not tried: they win at once only into a known
+     /// proof.
+     fn replay_threat(&mut self, pos: &Position, remaining: u32, children: &mut [Child]) {
++        crate::counts::bump(11);
+         let passed = pos.null();
+         let left = remaining.saturating_sub(1);
+         let counter = passed.halfmoves();
+diff -ruN a/src/eval.rs b/src/eval.rs
+--- a/src/eval.rs	2026-11-19 22:41:27.186423256 +0000
++++ b/src/eval.rs	2026-11-19 22:41:27.188296827 +0000
+@@ -68,6 +68,7 @@
+ }
+ 
+ pub fn terms(pos: &Position, color: Color) -> Terms {
++    crate::counts::bump(10);
+     let ours = pos.by_color(color);
+     let theirs = pos.by_color(!color);
+     let occupied = pos.occupied();
+diff -ruN a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs	2026-11-19 22:41:27.186498316 +0000
++++ b/src/lib.rs	2026-11-19 22:41:27.188339307 +0000
+@@ -11,6 +11,7 @@
+ 
+ pub mod board;
+ pub mod check;
++pub mod counts;
+ pub mod clock;
+ pub mod dfpn;
+ pub mod eval;
+diff -ruN a/src/main.rs b/src/main.rs
+--- a/src/main.rs	2026-11-19 22:41:27.186572705 +0000
++++ b/src/main.rs	2026-11-19 22:41:27.188380896 +0000
+@@ -159,6 +159,7 @@
+     let mut json = false;
+     let mut seed = 0u64;
+     let mut evals = None;
++    let mut counts = false;
+     let mut args = args.iter();
+     while let Some(arg) = args.next() {
+         let mut value = || args.next().ok_or(format!("{arg} needs a value"));
+@@ -174,6 +175,7 @@
+             }
+             "--evals" => evals = Some(parse_positive_u64(value()?, "--evals")?),
+             "--json" => json = true,
++            "--counts" => counts = true,
+             unknown if unknown.starts_with("--") => {
+                 return Err(format!("unknown option {unknown}: see 470MI --help"));
+             }
+@@ -235,6 +237,13 @@
+         },
+         "seed": seed,
+     });
++    if counts {
++        let mut sites = serde_json::Map::new();
++        for (name, calls) in atomic470mi::counts::snapshot() {
++            sites.insert(name.to_owned(), json!(calls));
++        }
++        result["counts"] = serde_json::Value::Object(sites);
++    }
+     if let Some(header) = &written {
+         result["proof_moves"] = json!(header.positions);
+         result["proof_path"] = json!(proofs);
+diff -ruN a/src/moves.rs b/src/moves.rs
+--- a/src/moves.rs	2026-11-19 22:41:27.186618185 +0000
++++ b/src/moves.rs	2026-11-19 22:41:27.188403686 +0000
+@@ -56,6 +56,7 @@
+ 
+ impl<'a> Mover<'a> {
+     pub fn new(pos: &'a Position) -> Mover<'a> {
++        crate::counts::bump(5);
+         let us = pos.turn();
+         let ours = pos.by_color(us);
+         let theirs = pos.by_color(!us);
+@@ -155,11 +156,13 @@
+     /// neither the king nor tested always is.
+     #[inline]
+     pub fn legal(&self, m: Move) -> bool {
++        crate::counts::bump(12);
+         if let Some((from, _)) = self.quiet(m)
+             && !self.tested.contains(from)
+         {
+             return true;
+         }
++        crate::counts::bump(14);
+         self.context.legal(m.native())
+     }
+ 
+@@ -205,6 +208,7 @@
+     /// than a king's or a promotion, from the check squares and the uncovering
+     /// pieces; otherwise from the occupancy it leaves.
+     pub fn gives_check(&self, m: Move, effect: &Effect) -> bool {
++        crate::counts::bump(8);
+         let Some(their_king) = self.their_king else {
+             return false;
+         };
+@@ -261,6 +265,7 @@
+     /// what they did, and a slider's attacks change only through the squares
+     /// the move touches.
+     pub fn exposes(&self, m: Move, effect: &Effect) -> bool {
++        crate::counts::bump(7);
+         let (from, to) = (m.from(), m.to());
+         let occupied = effect.occupied;
+         if !effect.capture && !m.is_castle() {
+@@ -336,6 +341,7 @@
+     /// nor threatening to explode their king. Exact, and much cheaper than
+     /// scoring the move.
+     pub fn plain(&self, m: Move) -> bool {
++        crate::counts::bump(6);
+         let Some((from, to)) = self.quiet(m) else {
+             return false;
+         };
+@@ -405,6 +411,7 @@
+     /// than a king's threatens only with the moved piece, or by uncovering a
+     /// slider.
+     pub fn threats(&self, m: Move, effect: &Effect) -> u32 {
++        crate::counts::bump(9);
+         if let Some((from, to)) = self.quiet(m)
+             && !self.uncovering_targets.contains(from)
+         {

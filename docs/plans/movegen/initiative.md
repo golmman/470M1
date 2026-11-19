@@ -12,7 +12,12 @@ measured the adopted tree against the `MD6` bar: 3/3 cells, 9/9 accepted,
 against it, at the pre-recorded ~1.12× crate-led ceiling, with the `W7`
 (121.9) and `W8` (215.2) per-call targets still missed. The adoption stays
 (`MD1`); `M1`'s performance part and `M6` stay open, and there is no `M8`
-handoff. See [`report5.md`](report5.md),
+handoff. Plan 6 resolved the non-rules residual (`M11`): rules are +0.62e9 of
+the 1.435e9 `core` gap, node geometry +0.36e9 (51.7%, but only +0.15e9 once
+the `attackers_to` inlining boundary is accounted for), generation +0.13e9,
+and the `NodeFacts` formulation change (`C1`) was falsified at **+0.038e9**
+instructions with identical counters. Tree unchanged, no ledger row. See
+[`report5.md`](report5.md), [`report6.md`](report6.md),
 [`hot-path-audit.md`](hot-path-audit.md) and [`wishlist2.md`](wishlist2.md).
 
 ## Goal
@@ -97,6 +102,7 @@ These are placeholders; the next plan turns them into concrete items.
 | M8 | **Complete shakmaty removal** | Parser, display, proof paths and line output leave the prover; `check.rs` stays shakmaty |
 | M9 | **Rename** | Apply `470MI` / `atomic470mi` before the first adapter bench; historical docs stay unchanged |
 | M10 | **Hot-path cost** | Adopt `W6`-`W9` lean APIs; no translator; measured per call, then by the 10 s row |
+| M11 | **Non-rules residual** | The gap left after the rules layer: node geometry, generation adapter, tree, `null`; **closed negative** (plan 6: split resolved, `NodeFacts` falsified at +0.038e9) |
 
 ## Gates
 
@@ -125,6 +131,18 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-19** — plan 6 resolved the non-rules residual and closed `M11` as
+  a negative. Counted build (15 sites) + `perf record -c 500000` on `core`
+  reconcile to −0.09%; the 1.435e9 gap is rules **+0.62e9**, node geometry
+  **+0.36e9** (51.7% of the 0.693e9 non-rules residual, 30.5% if
+  `attackers_to`'s plan-2 inlining is accounted for), generation +0.13e9,
+  tree +0.12e9, search/table +0.25e9. Legality measures 120.9 per call from
+  the whole binary against plan 5's 121.9. `C1` (`NodeFacts`) reached the
+  adoption rule and failed its falsifier: **+0.038e9** instructions, counters
+  identical, so the accessor traffic it removes is already inline field
+  reads. Reverted; binary bit-identical to plan 5's. No tree change, no
+  ledger row. [`report6.md`](report6.md),
+  [`measurements/plan6/`](measurements/plan6/README.md).
 - **2026-11-19** — plan 5 decided the `M1` question on the `MD6` bar: the
   adopted 2.10.0 tree measured 1.208 / 1.158 / 0.936, geomean **1.094**,
   3/3 and 9/9 accepted, `D14` identical, against a same-session plan 2 binary

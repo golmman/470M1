@@ -1,0 +1,188 @@
+{
+ "note": "perf record -e instructions:u -c 500000 on core, seed 0, 10 s, no export",
+ "counters": {
+  "child_evals": 3896430,
+  "expansions": 191557,
+  "nodes": 350430,
+  "mate": 14
+ },
+ "perf_stat": {
+  "2100": 8004086093,
+  "plan2": 6569377210
+ },
+ "symbol_totals": {
+  "2100": 7996500000,
+  "plan2": 6564000000
+ },
+ "reconciliation": {
+  "symbol_sum_vs_perf_stat_2100": -0.0009477775366052432,
+  "symbol_sum_vs_perf_stat_plan2": -0.0008185266012453729,
+  "total_delta": 1434708883,
+  "tree_delta": 124920082.2599724,
+  "bucket_delta_sum": 1432500000
+ },
+ "sites": {
+  "legal_in": {
+   "calls": 10012184,
+   "instructions": 1210000000,
+   "per_call": 120.85275300573781,
+   "share": 0.151172786741788
+  },
+  "effect": {
+   "calls": 4779358,
+   "instructions": 632500000,
+   "per_call": 132.33995026110202,
+   "share": 0.07902213852411645
+  },
+  "pseudo_legal": {
+   "calls": 578396,
+   "instructions": 662000000,
+   "per_call": 1144.5445680813837,
+   "share": 0.08270775605211872
+  },
+  "play": {
+   "calls": 949651,
+   "instructions": 158500000,
+   "per_call": 166.90342030914516,
+   "share": 0.019802385701300326
+  },
+  "null": {
+   "calls": 44734,
+   "instructions": 65500000,
+   "per_call": 1464.2106675012294,
+   "share": 0.008183320274038937
+  },
+  "mover_new": {
+   "calls": 578396,
+   "instructions": 323000000,
+   "per_call": 558.4409297436358,
+   "share": 0.0403543885269401
+  },
+  "plain": {
+   "calls": 6630358,
+   "instructions": 282000000,
+   "per_call": 42.53164007132043,
+   "share": 0.0352320048439539
+  },
+  "exposes": {
+   "calls": 4745979,
+   "instructions": 320500000,
+   "per_call": 67.53085085290095,
+   "share": 0.040042048058465333
+  },
+  "gives_check": {
+   "calls": 3358938,
+   "instructions": 164500000,
+   "per_call": 48.97381255623057,
+   "share": 0.02055200282563977
+  },
+  "threats": {
+   "calls": 987717,
+   "instructions": 59500000,
+   "per_call": 60.23992702363126,
+   "share": 0.007433703149699492
+  },
+  "terms": {
+   "calls": 383114,
+   "instructions": 355000000,
+   "per_call": 926.6171426781584,
+   "share": 0.04435234652341714
+  },
+  "replay_threat": {
+   "calls": 44734,
+   "instructions": 65500000,
+   "per_call": 1464.2106675012294,
+   "share": 0.008183320274038937
+  },
+  "mover_legal": {
+   "calls": 15171649,
+   "instructions": null,
+   "per_call": null,
+   "share": null
+  },
+  "attackers_to": {
+   "calls": 2933157,
+   "instructions": 212000000,
+   "per_call": 72.27707211035754,
+   "share": 0.026486471726660375
+  }
+ },
+ "buckets": {
+  "adapter": {
+   "2100": 111500000,
+   "plan2": 92000000,
+   "delta": 19500000,
+   "aligned_2100": 111500000,
+   "aligned_plan2": 92000000,
+   "aligned_delta": 19500000
+  },
+  "generation": {
+   "2100": 662000000,
+   "plan2": 536500000,
+   "delta": 125500000,
+   "aligned_2100": 662000000,
+   "aligned_plan2": 536500000,
+   "aligned_delta": 125500000
+  },
+  "geometry": {
+   "2100": 2230500000,
+   "plan2": 1872000000,
+   "delta": 358500000,
+   "aligned_2100": 2018500000,
+   "aligned_plan2": 1872000000,
+   "aligned_delta": 146500000
+  },
+  "null": {
+   "2100": 65500000,
+   "plan2": 61500000,
+   "delta": 4000000,
+   "aligned_2100": 65500000,
+   "aligned_plan2": 61500000,
+   "aligned_delta": 4000000
+  },
+  "play": {
+   "2100": 337000000,
+   "plan2": 279500000,
+   "delta": 57500000,
+   "aligned_2100": 337000000,
+   "aligned_plan2": 279500000,
+   "aligned_delta": 57500000
+  },
+  "rules": {
+   "2100": 1983000000,
+   "plan2": 1366000000,
+   "delta": 617000000,
+   "aligned_2100": 2195000000,
+   "aligned_plan2": 1366000000,
+   "aligned_delta": 829000000
+  },
+  "search": {
+   "2100": 2607000000,
+   "plan2": 2356500000,
+   "delta": 250500000,
+   "aligned_2100": 2607000000,
+   "aligned_plan2": 2356500000,
+   "aligned_delta": 250500000
+  }
+ },
+ "readings": {
+  "primary": {
+   "rules_delta": 617000000,
+   "geometry_delta": 358500000,
+   "tree_delta": 124920082.2599724,
+   "non_rules_residual": 692788800.7400277,
+   "geometry_share": 0.5174737230409255,
+   "geometry_at_least_300m": true,
+   "geometry_share_at_least_half": true
+  },
+  "aligned": {
+   "rules_delta": 829000000,
+   "geometry_delta": 146500000,
+   "tree_delta": 124920082.2599724,
+   "non_rules_residual": 480788800.74002767,
+   "geometry_share": 0.30470759671295994,
+   "geometry_at_least_300m": false,
+   "geometry_share_at_least_half": false
+  }
+ }
+}
