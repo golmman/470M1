@@ -7,7 +7,7 @@ ORACLE=${PROVARI_ORACLE:-/tmp/470M1-oracle/provari/target/release/provari}
 test -x "$ORACLE" || { echo "missing oracle: run make oracle" >&2; exit 1; }
 
 cargo build --quiet
-OURS=target/debug/470m1
+OURS=target/debug/470MI
 
 for proof in tests/fixtures/proofs/*.pvr; do
   echo "== accept $proof"

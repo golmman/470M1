@@ -11,7 +11,7 @@ directory holds the corpus and the reference-side driver.
 ## Protocol
 
 - Reference: `provari prove "<FEN>" --seconds 10 --memory 192 --guide hand`.
-- Candidate: `470m1 prove "<FEN>" --seconds <cap> --memory 192` (plan2).
+- Candidate: `470MI prove "<FEN>" --seconds <cap> --memory 192` (movegen plan3).
 - Three repeats per cell per side, one process at a time, same session.
 - The driver refuses a corpus whose sha256 does not match.
 - The driver writes parsed results, not raw transcripts, under

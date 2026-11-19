@@ -10,7 +10,8 @@ use std::collections::{HashMap, HashSet};
 
 use shakmaty::{Color, Move, Position as _, variant::Atomic};
 
-use crate::{Status, hash, status};
+use crate::board::Position;
+use crate::{Status, status};
 
 /// Attacker boards and their winning moves.
 pub type Moves = HashMap<u64, Option<Move>>;
@@ -66,7 +67,7 @@ pub fn measure(
     moves: &Moves,
     walk: &mut Walk,
 ) -> Result<Measure, String> {
-    let here = hash(pos);
+    let here = Position::from_atomic(pos).hash();
     if walk.active.contains(&here) {
         return Err("the proof repeats a position".into());
     }

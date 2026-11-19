@@ -1,5 +1,5 @@
 [package]
-name = "atomic470m1"
+name = "atomic470mi"
 version = "0.1.0"
 edition = "2024"
 publish = false
@@ -7,7 +7,7 @@ description = "An Atomic chess win prover and independent proof checker"
 license = "GPL-3.0-or-later"
 
 [[bin]]
-name = "470m1"
+name = "470MI"
 path = "src/main.rs"
 
 [dependencies]

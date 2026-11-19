@@ -7,7 +7,7 @@
 use std::fs;
 use std::path::Path;
 
-use atomic470m1::check::check_proof;
+use atomic470mi::check::check_proof;
 
 #[test]
 fn accepts_every_pinned_proof_fixture() {

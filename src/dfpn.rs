@@ -1972,7 +1972,7 @@ mod tests {
         // change cannot slip through unnoticed.
         assert_eq!(
             core_counters(0, Some(100_000)),
-            (None, 100_016, 1_161_335, 57_100, Some((370, 24_825)))
+            (None, 100_005, 1_181_957, 58_248, Some((371, 26_198)))
         );
     }
 
@@ -2052,7 +2052,7 @@ mod tests {
             Instant::now() + Duration::from_secs(10),
             (16, 16),
         );
-        assert_eq!(search.solve(&root), Some(17));
+        assert_eq!(search.solve(&root), Some(14));
         let (header, bytes) = crate::format::encode(&root, root.turn(), |pos| {
             let key = (pos.hash(), pos.halfmoves());
             search
@@ -2060,7 +2060,7 @@ mod tests {
                 .and_then(|m| crate::format::board_move(pos, &m))
         })
         .unwrap();
-        assert_eq!(header.moves, 17);
+        assert_eq!(header.moves, 14);
         let checked = crate::check::check_proof("core", &bytes);
         assert_eq!(checked["valid"], true, "{checked}");
     }

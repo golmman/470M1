@@ -1,4 +1,4 @@
-//! `470m1`: Atomic win proofs.
+//! `470MI`: Atomic win proofs.
 //!
 //! The CLI exposes the prover (`prove`), the independent checker (`check`),
 //! the proof viewer (`line`) and the reference-side bench. Command names and
@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 use serde_json::{Value, json};
 use shakmaty::{Color, Position as _};
 
-use atomic470m1::{check, dfpn, format, lines, position};
+use atomic470mi::{check, dfpn, format, lines, position};
 
 /// The most memory one search or reference run may be asked for, in MB.
 const MOST_MEMORY_MB: usize = 1 << 20;
@@ -89,7 +89,7 @@ fn main() {
         "bench" => bench(rest),
         "prove" => prove(rest),
         "version" | "--version" => {
-            println!("470m1 {}", env!("CARGO_PKG_VERSION"));
+            println!("470MI {}", env!("CARGO_PKG_VERSION"));
             Ok(())
         }
         "help" => {
@@ -100,7 +100,7 @@ fn main() {
             eprint!("{}", help());
             std::process::exit(2);
         }
-        _ => Err(format!("unknown command {command}: see 470m1 --help")),
+        _ => Err(format!("unknown command {command}: see 470MI --help")),
     };
     if let Err(error) = result {
         eprintln!("error: {error}");
@@ -110,14 +110,14 @@ fn main() {
 
 fn help() -> String {
     format!(
-        "470m1 {}\nProves forced wins in Atomic chess.\n\n{}",
+        "470MI {}\nProves forced wins in Atomic chess.\n\n{}",
         env!("CARGO_PKG_VERSION"),
         HELP
     )
 }
 
 const HELP: &str = "\
-Usage: 470m1 COMMAND [OPTIONS]
+Usage: 470MI COMMAND [OPTIONS]
 
 Commands:
   prove FEN                searches one position for a win
@@ -175,14 +175,14 @@ fn prove(args: &[String]) -> Result<(), String> {
             "--evals" => evals = Some(parse_positive_u64(value()?, "--evals")?),
             "--json" => json = true,
             unknown if unknown.starts_with("--") => {
-                return Err(format!("unknown option {unknown}: see 470m1 --help"));
+                return Err(format!("unknown option {unknown}: see 470MI --help"));
             }
             _ => free.push(arg.clone()),
         }
     }
     let fen = free
         .first()
-        .ok_or("usage: 470m1 prove FEN [--seconds S] [--memory MB] [--guide hand|none] [--proofs PATH] [--json] [--seed N] [--evals N]")?;
+        .ok_or("usage: 470MI prove FEN [--seconds S] [--memory MB] [--guide hand|none] [--proofs PATH] [--json] [--seed N] [--evals N]")?;
     let guide = match guide.as_str() {
         "hand" => dfpn::Guide::Hand,
         "none" => dfpn::Guide::None,
@@ -282,14 +282,14 @@ fn line(args: &[String]) -> Result<(), String> {
             "--pgn" => pgn = Some(value()?.to_owned()),
             "--until" => until = Some(parse_positive_u32(value()?, "--until")?),
             unknown if unknown.starts_with("--") => {
-                return Err(format!("unknown option {unknown}: see 470m1 --help"));
+                return Err(format!("unknown option {unknown}: see 470MI --help"));
             }
             _ => free.push(arg.clone()),
         }
     }
     let (input, played) = free
         .split_first()
-        .ok_or("usage: 470m1 line PROOF [MOVES] [--pgn FILE] [--until N]")?;
+        .ok_or("usage: 470MI line PROOF [MOVES] [--pgn FILE] [--until N]")?;
     let bytes = fs::read(input).map_err(|error| format!("{input}: {error}"))?;
     let checked = check::check_proof(input, &bytes);
     if checked["valid"] != true {
@@ -314,7 +314,7 @@ fn line(args: &[String]) -> Result<(), String> {
 /// Reads a compact or JSON-lines proof into its root, attacker and moves.
 fn read_moves(
     bytes: &[u8],
-) -> Result<(shakmaty::variant::Atomic, Color, atomic470m1::walk::Moves), String> {
+) -> Result<(shakmaty::variant::Atomic, Color, atomic470mi::walk::Moves), String> {
     if let Some((header, indices)) = format::decode(bytes)? {
         return format::strategy(&header, &indices);
     }
@@ -352,14 +352,14 @@ fn bench(args: &[String]) -> Result<(), String> {
                 }
             }
             unknown if unknown.starts_with("--") => {
-                return Err(format!("unknown option {unknown}: see 470m1 --help"));
+                return Err(format!("unknown option {unknown}: see 470MI --help"));
             }
             _ => free.push(arg.clone()),
         }
     }
     let input = free
         .first()
-        .ok_or("usage: 470m1 bench FILE --out FILE --reference PATH")?;
+        .ok_or("usage: 470MI bench FILE --out FILE --reference PATH")?;
     let out = out.ok_or("bench needs --out FILE")?;
     let reference = reference
         .or_else(|| std::env::var("PROVARI").ok())

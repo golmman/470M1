@@ -27,7 +27,7 @@
 //! leave out the positions where a capture wins at once; the compact format
 //! also those it settles by a mate or a check that wins in two.
 //!
-//! `470m1 check PROOF... [--workers N] [--seconds S] [--compact-only]`
+//! `470MI check PROOF... [--workers N] [--seconds S] [--compact-only]`
 //! prints a JSON line for each proof, in order, and exits
 //! with 1 if any is not shown valid. A valid proof's line gives the attacker
 //! positions it proves, its length and the 50-move counter up to which its
@@ -143,14 +143,14 @@ pub fn run(args: &[String]) -> Result<bool, String> {
             }
             "--compact-only" => limits.compact_only = true,
             unknown if unknown.starts_with("--") => {
-                return Err(format!("unknown option {unknown}: see 470m1 --help"));
+                return Err(format!("unknown option {unknown}: see 470MI --help"));
             }
             _ => proofs.push(PathBuf::from(arg)),
         }
     }
     if proofs.is_empty() {
         return Err(
-            "usage: 470m1 check PROOF... [--workers N] [--seconds S] [--compact-only]".into(),
+            "usage: 470MI check PROOF... [--workers N] [--seconds S] [--compact-only]".into(),
         );
     }
     let next = AtomicUsize::new(0);
@@ -1385,7 +1385,7 @@ mod tests {
         let args = ["proof.pvr", "--tablebase", "tables"].map(String::from);
         assert_eq!(
             super::run(&args),
-            Err("unknown option --tablebase: see 470m1 --help".to_owned())
+            Err("unknown option --tablebase: see 470MI --help".to_owned())
         );
     }
 

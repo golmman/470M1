@@ -5,9 +5,9 @@ use std::fs;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use atomic470m1::check::check_proof;
-use atomic470m1::dfpn::{Dfpn, Guide};
-use atomic470m1::{format, position};
+use atomic470mi::check::check_proof;
+use atomic470mi::dfpn::{Dfpn, Guide};
+use atomic470mi::{format, position};
 use shakmaty::Position as _;
 
 fn rows(name: &str) -> Vec<(String, String, String)> {

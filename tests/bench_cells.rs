@@ -4,9 +4,9 @@
 
 use std::time::{Duration, Instant};
 
-use atomic470m1::check::check_proof;
-use atomic470m1::dfpn::{self, Dfpn, Guide};
-use atomic470m1::{format, position};
+use atomic470mi::check::check_proof;
+use atomic470mi::dfpn::{self, Dfpn, Guide};
+use atomic470mi::{format, position};
 use shakmaty::Position as _;
 
 const CELLS: [(&str, &str); 3] = [

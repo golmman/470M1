@@ -6,7 +6,7 @@ use std::process::{Command, Output};
 const CORE: &str = "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1";
 
 fn run(args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_470m1"))
+    Command::new(env!("CARGO_BIN_EXE_470MI"))
         .args(args)
         .output()
         .unwrap()
@@ -66,7 +66,7 @@ fn bad_numeric_flags_are_usage_errors() {
 fn missing_arguments_are_usage_errors() {
     let empty = run(&[]);
     assert_eq!(empty.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&empty.stderr).contains("Usage: 470m1"));
+    assert!(String::from_utf8_lossy(&empty.stderr).contains("Usage: 470MI"));
     usage_error(&["prove"]);
     usage_error(&["check"]);
     usage_error(&["bench", "bench/corpus.json", "--out", "/tmp/none"]);

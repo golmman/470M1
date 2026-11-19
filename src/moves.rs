@@ -17,8 +17,7 @@ use crate::board::{Effect, Move, Position};
 pub struct Mover<'a> {
     pos: &'a Position,
     us: Color,
-    /// The hash every child's hash starts from.
-    base: u64,
+    state: atomic_movegen::StateInfo,
     our_king: Option<Square>,
     their_king: Option<Square>,
     /// Our pieces whose quiet moves need a legality test: every piece while
@@ -60,10 +59,12 @@ impl<'a> Mover<'a> {
         let their_king = pos.king(!us);
         let touching = matches!((our_king, their_king),
             (Some(ours), Some(theirs)) if attacks::king_attacks(ours).contains(theirs));
+        let mut state = atomic_movegen::StateInfo::new();
+        pos.board().populate_state(&mut state);
         let tested = match our_king {
             _ if touching => Bitboard::EMPTY,
-            Some(king) if pos.checked_after(king, !us, occupied) => ours,
-            Some(king) => blockers(pos, king, !us) & ours,
+            _ if !state.checkers.is_empty() => ours,
+            Some(_) => Bitboard(state.pinned.0) & ours,
             None => ours,
         };
         let mut check_squares = ByRole {
@@ -98,7 +99,7 @@ impl<'a> Mover<'a> {
         Mover {
             pos,
             us,
-            base: pos.child_base(),
+            state,
             our_king,
             their_king,
             tested,
@@ -119,19 +120,15 @@ impl<'a> Mover<'a> {
         }
     }
 
+    #[inline]
     pub fn effect(&self, m: Move) -> Effect {
-        self.pos.effect(m, self.base)
+        self.pos.effect(m)
     }
 
-    /// A legal move's effect with the child's whole hash: the en passant
-    /// file, which `effect` leaves out, counts only if taking there is legal,
-    /// which needs the child.
+    /// A legal move's effect; the child's key already counts the en passant
+    /// file only where taking there is legal.
     pub fn full_effect(&self, m: Move) -> Effect {
-        let mut effect = self.effect(m);
-        if effect.en_passant {
-            effect.hash ^= self.pos.play(m).ep_hash();
-        }
-        effect
+        self.effect(m)
     }
 
     /// The squares of a quiet move by a piece other than the king.
@@ -146,13 +143,14 @@ impl<'a> Mover<'a> {
 
     /// Whether a pseudo-legal move is legal: a quiet move by a piece that is
     /// neither the king nor tested always is.
+    #[inline]
     pub fn legal(&self, m: Move) -> bool {
         if let Some((from, _)) = self.quiet(m)
             && !self.tested.contains(from)
         {
             return true;
         }
-        self.pos.legal(m)
+        self.pos.legal_with(m, &self.state)
     }
 
     /// Whether a legal move explodes the other king.
@@ -271,7 +269,7 @@ impl<'a> Mover<'a> {
                         || (attacks::rook_attacks(square, occupied) & self.their_straight).any()
                 })
             };
-            return covered || (effect.en_passant && self.ep_exposes(m, effect));
+            return covered || (self.ep_threat(m) && self.ep_exposes(m, effect));
         }
         // A capture or castling: judge the board it leaves.
         let Some(our_king) = self
@@ -289,6 +287,16 @@ impl<'a> Mover<'a> {
         exposed
             .into_iter()
             .any(|square| (self.pos.attackers_to(square, occupied) & capturers).any())
+    }
+
+    /// Whether a double push `m` lets an enemy pawn take en passant.
+    fn ep_threat(&self, m: Move) -> bool {
+        if !self.pos.is_double_push(m) {
+            return false;
+        }
+        let (from, to) = (m.from(), m.to());
+        let passed = Square::new((from as u32 + to as u32) / 2);
+        (attacks::pawn_attacks(self.us, passed) & self.pos.by_piece((!self.us).pawn())).any()
     }
 
     /// Whether the en passant capture a double push `m` allows explodes our
@@ -668,7 +676,7 @@ mod tests {
             let m = pushed(&pos, from, to);
             assert!(mover.legal(m), "{fen}");
             let effect = mover.effect(m);
-            assert!(effect.en_passant, "{fen}");
+            assert!(pos.is_double_push(m), "{fen}");
             assert!(mover.exposes(m, &effect), "{fen}");
             let child = pos.play(m);
             assert_eq!(child.maybe_ep_square(), Some(passed), "{fen}");
@@ -691,7 +699,8 @@ mod tests {
         let mover = Mover::new(&quiet);
         let m = pushed(&quiet, Square::H7, Square::H5);
         let effect = mover.effect(m);
-        assert!(!effect.en_passant);
+        assert!(quiet.is_double_push(m));
+        assert_eq!(quiet.play(m).maybe_ep_square(), Some(Square::H6));
         assert!(!mover.exposes(m, &effect));
         assert!(exploding_capture(&quiet.play(m), Color::White).is_none());
 
@@ -699,7 +708,7 @@ mod tests {
         let mover = Mover::new(&both);
         let m = pushed(&both, Square::D2, Square::D4);
         let effect = mover.effect(m);
-        assert!(effect.en_passant);
+        assert!(both.is_double_push(m));
         assert!(!mover.exposes(m, &effect));
         let child = both.play(m);
         assert_eq!(child.maybe_ep_square(), Some(Square::D3));

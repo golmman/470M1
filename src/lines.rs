@@ -1,4 +1,4 @@
-//! A proof's lines, as `470m1 line` shows them: the proof's move and every
+//! A proof's lines, as `470MI line` shows them: the proof's move and every
 //! defence with the attacker moves it lasts, a longest line, and the proof's
 //! tree as PGN.
 //!
@@ -13,7 +13,8 @@ use shakmaty::{
     Color, EnPassantMode, Move, Position as _, fen::Fen, uci::UciMove, variant::Atomic,
 };
 
-use crate::{Status, hash, status, walk};
+use crate::board::Position;
+use crate::{Status, status, walk};
 
 /// A proof's lines from the position after `played` (SAN or UCI, move
 /// numbers allowed), as JSON: against the proof's moves for `attacker`, the
@@ -145,7 +146,7 @@ impl Proof {
             return Ok(m);
         }
         self.moves
-            .get(&hash(pos))
+            .get(&Position::from_atomic(pos).hash())
             .copied()
             .flatten()
             .ok_or_else(|| {

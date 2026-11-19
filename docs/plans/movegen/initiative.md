@@ -2,21 +2,21 @@
 
 ## Status
 
-**Open (2026-11-17).** `parity` reached `P5` and its closure row is recorded
-in [`../../bench.md`](../../bench.md). The prover's rules surface is documented
-in [`rules-surface.md`](rules-surface.md), and `golmman/atomic_movegen`
-`af3faf0dd80f48cc7fa0cb737f4944bca8f6bf85` (v2.9.0, MIT) is a pinned
-default-feature dependency. Plan 1 delivered the differential harness and found
-two blockers; plan 2 fixed the en-passant immediate-explosion gap and the full
-sweep is now green (`mismatches: 0`). The owner resolved the open decisions on
-2026-11-19: complete prover replacement, native keys measured first, an EP
-`threats` census, and the final name `470MI` ([`decisions.md`](decisions.md)).
-The next plan is the rules adapter, starting with the rename and a native-key
-bench. The two crates' Zobrist tables still differ numerically; that is a
-measured key choice, not a rules assertion. See [`report1.md`](report1.md),
-[`report2.md`](report2.md) and [`wishlist1.md`](wishlist1.md) (W1-W3 landed,
-W4 open, W5 proposed). We own the upstream crate; a release is integrated only
-by an owner-triggered plan/report.
+**Open (2026-11-17).** `parity` reached `P5`; its closure row is in
+[`../../bench.md`](../../bench.md). Plan 1 delivered the differential harness
+and found two blockers; plan 2 fixed the en-passant immediate-explosion gap.
+Plan 3 applied the `MD4` rename and the `M1` adapter: the prover now uses
+`atomic_movegen::Board` for move generation, pseudo-legality, legality,
+effects/child keys and null moves, with movegen's native `Legal` keys and the
+`MD3` census recorded (87 EP children, 0 verdicts, 0 differences). The full
+differential is green (`mismatches: 0`, `key_mismatches: 0`). The 10 s bench
+**regressed** to 3/3, 9/9 accepted, geomean **1.206** (1.352 / 1.250 / 1.038);
+a same-session plan 2 binary reads 0.987, so the loss is the adapter's
+per-node cost. The adoption bar did not hold and is reported, not tuned away.
+See [`report1.md`](report1.md), [`report2.md`](report2.md),
+[`report3.md`](report3.md) and [`wishlist1.md`](wishlist1.md) (W1-W3 landed,
+W4 open, W5 proposed). The next step is an owner decision on the regression,
+then `M8`/performance; the checker stays on shakmaty.
 
 ## Goal
 
@@ -125,6 +125,12 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-19** — plan 3 renamed the product to `470MI`/`atomic470mi` and
+  wrapped `atomic_movegen::Board` behind `Position` with native `Legal` keys.
+  Differential green (0 mismatches, 0 key mismatches, EP census 87/0/0); all
+  gates and 9/9 checker verdicts green. The 10 s row is 3/3, geomean **1.206**
+  (plan 2: 0.972), a regression finding; same-session old binary 0.987.
+  [`report3.md`](report3.md).
 - **2026-11-19** — owner resolved the four open decisions: complete prover
   replacement with no regression and a faster stretch goal (`MD1`), native
   keys measured first with W5 as fallback (`MD2`), an EP `threats` census

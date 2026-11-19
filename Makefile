@@ -41,5 +41,5 @@ bench2:
 	cargo build --release
 	python3 docs/plans/parity/measurements/plan2/run_bench.py \
 		--provari /tmp/470M1-oracle/provari/target/release/provari \
-		--candidate target/release/470m1 \
+		--candidate target/release/470MI \
 		--out docs/plans/parity/measurements/plan2/results.json

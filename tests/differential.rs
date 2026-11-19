@@ -18,9 +18,9 @@ use atomic_movegen::{
     Board, Color as TheirColor, EnPassantMode as TheirEp, FenPolicy, Move as TheirMove, Outcome,
     PieceType as TheirPiece, StateInfo, TerminalReason, movegen,
 };
-use atomic470m1::board::{Move as OurMove, Position as OurPosition};
-use atomic470m1::moves::{self, Mover};
-use atomic470m1::{ending, position};
+use atomic470mi::board::{Move as OurMove, Position as OurPosition};
+use atomic470mi::moves::{self, Mover};
+use atomic470mi::{ending, position};
 use shakmaty::fen::Fen;
 use shakmaty::{Color, EnPassantMode, Position as _, Role, Square, uci::UciMove, variant::Atomic};
 
@@ -45,7 +45,10 @@ struct Stats {
     node_explosion_ep_mismatches: u64,
     node_explosion_other_mismatches: u64,
     material_exempt: u64,
-    key_table_differences: u64,
+    ep_child: u64,
+    ep_threats_verdicts: u64,
+    ep_threats_difference: u64,
+    key_mismatches: u64,
     games: u64,
     plies: u64,
     playout_nodes: u64,
@@ -64,8 +67,9 @@ impl Stats {
              \"exposes_mismatches\":{},\"exposes_ep_mismatches\":{},\
              \"exposes_other_mismatches\":{},\"node_explosion_mismatches\":{},\
              \"node_explosion_ep_mismatches\":{},\"node_explosion_other_mismatches\":{},\
-             \"material_exempt\":{},\
-             \"key_table_differences\":{},\"games\":{},\"plies\":{},\
+             \"material_exempt\":{},\"ep_child\":{},\"ep_threats_verdicts\":{},\
+             \"ep_threats_difference\":{},\
+             \"key_mismatches\":{},\"games\":{},\"plies\":{},\
              \"playout_nodes\":{},\"mismatches\":{}}}",
             self.fen_accepted,
             self.fen_rejected,
@@ -84,7 +88,10 @@ impl Stats {
             self.node_explosion_ep_mismatches,
             self.node_explosion_other_mismatches,
             self.material_exempt,
-            self.key_table_differences,
+            self.ep_child,
+            self.ep_threats_verdicts,
+            self.ep_threats_difference,
+            self.key_mismatches,
             self.games,
             self.plies,
             self.playout_nodes,
@@ -325,6 +332,38 @@ fn square_set(raw: u64) -> BTreeSet<u8> {
     (0..64).filter(|index| raw & (1 << index) != 0).collect()
 }
 
+/// The pieces beside `side`'s enemy commoner that `side` could take to
+/// explode it, plus the empty-destination en-passant target when `side` is to
+/// move. The scoring's `threats` is EP-blind; the census compares against
+/// this count.
+fn exploding_captures_ep(pos: &OurPosition, side: Color) -> u32 {
+    let Some(king) = pos.king(!side) else {
+        return 0;
+    };
+    let own = pos
+        .king(side)
+        .map_or(shakmaty::Bitboard::EMPTY, shakmaty::attacks::king_attacks);
+    let occupied = pos.occupied();
+    let capturers = pos.by_color(side) & !pos.by_role(Role::King);
+    let mut count = (shakmaty::attacks::king_attacks(king) & pos.by_color(!side) & !own)
+        .into_iter()
+        .filter(|&target| (pos.attackers_to(target, occupied) & capturers).any())
+        .count() as u32;
+    if pos.turn() == side
+        && let Some(to) = pos.maybe_ep_square()
+    {
+        let takers = pos.attackers_to(to, occupied) & pos.by_piece(side.pawn());
+        for from in takers {
+            let m = pos.en_passant_move(from, to);
+            if pos.legal(m) && pos.play(m).king(!side).is_none() {
+                count += 1;
+                break;
+            }
+        }
+    }
+    count
+}
+
 fn compare_placement(
     context: &str,
     our: &OurPosition,
@@ -426,51 +465,25 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
     };
     stats.positions += 1;
 
-    // Keys: the two crates ship independently generated Zobrist tables, so
-    // numeric cross-equality is a recorded finding, not a rules assertion.
-    // Within each implementation the key must still be the child's key and the
-    // legal-en-passant component must gate exactly the same way.
+    // Keys: the prover now uses movegen's native table. The Legal policy
+    // counts the en-passant file only where a legal capture exists.
     if our.hash() != board.hash_with(TheirEp::Legal) {
-        stats.key_table_differences += 1;
+        stats.key_mismatches += 1;
+        stats.mismatches += 1;
+        eprintln!(
+            "KEY {}: ours {:016x}, theirs {:016x}",
+            context(),
+            our.hash(),
+            board.hash_with(TheirEp::Legal)
+        );
     }
     let ep_legal = board.legal_ep_square().is_some();
-    assert_eq!(
-        our.ep_hash() != 0,
-        ep_legal,
-        "{}: en passant legality differs (ours {}, theirs {})",
-        context(),
-        our.ep_hash() != 0,
-        ep_legal
-    );
     assert_eq!(
         board.hash_with(TheirEp::Always) == board.hash_with(TheirEp::Legal),
         ep_legal || board.ep_square().is_none(),
         "{}: movegen legal-EP canonicalization differs",
         context()
     );
-    if shak.maybe_ep_square().is_some() {
-        let fen = Fen::from_position(shak, EnPassantMode::Always).to_string();
-        let mut fields: Vec<String> = fen.split(' ').map(str::to_owned).collect();
-        fields[3] = "-".to_owned();
-        let cleared = fields.join(" ");
-        let our_cleared = OurPosition::from_atomic(&position(&cleared).expect("cleared FEN"));
-        let their_cleared =
-            Board::from_fen_with(&cleared, FenPolicy::Lichess).expect("cleared FEN");
-        assert_eq!(
-            our.hash() ^ our_cleared.hash(),
-            our.ep_hash(),
-            "{}: our en passant key component differs",
-            context()
-        );
-        let their_ep_component =
-            board.hash_with(TheirEp::Legal) ^ their_cleared.hash_with(TheirEp::Legal);
-        assert_eq!(
-            their_ep_component != 0,
-            ep_legal,
-            "{}: movegen en passant key component differs",
-            context()
-        );
-    }
 
     // Legal moves: ours, shakmaty's and theirs, as UCI sets, exactly once each.
     let shak_moves: Vec<shakmaty::Move> = shak.legal_moves().into_iter().collect();
@@ -481,6 +494,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
         "{}: shakmaty listed a move twice",
         context()
     );
+    let threats_before = moves::exploding_capture(our, our.turn()).is_some();
     let ours = our_legal(our);
     let our_uci_set: BTreeSet<String> = ours.iter().map(|&m| our_uci(our, m)).collect();
     assert_eq!(
@@ -536,6 +550,23 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
         let am = to_their_move(m);
         let child = our.play(m);
         let effect = mover.full_effect(m);
+        let threats = mover.threats(m, &effect);
+        let ep_explosion =
+            moves::exploding_capture(&child, child.turn()).is_some_and(OurMove::is_en_passant);
+        if ep_explosion {
+            stats.ep_child += 1;
+            if threats >= 2 {
+                stats.ep_threats_verdicts += 1;
+            }
+        }
+        let with_ep = exploding_captures_ep(&child, our.turn());
+        if !threats_before && threats != with_ep {
+            stats.ep_threats_difference += 1;
+            eprintln!(
+                "EP THREATS {} after {am}: threats {threats}, with en passant {with_ep}",
+                context()
+            );
+        }
         let (post, key) = ctx
             .post_move_and_key_with(board, am, TheirEp::Legal)
             .expect("a move with a piece");
@@ -829,6 +860,8 @@ fn fen_acceptance_and_rules_smoke() {
         &mut stats,
     );
     println!("{}", stats.json("smoke"));
+    assert_eq!(stats.key_mismatches, 0);
+    assert_eq!(stats.ep_threats_difference, 0);
     assert_eq!(stats.mismatches, 0);
 }
 
@@ -900,33 +933,61 @@ fn rules_differential_full() {
     assert_eq!(stats.mismatches, 0);
 }
 
-/// Numeric key parity is blocked by two independently generated Zobrist
-/// tables. The harness therefore compares key semantics (child key and
-/// legal-EP gating) and records this divergence; it is not a rules difference.
+/// The prover's keys are movegen's native keys, for roots and children.
 #[test]
-fn numeric_key_parity_is_a_recorded_divergence() {
-    let fen = STANDARD;
-    let shak = position(fen).expect("standard position");
-    let our = OurPosition::from_atomic(&shak);
-    let board = Board::from_fen_with(fen, FenPolicy::Lichess).expect("standard position");
-    println!(
-        "our key {:016x}, movegen key {:016x}",
-        our.hash(),
-        board.hash_with(TheirEp::Legal)
+fn native_keys_match_movegen() {
+    let mut fens = vec![STANDARD.to_owned()];
+    fens.extend(base_fens());
+    fens.extend(ep_fens());
+    for fen in &fens {
+        let shak = position(fen).expect("an accepted FEN");
+        let our = OurPosition::from_atomic(&shak);
+        let board = Board::from_fen_with(fen, FenPolicy::Lichess).expect("an accepted FEN");
+        assert_eq!(
+            our.hash(),
+            board.hash_with(TheirEp::Legal),
+            "{fen}: root key"
+        );
+        for &m in our_legal(&our).iter() {
+            let am = to_their_move(m);
+            assert_eq!(
+                our.play(m).hash(),
+                board.hash_after_with(am, TheirEp::Legal),
+                "{fen}: child key after {am}"
+            );
+        }
+    }
+    let mut stats = Stats::default();
+    run_playouts(
+        &[STANDARD.to_owned()],
+        &[0x005e_ed0f_e99a_11ce],
+        8,
+        32,
+        &mut stats,
     );
-    assert_ne!(
-        our.hash(),
-        board.hash_with(TheirEp::Legal),
-        "{fen}: the plan's numeric key equality holds; retire this finding"
-    );
-    // The same board maps to a stable key on each side of the boundary.
-    let shak2 = position(fen).expect("standard position");
-    let board2 = Board::from_fen_with(fen, FenPolicy::Lichess).expect("standard position");
-    assert_eq!(our.hash(), OurPosition::from_atomic(&shak2).hash());
-    assert_eq!(
-        board.hash_with(TheirEp::Legal),
-        board2.hash_with(TheirEp::Legal)
-    );
+    assert_eq!(stats.key_mismatches, 0);
+}
+
+/// The same position and move key the same way in independent runs.
+#[test]
+fn native_keys_are_deterministic() {
+    for fen in [STANDARD]
+        .into_iter()
+        .chain(base_fens().iter().map(String::as_str))
+    {
+        let first = position(fen).expect("an accepted FEN");
+        let second = position(fen).expect("an accepted FEN");
+        let first = OurPosition::from_atomic(&first);
+        let second = OurPosition::from_atomic(&second);
+        assert_eq!(first.hash(), second.hash(), "{fen}: root key moved");
+        for &m in our_legal(&first).iter() {
+            assert_eq!(
+                first.play(m).hash(),
+                second.play(m).hash(),
+                "{fen}: child key moved after {m:?}"
+            );
+        }
+    }
 }
 
 /// The material exemption is explicit: shakmaty's broad atomic rule draws

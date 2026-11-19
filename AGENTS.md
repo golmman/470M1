@@ -18,23 +18,22 @@ claim.
 
 ## Current state
 
-`parity` is closed (2026-11-17). Plan 5 recorded the `P5` closure row on the
-product default (seed 0) at 10 s: all three cells, 3/3 coverage, geomean
-**0.945**, 9/9 proofs accepted by both checkers, `D14` timed and untimed
-counters identical. The crate, rules layer, proof format, independent checker,
-`line`, bench harness, oracle/veto and the DF-PN search core with the hand
-guide are in place. `movegen` is open with a documented rules surface and
-`atomic-movegen` 2.9.0 (`af3faf0`, MIT) pinned. Plan 2 fixed the en-passant
-immediate-explosion gap: the differential sweep is green, the gates pass, and
-its 10 s row is 3/3, geomean **0.972**, 9/9 accepted
-([`docs/plans/movegen/report2.md`](docs/plans/movegen/report2.md)). The
-2026-11-19 decisions ([`docs/plans/movegen/decisions.md`](docs/plans/movegen/decisions.md))
-set the complete prover replacement, native keys measured first, an EP
-`threats` census and the final name `470MI`; the next plan is the adapter. We
-own the upstream `golmman/atomic_movegen`
-crate; changes are requested in `docs/plans/movegen/wishlistN.md`, and a new
-release is integrated only by an owner-triggered plan/report. See
-[`docs/plans/parity/report5.md`](docs/plans/parity/report5.md) and
+`parity` is closed (2026-11-17): plan 5 recorded the `P5` row on the product
+default (seed 0) at 10 s, 3/3, geomean **0.945**, 9/9 accepted by both
+checkers. `movegen` is open. Plan 2 fixed the en-passant immediate-explosion
+gap; plan 3 applied the `MD4` rename (`atomic470mi`/`470MI`) and the `M1`
+adapter: the prover's move generation, legality, effects/child keys and null
+moves run on `atomic-movegen`'s `Board` with native `Legal` keys, while
+shakmaty remains the parser, typed boundary and checker. The differential is
+green (`mismatches: 0`, `key_mismatches: 0`; `MD3` census 87/0/0), but the
+10 s bench **regressed** to 3/3, geomean **1.206** (1.352 / 1.250 / 1.038;
+9/9 accepted, `D14` identical). A same-session plan 2 binary reads 0.987, so
+the loss is the adapter's per-node cost and the adoption bar did not hold.
+The next step is an owner decision on that regression, then `M8` and
+performance. We own the upstream `golmman/atomic_movegen`; changes are
+requested in `docs/plans/movegen/wishlistN.md`, and a new release is
+integrated only by an owner-triggered plan/report. See
+[`docs/plans/movegen/report3.md`](docs/plans/movegen/report3.md) and
 [`docs/plans/movegen/initiative.md`](docs/plans/movegen/initiative.md).
 
 ## Collaboration
@@ -56,8 +55,8 @@ release is integrated only by an owner-triggered plan/report. See
 
 The parity layout follows provari's separation of concerns:
 
-- `src/board.rs` — atomic position, move and effect representation; hashes
-  equal shakmaty's.
+- `src/board.rs` — atomic position, move and effect representation on the
+  prover's `atomic-movegen` board and native `Legal` keys.
 - `src/moves.rs` — per-position move precomputation, legality, checks and
   one-ply explosion facts.
 - `src/table.rs` — bounded transposition table: 4-slot clusters, filter,

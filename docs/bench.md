@@ -62,7 +62,7 @@ factor(cell) = median candidate wall [s] / median provari --guide hand wall [s]
 | Item | Value |
 | --- | --- |
 | Reference side | `provari prove "<FEN>" --guide hand --seconds 10 --memory 192`. Fixed: the set is selected so the hand guide proves inside 10 s, so the reference cannot move with a candidate cap |
-| Candidate side | `470m1 prove "<FEN>" --seconds <cap> --memory 192 [--seed N] <stack flags>`; `--memory` covers the TT, the proof table and the filter |
+| Candidate side | `470MI prove "<FEN>" --seconds <cap> --memory 192 [--seed N] <stack flags>`; `--memory` covers the TT, the proof table and the filter |
 | Caps planned | reference 10 s always; candidate at the row's `Cap` (10 s, 120 s, 600 s) |
 | Repeats | 3 per cell per side, medians reported, one process at a time |
 | Session | a row's reference and candidate runs are measured back to back on one host |
@@ -119,7 +119,7 @@ of them is a git commit**.
 | --- | --- | --- |
 | Cell short name | `core`, `easy-win`, `deep-win` | use this in prose, plans, reports and ledger rows; defined in [The bench set](#the-bench-set) |
 | Cell id | `1eb80b92f92c` | provari's record id in its corpus file — **not** a git hash: the first 12 hex of `sha256(FEN)` at the pinned commit, unique inside that file. Tooling and `corpus.json` key by it |
-| Commit pin | `470m1@<sha>`, `provari-v0.4.0` | a real commit: the oracle build, or the tree a row was measured at; full sha in the [pins](#pins) table |
+| Commit pin | `470MI@<sha>`, `provari-v0.4.0` | a real commit: the oracle build, or the tree a row was measured at; full sha in the [pins](#pins) table |
 
 Rule of thumb: prose uses short names, tooling uses cell ids, rows record the
 commit pins. A cell id is stable forever; a short name is stable as long as the
@@ -166,6 +166,7 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 | plan4 | 2026-11-17 | `8f5ca2f2750a` | hand, tie-break seed (0–2) | **1.055** | **1.106** | **0.900** | **1.016** | 10 s |
 | plan5 | 2026-11-17 | `8f5ca2f2750a` | hand, product default (seed 0) | **0.936** | **0.962** | **0.938** | **0.945** | 10 s |
 | movegen plan2 | 2026-11-18 | `f043976fff92` | hand, product default (seed 0) | **0.981** | **0.978** | **0.958** | **0.972** | 10 s |
+| movegen plan3 | 2026-11-19 | `c90face26537` | hand, product default (seed 0) | **1.352** | **1.250** | **1.038** | **1.206** | 10 s |
 
 
 Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
@@ -218,6 +219,20 @@ explosion finds the accepted 19-move proof there. No cap, cell, memory split,
 hash, checker or proof format changed. See `plans/movegen/report2.md` and
 `plans/movegen/measurements/plan2/`.
 
+Movegen plan3 footnote: **regression row, not an adoption claim.**
+Coverage 3/3, seed 0, three repeats, protocol `a`, every proof accepted by
+`470MI check` and `provari check` (9/9), `D14` timed and untimed counters
+identical. Candidate proof lengths 14 / 18 / 20 against same-session reference
+mates 17 / 15 / 22; `child_evals` 3,896,430 / 904,368 / 44,828,946. The native
+keys moved the tree (the `core` proof is 14, not 17), but the wall regressed:
+factors 1.352 / 1.250 / 1.038, geomean **1.206** against the plan 2 row's
+0.972 (per-cell delta +0.371 / +0.272 / +0.080, cross-session, not a factor).
+A same-session plan 2 binary reads 0.998 / 1.007 / 0.958, geomean 0.987, so
+the loss is the adapter's per-node cost, not host drift or proof export. The
+plan's adoption bar (`<= 1.0`) did not hold; no search or eval tuning was
+made. See `plans/movegen/report3.md` and
+`plans/movegen/measurements/plan3/`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -236,6 +251,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470m1@<sha>` | _owner commits the plan4 tree_ | plan4 |
 | `470m1@<sha>` | _owner commits the plan5 tree_ | plan5 |
 | `470m1@<sha>` | _owner commits the movegen plan2 tree_ | movegen plan2 |
+| `470MI@<sha>` | _owner commits the movegen plan3 tree_ | movegen plan3 |
 
 The product rename is decided (`MD4`, 2026-11-19): rows measured before the
 rename keep `470m1`; the first adapter row and later rows use `470MI`.

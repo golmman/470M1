@@ -15,7 +15,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86a8b5d727370f081df9b504971e2e6b3bc6f600c584fb4993af13ec1818ec45"
 
 [[package]]
-name = "atomic470m1"
+name = "atomic470mi"
 version = "0.1.0"
 dependencies = [
  "atomic-movegen",

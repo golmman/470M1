@@ -565,7 +565,8 @@ pub fn small_defended() -> (Header, Vec<u8>) {
     let (header, indices) = decode(&bytes).unwrap().unwrap();
     let (root, attacker, moves) = strategy(&header, &indices).unwrap();
     let mut after = root.clone();
-    shakmaty::Position::play_unchecked(&mut after, moves[&crate::hash(&root)].unwrap());
+    let key = Position::from_atomic(&root).hash();
+    shakmaty::Position::play_unchecked(&mut after, moves[&key].unwrap());
     encode(&after, attacker, |pos| {
         moves
             .get(&pos.hash())
@@ -585,7 +586,6 @@ mod tests {
         strategy, won_at_once,
     };
     use crate::board::{Position, from_fen};
-    use crate::hash;
 
     #[test]
     fn reads_back_what_it_writes() {
@@ -597,7 +597,7 @@ mod tests {
         assert_eq!(read.attacker, None);
         let (root, attacker, moves) = strategy(&read, &indices).unwrap();
         assert_eq!(attacker, Color::White);
-        let first = moves[&hash(&root)].unwrap();
+        let first = moves[&Position::from_atomic(&root).hash()].unwrap();
         assert_eq!(UciMove::from_standard(first).to_string(), "g5f7");
     }
 
@@ -617,7 +617,7 @@ mod tests {
         let (_, first) = encode_jsonl(SMALL).unwrap();
         let (first, first_indices) = decode(&first).unwrap().unwrap();
         let (first_root, _, first_moves) = strategy(&first, &first_indices).unwrap();
-        assert!(!moves.contains_key(&hash(&first_root)));
+        assert!(!moves.contains_key(&Position::from_atomic(&first_root).hash()));
         assert_eq!(moves.len(), first_moves.len() - 1);
         assert!(moves.iter().all(|(key, m)| first_moves.get(key) == Some(m)));
         let mut named = read;
