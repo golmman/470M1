@@ -71,3 +71,21 @@ open decisions?
 ---
 
 Plan session for movegen: profile the M1 adapter against the stored plan 2 binary, identify the per-node regression in pseudo_legal, legal and effect, and propose the smallest measured fix that brings the 10 s row back to <= 1.0.
+
+---
+
+Decisions:
+1B
+3B
+
+I don't understand Decision 2 as stated.
+I want clean and performant code, no extra adapter. If that means `atomic-movegen` needs to adapt then we put this into a wishlist.
+
+---
+
+Decision 2: B
+Decision A: yes
+Decision B: B
+Decision C: B
+
+Let's do the "Patch atomic-movegen locally in /tmp" first though

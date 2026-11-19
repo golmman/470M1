@@ -24,6 +24,11 @@ a finding, not an accepted trade.
 display path on shakmaty would leave the replacement partial. The checker is
 the external veto and must not share the prover's rules implementation.
 
+**Reaffirmed (2026-11-19).** A measured rollback to the provari-derived hot path
+(plan 2's binary reads 0.987 in the plan 4 session) was proposed and **rejected**:
+the crate is the rules layer even when that is slower today. The regression is
+closed by making the crate fast, not by keeping a second implementation.
+
 **Consequences.** Parser removal (W2) and display/proof-path removal are in
 scope, not later cleanups. The crate will still depend on shakmaty for the
 checker even after the prover is clean. A missing display API (for example SAN)
@@ -80,3 +85,42 @@ before new measurements avoids a second baseline and mixed binary paths.
 **Consequences.** `Cargo.toml`, `Cargo.lock`, `src/`, `tests/`, `scripts/`,
 `bench/`, `Makefile` and current docs need the rename. The repository
 directory name is not part of the build and is left to the owner.
+
+## MD5 — Hot-path boundary
+
+**Resolution (2026-11-19).** The prover's rules hot path calls `atomic-movegen`
+directly. There is no translation layer: a per-candidate conversion, a
+rebuilt `Setup`, a cached board copy or a second legality implementation in
+the prover is a defect, not a convenience. Boundary conversions are allowed
+and expected only at the edges — FEN parsing (until `M8`), `to_shakmaty` for
+the checker and proof I/O, and the `.pvr` move bits in `format.rs`. If a
+conversion or a re-derivation is needed on the hot path, the fix is a
+`wishlistN.md` request for a leaner crate API.
+
+**Rationale.** The measured per-node regression is the translator: plan 2's
+shape and the crate's shape differ in representation, move encoding, node
+state and key derivation. Keeping the translator and optimising inside it was
+measured at ~5%, while every candidate change inside the translator (a cached
+`StateInfo`, `EffectContext` for effect/legality) regressed
+([`hot-path-audit.md`](hot-path-audit.md)).
+
+**Consequences.** `src/board.rs`/`src/moves.rs` shrink to direct calls plus
+the boundary; `M2` moves the prover's move storage to the crate's stable `u16`
+encoding; `M8` removes the parser and `to_shakmaty` from the prover path.
+
+## MD6 — What "no regression" means
+
+**Resolution (2026-11-19).** "No regression" is a same-session comparison: the
+candidate's 10 s geomean against the plan 2 reference binary (`470m1`) measured
+in the same session with the same driver and protocol, requiring **3/3 cells
+and 9/9 accepted by both checkers**, with the reference reading within noise of
+its recorded **0.972**. The recorded 0.972 is an anchor, not a target, and
+`1.0` against provari is not the bar.
+
+**Rationale.** Host drift is larger than the difference between 0.972 and the
+0.987 re-read of the same old binary in the plan 4 session. An absolute number
+measured in another session would pass or fail on noise.
+
+**Consequences.** Every adoption plan runs the reference and the candidate
+interleaved in one session and records both in `measurements/planN/`. A pass
+that beats `1.0` but loses to the same-session reference does not pass.

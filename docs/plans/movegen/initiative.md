@@ -13,10 +13,14 @@ differential is green (`mismatches: 0`, `key_mismatches: 0`). The 10 s bench
 **regressed** to 3/3, 9/9 accepted, geomean **1.206** (1.352 / 1.250 / 1.038);
 a same-session plan 2 binary reads 0.987, so the loss is the adapter's
 per-node cost. The adoption bar did not hold and is reported, not tuned away.
-See [`report1.md`](report1.md), [`report2.md`](report2.md),
-[`report3.md`](report3.md) and [`wishlist1.md`](wishlist1.md) (W1-W3 landed,
-W4 open, W5 proposed). The next step is an owner decision on the regression,
-then `M8`/performance; the checker stays on shakmaty.
+The owner rejected a rollback (`MD1` reaffirmed) and set the hot-path boundary
+(`MD5`) and the same-session bench bar (`MD6`); [`hot-path-audit.md`](hot-path-audit.md)
+measures where the 2.46e9 instructions go and records three negative designs.
+[`wishlist2.md`](wishlist2.md) is the narrower cost list (`W6`-`W9`).
+[`plan4.md`](plan4.md) adopts the next owner-triggered release; [`plan5.md`](plan5.md)
+measures it against the bar. See [`report3.md`](report3.md) and
+[`wishlist1.md`](wishlist1.md) (W1-W3 landed, W4 open, W5 proposed). The next
+step is the owner-triggered release; the checker stays on shakmaty.
 
 ## Goal
 
@@ -68,6 +72,8 @@ One-line resolutions; full text and rationale in [`decisions.md`](decisions.md).
 | MD2 | Key strategy | Native `atomic-movegen` keys first; W5 only if measured slower; end state prover-only movegen |
 | MD3 | EP-blind `threats` | Census first; change only with measured evidence |
 | MD4 | Product name | Final name `470MI`; package/lib `atomic470mi`, binary `470MI`; rename before the first adapter bench |
+| MD5 | Hot-path boundary | Direct crate calls on the rules path; conversions only at the FEN/checker/proof edge; a needed conversion is a wishlist item |
+| MD6 | What "no regression" means | Same-session plan 2 reference, 3/3 and 9/9, reference near 0.972; `1.0` against provari is not the bar |
 
 ## Upstream ownership and wishlists
 
@@ -97,6 +103,7 @@ These are placeholders; the next plan turns them into concrete items.
 | M7 | **Upstream asks** | File measured API requests in `wishlistN.md`; integrate a release only by an owner-triggered plan/report and pin update |
 | M8 | **Complete shakmaty removal** | Parser, display, proof paths and line output leave the prover; `check.rs` stays shakmaty |
 | M9 | **Rename** | Apply `470MI` / `atomic470mi` before the first adapter bench; historical docs stay unchanged |
+| M10 | **Hot-path cost** | Adopt `W6`-`W9` lean APIs; no translator; measured per call, then by the 10 s row |
 
 ## Gates
 
@@ -104,9 +111,9 @@ These are placeholders; the next plan turns them into concrete items.
   and the bench corpus, and no proof is accepted by one rules implementation
   and rejected by the other.
 - The checker still uses shakmaty only and shares no code with the prover.
-- The bench does not regress against the current baseline (plan 2: geomean
-  0.972); a regression is a finding, not a silent adoption. The stretch goal
-  is a measured improvement.
+- The bench does not regress against the same-session plan 2 reference (`MD6`:
+  3/3, 9/9, reference near 0.972); a regression is a finding, not a silent
+  adoption. The stretch goal is a measured improvement.
 - A new `atomic-movegen` release enters only by owner trigger, a
   `planN.md`/`reportN.md`, a pin/provenance update and the same gates.
 - `make test`, `make test-full` and `make veto` green.
@@ -124,6 +131,17 @@ These are placeholders; the next plan turns them into concrete items.
 | Scope creep into search tuning | Movegen is a rules-layer initiative; search changes need their own item and gate |
 
 ## History
+
+- **2026-11-19** — hot-path audit and cost wishlist. The shipped
+  `EffectContext`/batch-key API is measured **slower** than the adapter's
+  current path (394 vs ~200 instructions per candidate; +17.9% on `core`), as
+  is caching node state in `Position` (+16.6%). The rules layer is 31% of all
+  instructions; the optimistic ceiling of a crate-led fix is ~1.12× the plan 2
+  binary. Owner decisions: keep the movegen rules layer and optimise upstream
+  (`MD1` reaffirmed), no translator on the hot path (`MD5`), same-session
+  bench bar (`MD6`). [`hot-path-audit.md`](hot-path-audit.md),
+  [`wishlist2.md`](wishlist2.md); plans renumbered so [`plan4.md`](plan4.md)
+  adopts the next release and [`plan5.md`](plan5.md) measures it.
 
 - **2026-11-19** — plan 3 renamed the product to `470MI`/`atomic470mi` and
   wrapped `atomic_movegen::Board` behind `Position` with native `Legal` keys.

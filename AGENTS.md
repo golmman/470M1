@@ -22,19 +22,20 @@ claim.
 default (seed 0) at 10 s, 3/3, geomean **0.945**, 9/9 accepted by both
 checkers. `movegen` is open. Plan 2 fixed the en-passant immediate-explosion
 gap; plan 3 applied the `MD4` rename (`atomic470mi`/`470MI`) and the `M1`
-adapter: the prover's move generation, legality, effects/child keys and null
-moves run on `atomic-movegen`'s `Board` with native `Legal` keys, while
-shakmaty remains the parser, typed boundary and checker. The differential is
-green (`mismatches: 0`, `key_mismatches: 0`; `MD3` census 87/0/0), but the
-10 s bench **regressed** to 3/3, geomean **1.206** (1.352 / 1.250 / 1.038;
-9/9 accepted, `D14` identical). A same-session plan 2 binary reads 0.987, so
-the loss is the adapter's per-node cost and the adoption bar did not hold.
-The next step is an owner decision on that regression, then `M8` and
-performance. We own the upstream `golmman/atomic_movegen`; changes are
-requested in `docs/plans/movegen/wishlistN.md`, and a new release is
-integrated only by an owner-triggered plan/report. See
-[`docs/plans/movegen/report3.md`](docs/plans/movegen/report3.md) and
-[`docs/plans/movegen/initiative.md`](docs/plans/movegen/initiative.md).
+adapter: the prover runs move generation, legality, effects/keys and null
+moves on `atomic-movegen`'s `Board` with native `Legal` keys; shakmaty remains
+the parser, boundary and checker. The differential is green (`mismatches: 0`,
+`key_mismatches: 0`; `MD3` census 87/0/0), but the 10 s bench **regressed** to
+3/3, geomean **1.206**, 9/9 accepted, `D14` identical. A same-session plan 2
+binary reads 0.987, so the loss is per-node adapter cost. Rollback was
+rejected (`MD1`); the boundary is `MD5`, the bar `MD6`. The audit's ceiling for
+a crate-led fix is ~1.12x plan 2. Plan 4 adopts the next owner-triggered release
+(`W6`-`W9`); plan 5 measures it. We own the upstream `golmman/atomic_movegen`;
+changes go in `docs/plans/movegen/wishlistN.md` and integrate only by an
+owner-triggered plan/report. See
+[`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
+[`wishlist2`](docs/plans/movegen/wishlist2.md) and
+[`initiative`](docs/plans/movegen/initiative.md).
 
 ## Collaboration
 
