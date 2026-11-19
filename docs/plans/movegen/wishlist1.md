@@ -2,7 +2,7 @@
 
 **Status:** a request list, not a plan. Baseline `atomic-movegen`
 `af3faf0dd80f48cc7fa0cb737f4944bca8f6bf85` (v2.9.0, MIT); W1-W3 landed, W4
-W5 proposed; the crate's own
+open, W5 proposed; `MD1` puts parser removal in scope. The crate's own
 `docs/plans/feedback/handoff3.md` in the `golmman/atomic_movegen` repository
 remains the live cost wishlist (MG19/MG20); this file records the asks that
 follow from [`rules-surface.md`](rules-surface.md). It does not supersede that
@@ -20,10 +20,10 @@ committed here.
 | # | Ask | Type | Decisive experiment | Priority |
 | --- | --- | --- | --- | --- |
 | W1 | **Legal-EP child key on the effect path** | rules/API + cost | measure the double-push share and the clone in the prover's `full_effect` | P1 |
-| W2 | **Lichess-style FEN acceptance** | parser parity | differential against shakmaty on corpus plus malformed FENs | P2 |
+| W2 | **Lichess-style FEN acceptance** | parser parity (landed in 2.9.0) | differential against shakmaty on corpus plus malformed FENs | P1 |
 | W3 | **Immediate-explosion query on a child** | one-ply fact | compare with the prover's `Mover::exposes` on random play-outs | P2/P3 |
 | W4 | **Node-constant analysis view** | guide geometry | profile `Mover::new` before asking for it | P3 |
-| W5 | **Shakmaty-compatible Zobrist table** | key parity | plan 1's harness: zero numeric key differences | P1 |
+| W5 | **Shakmaty-compatible Zobrist table** | key parity, only if native keys lose | native-key bench first; then zero numeric key differences | P1 |
 
 ## W1 — legal-EP child key on the effect path
 
@@ -130,28 +130,28 @@ item stays a watchlist entry and is not implemented.
 
 **Why.** Plan 1 found the tables differ: start `0x463b96181691fc9c` (ours)
 against `0x5ab84d1cfc77f79e` (2.9.0). The schema and legal-EP
-canonicalization agree, but numeric key parity is required and an adapter
-cannot mix keys.
+canonicalization agree. `MD2` makes native keys the default; W5 is only for a
+measured key-driven regression.
 
-**Proposal.** A feature, constructor or public translation hook that uses
-shakmaty's `Zobrist64` values. Keep the default table, `EnPassantMode`
-semantics and `ZOBRIST_VERSION`; a default-table change is a version bump.
+**Proposal (2026-11-19).** If native keys lose, add a feature, constructor or
+public hook that lets the caller supply the key table. The preferred shape is
+an injected `ZobristKeys`/compat hook: the GPL shakmaty table then stays in
+this GPL repository and `atomic-movegen` remains MIT. A built-in table in the
+MIT crate needs an owner licensing decision first. Keep the default table,
+`EnPassantMode` semantics and `ZOBRIST_VERSION`; a default-table change is a
+version bump.
 
-**Acceptance.** Plan 1's differential reports zero numeric key differences on
-the fixtures, corpus and play-outs; each engine's own child key and legal-EP
-gating stay unchanged.
+**Acceptance.** Measure native keys first. W5 is triggered only by a
+key-driven bench regression; then the differential reports zero numeric key
+differences on the fixtures, corpus and play-outs, each engine's own child key
+and legal-EP gating stay unchanged, and the bench recovers the baseline.
 
-## Formulation option — keep the parser outside
+## Formulation option — keep the parser outside (closed)
 
-W2 assumes the `movegen` goal includes replacing the prover's FEN parser. The
-cheaper formulation is to replace only the search rules layer and keep
-shakmaty for parsing, as `M1` already permits. Estimated gain: W2 leaves the
-critical path and the first adapter is smaller. Cost: the prover keeps a
-shakmaty dependency (the checker keeps it anyway), so the replacement is not
-complete. Cheapest decisive experiment: plan 1's differential harness parses
-with shakmaty and compares only board, legal moves, effects, keys and
-terminality; if that is green, W2 is a later cleanup, not an integration
-blocker.
+**Closed by `MD1` (2026-11-19).** Parser removal is in scope; shakmaty may not
+remain in the prover as a convenience. The cheaper search-only formulation was
+considered and rejected: it leaves the replacement partial. If W2's gate fails,
+record the blocker and fix it upstream; do not silently keep the parser.
 
 ## Non-wishes
 

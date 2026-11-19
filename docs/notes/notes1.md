@@ -60,3 +60,11 @@ Plan session. Read AGENTS.md, docs/plans/movegen/{initiative,report1,rules-surfa
 ---
 
 open decisions?
+
+---
+
+1. Movegen Goal: Replace shakmaty completely with not negative impact on performance; Stretch goal: improve overall performance
+2. Use atomic-movegen current keys if more performant. If not, formulate a wishlist so atomic-movegen can adopt shakmaty's keys. In the end we want only atomic-movegen but faster than shakmaty.
+3. Option B
+4. the name `470MI` is final
+

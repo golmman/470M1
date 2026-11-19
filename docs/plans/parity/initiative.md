@@ -20,7 +20,7 @@ adapted with provenance.
 | Item | Value |
 | --- | --- |
 | Repository | `470M1` (this repo) |
-| Package / binary | `470m1` (working name; rename is an owner decision) |
+| Package / binary | `470MI` final (package/lib `atomic470mi`; the mechanical rename precedes the first movegen adapter bench, `MD4`) |
 | Initiative directory | `docs/plans/parity/` |
 | Parity reference | `aiorla/provari` `bceb1ee1faf7d9cf2422eb89c931be69ae30619d` (`v0.4.0`), GPL-3.0-or-later |
 | Idea/measured-lever source | `golmman/atomi` `a4802e7cbe7ea6338e99dd21d3b84dbd6f871f76`, MIT |

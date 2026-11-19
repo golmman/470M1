@@ -2,13 +2,14 @@
 
 ## Goal
 
-`470M1` is a from-scratch atomic chess win prover and independent proof
+`470MI` is a from-scratch atomic chess win prover and independent proof
 checker. The first initiative, `parity`, must reach wall-time parity with
 provari on the fixed bench set: all three cells proved at 10 s and a geomean
 wall factor `<= 1.0` against `provari --guide hand`, with every claim accepted
 by our checker and by `provari check`. The second initiative, `movegen`,
-replaces the parity rules dependency with `atomic-movegen` only after parity is
-reached.
+replaces shakmaty completely in the prover with `atomic-movegen`; the checker
+stays on shakmaty so the two rules implementations remain independent. No
+stage may regress the bench; faster is the stretch goal.
 
 The goal, rungs and budgets live in
 [`docs/plans/parity/initiative.md`](docs/plans/parity/initiative.md). The
@@ -26,8 +27,10 @@ guide are in place. `movegen` is open with a documented rules surface and
 `atomic-movegen` 2.9.0 (`af3faf0`, MIT) pinned. Plan 2 fixed the en-passant
 immediate-explosion gap: the differential sweep is green, the gates pass, and
 its 10 s row is 3/3, geomean **0.972**, 9/9 accepted
-([`docs/plans/movegen/report2.md`](docs/plans/movegen/report2.md)). Numeric
-Zobrist keys still differ; the plan 3 adapter must decide the key strategy. We
+([`docs/plans/movegen/report2.md`](docs/plans/movegen/report2.md)). The
+2026-11-19 decisions ([`docs/plans/movegen/decisions.md`](docs/plans/movegen/decisions.md))
+set the complete prover replacement, native keys measured first, an EP
+`threats` census and the final name `470MI`; the next plan is the adapter. We
 own the upstream `golmman/atomic_movegen`
 crate; changes are requested in `docs/plans/movegen/wishlistN.md`, and a new
 release is integrated only by an owner-triggered plan/report. See

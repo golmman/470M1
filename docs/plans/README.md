@@ -3,7 +3,7 @@
 | Initiative | Status | Documents |
 | --- | --- | --- |
 | [`parity`](parity/initiative.md) | **closed** — plan 5 complete. `P5` closure row on the product default (seed 0) at 10 s: 3/3 coverage, geomean 0.945, 9/9 accepted by both checkers, `D14` identical. Goal: all three bench cells proved at 10 s, geomean wall `<= 1.0` vs `provari --guide hand`, every claim accepted by our checker and `provari check` | [index](parity/README.md), [initiative](parity/initiative.md), [decisions](parity/decisions.md), [gotchas](parity/gotchas.md), [history](parity/history.md), [plan5](parity/plan5.md), [report5](parity/report5.md), [measurements/plan5](parity/measurements/plan5/README.md) |
-| [`movegen`](movegen/initiative.md) | **open** — plan 1 next; first phase is the differential harness. Goal: replace the prover's shakmaty rules layer with `atomic-movegen` while keeping the checker independent | [initiative](movegen/initiative.md), [rules surface](movegen/rules-surface.md), [wishlist 1](movegen/wishlist1.md) |
+| [`movegen`](movegen/initiative.md) | **open** — plan 2 green; decisions MD1–MD4 recorded. Next: plan 3, the rules adapter, starting with the rename and a native-key bench. Goal: replace shakmaty completely in the prover with `atomic-movegen`; the checker stays independent on shakmaty | [initiative](movegen/initiative.md), [decisions](movegen/decisions.md), [rules surface](movegen/rules-surface.md), [wishlist 1](movegen/wishlist1.md) |
 
 ## Conventions
 

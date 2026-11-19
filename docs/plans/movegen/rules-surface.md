@@ -17,8 +17,9 @@ finding, not a convenience.
 | Proof order | `format.rs::number`, `is_capture`, `won_at_once`, `Walk`; checker `check.rs` walks defences in square order | Compact proof writes only attacker moves; checks first, then from-square, to-square, promotion. The checker generates every defence. A rules rewrite must not change this order. | prover writes; checker reads |
 | Proof checking | `check.rs` only | shakmaty only; no prover module import (test at `check.rs` bottom). Tablebase verdicts remain unsupported. | checker |
 
-`main.rs`, `lines.rs`, `walk.rs` and `format.rs` may keep shakmaty for
-FEN/UCI/SAN display even if the search uses `atomic-movegen`.
+`main.rs`, `lines.rs`, `walk.rs` and `format.rs` must also leave shakmaty
+under `MD1`. If a display feature is missing upstream (for example SAN), record
+a wishlist item; do not keep shakmaty in the prover as a silent exception.
 
 ## Candidate dependency
 
@@ -31,6 +32,7 @@ fixed its en-passant finding, so `moves.rs::exploding_capture` and
 `Mover::exposes` now see an EP destination beside the commoner (the captured
 pawn on the other square is not beside it) and the full sweep is green. The two
 crates' numeric Zobrist tables still differ although the schema and legal-EP
-gating agree; plan 3 must decide keep-our-hash, translate, or wait for W5. The
-prover-side material rule remains explicit, not a movegen result. Open upstream
+gating agree. Under `MD2` the adapter measures native keys first; W5 is the
+fallback only for a key-driven regression. The prover-side material rule
+remains explicit, not a movegen result. Open upstream
 gaps are tracked in [`wishlist1.md`](wishlist1.md) (W4, W5).

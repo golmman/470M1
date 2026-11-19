@@ -237,12 +237,17 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470m1@<sha>` | _owner commits the plan5 tree_ | plan5 |
 | `470m1@<sha>` | _owner commits the movegen plan2 tree_ | movegen plan2 |
 
+The product rename is decided (`MD4`, 2026-11-19): rows measured before the
+rename keep `470m1`; the first adapter row and later rows use `470MI`.
+
 ## History
 
 Chronological entries — including every plan session that appended no row —
 are in the active initiative's `history.md`. Only ledger-structure changes are
 kept here:
 
+- **2026-11-19** — product name `470MI` recorded; earlier rows keep the
+  `470m1` pin label (`MD4`). No measurement change.
 - **2026-11-17** — file opened for the `parity` initiative. The bench set,
   metric and reading rules are inherited from atomi's ledger; the reference
   values are provisional until plan1 re-measures them. No rows yet.
