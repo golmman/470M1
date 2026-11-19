@@ -1,0 +1,76 @@
+# Plan 8 — core baseline, perf stat -e instructions:u
+# run 1 plan2
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":482,"nodes":342263,"seed":0}
+6569377267,,instructions:u,484475434,100.00,,
+# run 1 candidate
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":552,"nodes":350430,"seed":0}
+7816219546,,instructions:u,555048407,100.00,,
+# run 2 plan2
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":488,"nodes":342263,"seed":0}
+6569376944,,instructions:u,489797898,100.00,,
+# run 2 candidate
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":558,"nodes":350430,"seed":0}
+7816218878,,instructions:u,560005149,100.00,,
+# run 3 plan2
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":481,"nodes":342263,"seed":0}
+6569377148,,instructions:u,483352644,100.00,,
+# run 3 candidate
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":554,"nodes":350430,"seed":0}
+7816219318,,instructions:u,556715598,100.00,,
+# Plan 8 — core, perf stat -e instructions:u
+# run 1 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":549,"nodes":350430,"seed":0}
+7816219035,,instructions:u,551398965,100.00,,
+# run 1 V1 prototype
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":569,"nodes":350430,"seed":0}
+8034301968,,instructions:u,571056666,100.00,,
+# run 2 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":552,"nodes":350430,"seed":0}
+7816219256,,instructions:u,554853216,100.00,,
+# run 2 V1 prototype
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":571,"nodes":350430,"seed":0}
+8034301426,,instructions:u,573430067,100.00,,
+# run 3 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":555,"nodes":350430,"seed":0}
+7816219325,,instructions:u,557280118,100.00,,
+# run 3 V1 prototype
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":565,"nodes":350430,"seed":0}
+8034301477,,instructions:u,567724334,100.00,,
+# Plan 8 — core, V1 prototype (counts-only ladder), perf stat -e instructions:u
+# run 1 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":547,"nodes":350430,"seed":0}
+7816218741,,instructions:u,550030084,100.00,,
+# run 1 V1 prototype
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":581,"nodes":350430,"seed":0}
+8106265186,,instructions:u,584328663,100.00,,
+# run 2 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":555,"nodes":350430,"seed":0}
+7816218857,,instructions:u,556402757,100.00,,
+# run 2 V1 prototype
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":592,"nodes":350430,"seed":0}
+8106264837,,instructions:u,593605660,100.00,,
+# run 3 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":565,"nodes":350430,"seed":0}
+7816219218,,instructions:u,567618434,100.00,,
+# run 3 V1 prototype
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":574,"nodes":350430,"seed":0}
+8106264495,,instructions:u,576493948,100.00,,
+# Plan 8 — core, V1 hybrid prototype, perf stat -e instructions:u
+# run 1 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":559,"nodes":350430,"seed":0}
+7816218568,,instructions:u,561984071,100.00,,
+# run 1 V1 hybrid
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":583,"nodes":350430,"seed":0}
+7980337054,,instructions:u,584371124,100.00,,
+# run 2 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":551,"nodes":350430,"seed":0}
+7816219212,,instructions:u,552905094,100.00,,
+# run 2 V1 hybrid
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":568,"nodes":350430,"seed":0}
+7980337204,,instructions:u,570675955,100.00,,
+# run 3 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":553,"nodes":350430,"seed":0}
+7816218493,,instructions:u,555109647,100.00,,
+# run 3 V1 hybrid
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":571,"nodes":350430,"seed":0}
+7980336990,,instructions:u,572194086,100.00,,

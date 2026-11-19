@@ -1,0 +1,63 @@
+--- a/src/moves.rs
++++ b/src/moves.rs
+@@ -9,7 +9,7 @@
+ //! that check the other king, and attack maps, which settle most moves with
+ //! a bit test; the rest are judged from the occupancy the move leaves.
+ 
+-use atomic_movegen::{Counts, LegalityContext};
++use atomic_movegen::{Counts, FastLegality, LegalityContext};
+ use shakmaty::{Bitboard, ByRole, CastlingSide, Color, Role, Square, attacks};
+ 
+ use crate::board::{Effect, Move, Position};
+@@ -18,9 +18,11 @@
+ pub struct Mover<'a> {
+     pos: &'a Position,
+     us: Color,
+-    /// The node-local legality context and the counts it was built from.
++    /// The node-local oracle context and the counts it was built from.
+     context: LegalityContext,
+     counts: Counts,
++    /// The node-constant fast-legality ladder; the oracle remains the fallback.
++    fast: FastLegality,
+     /// The parent's occupancy, shared by legality, the fast path and effects.
+     occupied: Bitboard,
+     our_king: Option<Square>,
+@@ -68,6 +70,7 @@
+         pos.board().populate_state(&mut state);
+         let counts = Counts::from(&state);
+         let context = pos.board().legality_context(counts);
++        let fast = FastLegality::for_board(pos.board(), &state);
+         let tested = match our_king {
+             _ if touching => Bitboard::EMPTY,
+             _ if !state.checkers.is_empty() => ours,
+@@ -108,6 +111,7 @@
+             us,
+             context,
+             counts,
++            fast,
+             occupied,
+             our_king,
+             their_king,
+@@ -167,7 +171,10 @@
+         {
+             return true;
+         }
+-        self.context.legal(m.native())
++        match self.fast.decide_or_none(self.pos.board(), m.native()) {
++            Some(verdict) => verdict,
++            None => self.context.legal(m.native()),
++        }
+     }
+ 
+     /// Whether a legal move explodes the other king.
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -11,7 +11,7 @@
+ path = "src/main.rs"
+ 
+ [dependencies]
+-atomic-movegen = "=2.10.0"
++atomic-movegen = { path = "/tmp/plan8-crate" }
+ shakmaty = { version = "=0.30.1", features = ["variant"] }
+ serde_json = "1"
+ zstd = { version = "=0.13.3", default-features = false }

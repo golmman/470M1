@@ -1,0 +1,12 @@
+[package]
+name = "plan8-probe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+atomic-movegen = { path = "/tmp/plan8-crate" } # scratch W10 crate
+
+[profile.release]
+debug = false
+codegen-units = 1
+lto = "fat"

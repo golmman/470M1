@@ -1,0 +1,131 @@
+--- a/src/board.rs
++++ b/src/board.rs
+@@ -4086,7 +4086,7 @@
+ /// [`WidenedLegality`]) or delegates to it. The widened state is created on
+ /// first use, so nodes whose candidates are all trivially legal pay nothing for
+ /// it.
+-pub(crate) struct FastLegality {
++pub struct FastLegality {
+     /// Quiet-move fast path (checked first: it is the cheapest rule).
+     trivial: TrivialLegality,
+     /// Widened rules, created on first non-trivial candidate.
+@@ -4110,6 +4110,27 @@
+         }
+     }
+ 
++    /// Build the ladder for `board` from a caller-populated [`StateInfo`].
++    ///
++    /// This is the public counterpart of the crate-internal constructor: it
++    /// borrows the board's placement view, so the ladder stays valid while the
++    /// board does not change.
++    #[must_use]
++    pub fn for_board(board: &Board, state: &StateInfo) -> Self {
++        Self::new(board.position_view(), state)
++    }
++
++    /// Whether `m` is legal in `board`, whose placement must match the ladder.
++    ///
++    /// Exactly [`Board::legal`] for the populated `state`. `m` must be
++    /// pseudo-legal for `board`; the pseudo-legal precondition is not
++    /// revalidated, matching the crate-internal entry point.
++    #[inline(always)]
++    #[must_use]
++    pub fn legal_in(&self, board: &Board, m: Move, state: &StateInfo) -> bool {
++        self.is_legal(board.position_view(), m, state)
++    }
++
+     /// Returns `true` when the pseudo-legal move `m` is legal.
+     ///
+     /// Exactly membership in `generate_legal_with_state(board, state, ..)` for
+@@ -4138,6 +4159,78 @@
+         }
+     }
+ }
++
++/// Which rung of the fast-legality ladder answered a candidate.
++///
++/// Diagnostic only: [`FastLegality::legal_in`] does not expose it, so a normal
++/// caller never pays for the classification.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum LegalStage {
++    /// Terminal board: no move is legal.
++    Terminal,
++    /// Side to move is in check: the oracle answered.
++    InCheck,
++    /// The trivial quiet fast path accepted the move.
++    Trivial,
++    /// The widened rules decided the move; the value is the verdict.
++    Widened(bool),
++    /// The widened rules could not decide; the oracle answered.
++    Oracle,
++}
++
++impl FastLegality {
++    /// The trivial rung alone, for a diagnostic screen.
++    #[must_use]
++    pub fn is_trivial(&self, m: Move) -> bool {
++        self.trivial.is_trivially_legal(m)
++    }
++
++    /// The widened rung alone, or `None` when it cannot decide or is not
++    /// applicable (in check, terminal, non-castling precondition).
++    #[must_use]
++    pub fn widened_verdict(
++        &self,
++        board: &Board,
++        m: Move,
++        state: &StateInfo,
++    ) -> Option<bool> {
++        if !self.playable || self.in_check || self.trivial.is_trivially_legal(m) {
++            return None;
++        }
++        let view = board.position_view();
++        let widened = self.widened.get_or_init(|| WidenedLegality::new(view));
++        widened.decide(view, m)
++    }
++
++    /// [`legal_in`](Self::legal_in) with the answering rung reported.
++    ///
++    /// Mirrors the ladder branch for branch; the oracle is called exactly
++    /// where [`legal_in`](Self::legal_in) calls it.
++    #[must_use]
++    pub fn legal_traced(&self, board: &Board, m: Move, state: &StateInfo) -> (bool, LegalStage) {
++        if self.trivial.is_trivially_legal(m) {
++            return (true, LegalStage::Trivial);
++        }
++        if !self.playable {
++            return (false, LegalStage::Terminal);
++        }
++        let view = board.position_view();
++        if self.in_check {
++            return (
++                crate::position::legal_in_view(view, m, state),
++                LegalStage::InCheck,
++            );
++        }
++        let widened = self.widened.get_or_init(|| WidenedLegality::new(view));
++        match widened.decide(view, m) {
++            Some(verdict) => (verdict, LegalStage::Widened(verdict)),
++            None => (
++                crate::position::legal_in_view(view, m, state),
++                LegalStage::Oracle,
++            ),
++        }
++    }
++}
+ 
+ impl fmt::Display for Board {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -317,8 +317,8 @@
+ pub(crate) mod zobrist;
+ 
+ pub use board::{
+-    BlastCasualties, Board, Counts, FenLoadError, FenPolicy, LegalityContext, StateInfo,
+-    ValidationErrors,
++    BlastCasualties, Board, Counts, FastLegality, FenLoadError, FenPolicy, LegalStage,
++    LegalityContext, StateInfo, ValidationErrors,
+ };
+ pub use conformance::{CASES as CONFORMANCE_CASES, ConformanceCase};
+ pub use effects::{

@@ -22,16 +22,16 @@ claim.
 `movegen` is open: the prover runs move generation, legality, effects/keys and
 null moves on `atomic-movegen`'s `Board` with native `Legal` keys; shakmaty
 stays the parser, boundary and checker. Differential green (`mismatches: 0`,
-`key_mismatches: 0`; `MD3` 87/0/0). Plan 3's adapter regressed to 1.206; plan 4
-adopted 2.10.0 (`W6`-`W9`); plan 5 measured geomean **1.094** vs old **0.997**
-(`MD6` missed); plan 6 falsified `NodeFacts` (+0.038e9) and split the 1.435e9
-`core` gap (rules +0.62e9). Plan 7 adopted eval geometry `M12`: `core`
-**7.816e9** vs plan 2's 6.569e9 (1.190x), geomean **1.056** vs old **0.987**,
-`MD6` still missed. We own `golmman/atomic_movegen`; changes go in
-`wishlistN.md` and enter by an owner plan/report. See
+`key_mismatches: 0`; `MD3` 87/0/0). Plan 3 regressed to 1.206; plan 4 adopted
+2.10.0; plan 5 measured 1.094 vs old 0.997 (`MD6` missed); plan 6 split the
+`core` gap (rules +0.62e9); plan 7 adopted `M12` (`core` 7.816e9 vs 6.569e9,
+1.190x; geomean 1.056 vs 0.987). Plan 8 measured the exposed `FastLegality`
+ladder at **+0.164e9**, so the rules residual is a dated `MD7` miss: no fourth
+release, `M8` the only open item. We own `golmman/atomic_movegen`; changes go
+in `wishlistN.md` and enter by an owner plan/report. See
 [`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
 [`wishlist2`](docs/plans/movegen/wishlist2.md) and
-[`report7`](docs/plans/movegen/report7.md).
+[`report8`](docs/plans/movegen/report8.md).
 
 ## Collaboration
 

@@ -124,3 +124,36 @@ measured in another session would pass or fail on noise.
 **Consequences.** Every adoption plan runs the reference and the candidate
 interleaved in one session and records both in `measurements/planN/`. A pass
 that beats `1.0` but loses to the same-session reference does not pass.
+
+## MD7 — Rules residual accepted
+
+**Resolution (2026-11-19).** The `MD6` miss is accepted as a dated miss, not
+carried into a fourth `atomic-movegen` release. On `core` the adopted tree is
+**7.8162e9** instructions against plan 2's **6.5694e9** (1.190×), a gap of
+**1.2468e9**: rules **0.617e9** (49.5%), node geometry **0.15–0.36e9**
+depending on how `attackers_to`'s plan-2 inlining is aligned, generation
+**0.1255e9**, tree **0.1249e9** and search/table **0.2505e9**. The audit's
+crate-led ceiling is ≈**1.12×**; a perfect rules close still lands near 1.035
+candidate/old against a reference reading 0.987.
+
+Plan 8 measured the one cheap rules lever that 2.10.0 already contains: the
+`FastLegality` ladder. Exposed and wired into `Mover::legal`'s fallback in a
+scratch tree, it is correct — identical counters, mate and `.pvr` — but the
+best of three shapes costs **+0.1641e9** instructions on `core`, not a fall.
+The coverage census explains why: 82.0% of the 10.01M fallback candidates are
+in check, where the ladder can only test its trivial rung and defer to the
+oracle, and it decides only 1.56M calls; the pre-registered projection is at
+most **0.125e9**, below the 0.15e9 stop threshold. `M12` is the last measured
+prover-side gain. `M1`'s performance part and `M6` close as a documented miss;
+`M8` (complete shakmaty removal) is the only open item.
+
+**Rationale.** A release that can only narrow a miss already bounded by the
+audit, and is measured slower on the only available shape, costs more than it
+buys. The goal remains complete prover replacement; the performance claim is
+now a recorded residual rather than an open promise.
+
+**Consequences.** No `wishlist3.md`, no pin or `PROVENANCE.md` change, no
+ledger row. A future performance attempt needs a new plan and a measured lever
+outside the rules layer, or a new crate shape that first passes the 0.31e9
+whole-binary rule. The checker stays shakmaty and the differential remains the
+correctness gate.

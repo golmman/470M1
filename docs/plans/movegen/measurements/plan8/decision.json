@@ -1,0 +1,25 @@
+{
+  "branch": "acceptance",
+  "rule": "release only if the measured whole-binary core fall is >= 0.31e9 with identical counters, mate and .pvr",
+  "measured": {
+    "best_variant": "v1_hybrid_decide_or_none_context_oracle",
+    "core_fall_e9": -0.1641,
+    "counters_identical": true,
+    "mate_identical": true,
+    "pvr_identical": true
+  },
+  "census_projection_e9": 0.125,
+  "census_projection_with_failed_attempt_penalty_e9": 0.108,
+  "screen": {
+    "v1_minus_v0_per_legality_call": 6.3,
+    "v3_minus_v0_per_effect_call": 148.1
+  },
+  "why_acceptance": [
+    "The measured whole-binary fall is negative in all three V1 shapes; the build, counters, mate and .pvr are correct, so the ladder work itself is the cost.",
+    "82.0% of the 10.01M fallback candidates are in check, where the ladder can only add a trivial-rung test and then defer to the oracle.",
+    "The census projection is at most 0.125e9, below the 0.15e9 cheap-stop threshold and far below the 0.31e9 release threshold.",
+    "A fourth release could only narrow the miss; a perfect rules close lands near 1.035 candidate/old against a 0.987 reference, so MD6 cannot be held on this lever."
+  ],
+  "wishlist3": null,
+  "md7": "dated acceptance row"
+}

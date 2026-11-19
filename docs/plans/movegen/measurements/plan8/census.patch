@@ -1,0 +1,144 @@
+--- a/src/moves.rs
++++ b/src/moves.rs
+@@ -9,7 +9,10 @@
+ //! that check the other king, and attack maps, which settle most moves with
+ //! a bit test; the rest are judged from the occupancy the move leaves.
+ 
+-use atomic_movegen::{Counts, LegalityContext};
++use std::collections::BTreeMap;
++use std::sync::atomic::{AtomicU64, Ordering};
++
++use atomic_movegen::{Counts, FastLegality, LegalStage, LegalityContext, StateInfo};
+ use shakmaty::{Bitboard, ByRole, CastlingSide, Color, Role, Square, attacks};
+ 
+ use crate::board::{Effect, Move, Position};
+@@ -21,6 +24,10 @@
+     /// The node-local legality context and the counts it was built from.
+     context: LegalityContext,
+     counts: Counts,
++    /// Census-only: the populated state and the fast-legality ladder.
++    state: StateInfo,
++    fast: FastLegality,
++    in_check: bool,
+     /// The parent's occupancy, shared by legality, the fast path and effects.
+     occupied: Bitboard,
+     our_king: Option<Square>,
+@@ -68,6 +75,8 @@
+         pos.board().populate_state(&mut state);
+         let counts = Counts::from(&state);
+         let context = pos.board().legality_context(counts);
++        let fast = FastLegality::for_board(pos.board(), &state);
++        let in_check = !state.checkers.is_empty();
+         let tested = match our_king {
+             _ if touching => Bitboard::EMPTY,
+             _ if !state.checkers.is_empty() => ours,
+@@ -108,6 +117,9 @@
+             us,
+             context,
+             counts,
++            state,
++            fast,
++            in_check,
+             occupied,
+             our_king,
+             their_king,
+@@ -162,12 +174,33 @@
+     /// neither the king nor tested always is.
+     #[inline]
+     pub fn legal(&self, m: Move) -> bool {
++        census::calls();
+         if let Some((from, _)) = self.quiet(m)
+             && !self.tested.contains(from)
+         {
++            census::fast();
+             return true;
+         }
+-        self.context.legal(m.native())
++        let site = if self.in_check {
++            census::site_in_check()
++        } else if Some(m.from()) == self.our_king {
++            census::site_king()
++        } else if m.is_en_passant() || self.occupied.contains(m.to()) {
++            census::site_capture()
++        } else {
++            census::site_quiet()
++        };
++        let _ = site;
++        let (verdict, stage) = self.fast.legal_traced(self.pos.board(), m.native(), &self.state);
++        match stage {
++            LegalStage::Trivial => census::trivial(),
++            LegalStage::Terminal => census::terminal(),
++            LegalStage::InCheck => census::in_check_oracle(),
++            LegalStage::Widened(true) => census::some_true(),
++            LegalStage::Widened(false) => census::some_false(),
++            LegalStage::Oracle => census::none_oracle(),
++        }
++        verdict
+     }
+ 
+     /// Whether a legal move explodes the other king.
+@@ -846,3 +879,43 @@
+         assert!(moves > 200_000, "{moves}");
+     }
+ }
++
++
++/// Temporary census counters (plan 8, scratch tree only).
++pub mod census {
++    use super::{AtomicU64, BTreeMap, Ordering};
++    static CALLS: AtomicU64 = AtomicU64::new(0);
++    static FAST: AtomicU64 = AtomicU64::new(0);
++    static CAPTURE: AtomicU64 = AtomicU64::new(0);
++    static QUIET: AtomicU64 = AtomicU64::new(0);
++    static KING: AtomicU64 = AtomicU64::new(0);
++    static IN_CHECK: AtomicU64 = AtomicU64::new(0);
++    static TRIVIAL: AtomicU64 = AtomicU64::new(0);
++    static TERMINAL: AtomicU64 = AtomicU64::new(0);
++    static SOME_TRUE: AtomicU64 = AtomicU64::new(0);
++    static SOME_FALSE: AtomicU64 = AtomicU64::new(0);
++    static NONE_ORACLE: AtomicU64 = AtomicU64::new(0);
++    static IN_CHECK_ORACLE: AtomicU64 = AtomicU64::new(0);
++    fn bump(c: &AtomicU64) { c.fetch_add(1, Ordering::Relaxed); }
++    pub fn calls() { bump(&CALLS); }
++    pub fn fast() { bump(&FAST); }
++    pub fn site_capture() { bump(&CAPTURE); }
++    pub fn site_quiet() { bump(&QUIET); }
++    pub fn site_king() { bump(&KING); }
++    pub fn site_in_check() { bump(&IN_CHECK); }
++    pub fn trivial() { bump(&TRIVIAL); }
++    pub fn terminal() { bump(&TERMINAL); }
++    pub fn some_true() { bump(&SOME_TRUE); }
++    pub fn some_false() { bump(&SOME_FALSE); }
++    pub fn none_oracle() { bump(&NONE_ORACLE); }
++    pub fn in_check_oracle() { bump(&IN_CHECK_ORACLE); }
++    pub fn snapshot() -> BTreeMap<&'static str, u64> {
++        [
++            ("calls", &CALLS), ("fast", &FAST), ("site_capture", &CAPTURE),
++            ("site_quiet", &QUIET), ("site_king", &KING), ("site_in_check", &IN_CHECK),
++            ("trivial", &TRIVIAL), ("terminal", &TERMINAL), ("some_true", &SOME_TRUE),
++            ("some_false", &SOME_FALSE), ("none_oracle", &NONE_ORACLE),
++            ("in_check_oracle", &IN_CHECK_ORACLE),
++        ].into_iter().map(|(k, c)| (k, c.load(Ordering::Relaxed))).collect()
++    }
++}
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -250,6 +250,7 @@
+     if search.proofs_full() && moves.is_none() {
+         result["error"] = json!("the proofs filled their memory: give more --memory");
+     }
++    result["census"] = json!(atomic470mi::moves::census::snapshot());
+     if json {
+         println!("{result}");
+     } else if moves.is_some() {
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -11,7 +11,7 @@
+ path = "src/main.rs"
+ 
+ [dependencies]
+-atomic-movegen = "=2.10.0"
++atomic-movegen = { path = "/tmp/plan8-census-crate" }
+ shakmaty = { version = "=0.30.1", features = ["variant"] }
+ serde_json = "1"
+ zstd = { version = "=0.13.3", default-features = false }

@@ -21,7 +21,12 @@ adopted the eval-geometry formulation (`M12`): one per-node pass reusing the
 `Mover`'s check masks, **−0.1879e9** instructions on `core` (8.0041e9 ->
 7.8162e9) with identical counters, mate and `.pvr`; 10 s geomean **1.056**
 against a same-session plan 2 binary at **0.987** (candidate/old 1.070, from
-1.107). The gap is now 1.190×; `MD6` is still not held. See
+1.107). The gap is now 1.190×; `MD6` is still not held. Plan 8 decided the
+rules endgame: the exposed `FastLegality` ladder was correct but **slower** on
+`core` in every shape (best **+0.1641e9**, census projection ≤0.125e9), so the
+rules residual is accepted as the dated `MD7` miss; no fourth release, no
+`wishlist3`. `M12` is the last measured prover-side gain; `M1`'s performance
+part and `M6` close as a documented miss, and `M8` is the only open item. See
 [`report5.md`](report5.md), [`report6.md`](report6.md), [`report7.md`](report7.md),
 [`hot-path-audit.md`](hot-path-audit.md) and [`wishlist2.md`](wishlist2.md).
 
@@ -77,6 +82,7 @@ One-line resolutions; full text and rationale in [`decisions.md`](decisions.md).
 | MD4 | Product name | Final name `470MI`; package/lib `atomic470mi`, binary `470MI`; rename before the first adapter bench |
 | MD5 | Hot-path boundary | Direct crate calls on the rules path; conversions only at the FEN/checker/proof edge; a needed conversion is a wishlist item |
 | MD6 | What "no regression" means | Same-session plan 2 reference, 3/3 and 9/9, reference near 0.972; `1.0` against provari is not the bar |
+| MD7 | Rules residual | Accepted as a dated `MD6` miss (plan 8: ladder +0.1641e9, projection ≤0.125e9); no fourth release |
 
 ## Upstream ownership and wishlists
 
@@ -97,18 +103,19 @@ These are placeholders; the next plan turns them into concrete items.
 
 | # | Item | Note |
 | --- | --- | --- |
-| M1 | **Rules adapter** | Wrap `atomic-movegen::Board` behind the prover's position interface; parser removal follows in the same initiative |
+| M1 | **Rules adapter** | Wrap `atomic-movegen::Board` behind the prover's position interface; **performance part closed as a documented `MD6` miss** (plan 8, `MD7`); parser removal follows in `M8` |
 | M2 | **Move/effect layer** | Replace the parity `Mover`/`Effect` precomputation with `atomic-movegen`'s movegen and effect APIs where they are faster |
 | M3 | **Hash/key choice** | Use native movegen keys unless the bench shows a key-driven regression; W5 is the fallback |
 | M4 | **Terminality** | Use `atomic-movegen`'s outcome/terminal APIs; preserve the checker's insufficient-material rule |
 | M5 | **Differential harness** | Compare legal moves, outcomes, hashes and proof acceptance on fixtures, corpus and random play-outs |
-| M6 | **No regression, stretch faster** | Re-run the 10 s bench at every stage; a regression is a finding, not an adoption |
+| M6 | **No regression, stretch faster** | Re-run the 10 s bench at every stage; a regression is a finding, not an adoption; **closed as a documented `MD6` miss** (plan 8, `MD7`) |
 | M7 | **Upstream asks** | File measured API requests in `wishlistN.md`; integrate a release only by an owner-triggered plan/report and pin update |
 | M8 | **Complete shakmaty removal** | Parser, display, proof paths and line output leave the prover; `check.rs` stays shakmaty |
 | M9 | **Rename** | Apply `470MI` / `atomic470mi` before the first adapter bench; historical docs stay unchanged |
 | M10 | **Hot-path cost** | Adopt `W6`-`W9` lean APIs; no translator; measured per call, then by the 10 s row |
 | M11 | **Non-rules residual** | The gap left after the rules layer: node geometry, generation adapter, tree, `null`; **closed negative** (plan 6: split resolved, `NodeFacts` falsified at +0.038e9) |
 | M12 | **Eval geometry** | One per-node pass over roles reuses the `Mover`'s check masks; **adopted** (plan 7: −0.1879e9 on `core`, identical tree/`.pvr`; geomean 1.056, `MD6` still missed) |
+| M13 | **Rules endgame decision** | Expose `FastLegality` and measure the ladder on `core`; **closed negative** (plan 8: best +0.1641e9, projection ≤0.125e9; dated `MD7`, no release) |
 
 ## Gates
 
@@ -137,6 +144,17 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-19** — plan 8 closed the rules endgame as a dated `MD7` miss. The
+  exposed `FastLegality` ladder is oracle-equivalent (counters, mate and
+  `.pvr` identical) but costs **+0.1641e9** instructions on `core` in its best
+  shape (built-in oracle +218.1e6, counts-only +290.0e6, hybrid
+  `decide_or_none` +164.1e6), against a 0.31e9 release threshold. The census
+  found 82.0% of the 10.01M fallback candidates in check, where the ladder
+  defers to the oracle; it decided 1.56M calls and projects at most 0.125e9.
+  No fourth release, no `wishlist3`, no pin or ledger row. `M12` is recorded
+  as the last prover-side gain; `M1`'s performance part and `M6` close as a
+  documented miss, and `M8` is the only open item.
+  [`report8.md`](report8.md), [`measurements/plan8/`](measurements/plan8/README.md).
 - **2026-11-19** — plan 7 adopted `M12`, the eval-geometry formulation: walk
   the pieces by role and reuse the `Mover`'s per-role check masks for the side
   to move, building only the defender's table once. Counted build

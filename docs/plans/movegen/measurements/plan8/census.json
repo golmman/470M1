@@ -1,0 +1,49 @@
+{
+  "run": {
+    "fen": "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1",
+    "seconds": 10,
+    "memory_mb": 192,
+    "seed": 0,
+    "export": false,
+    "counters": {
+      "child_evals": 3896430,
+      "expansions": 191557,
+      "nodes": 350430,
+      "mate": 14
+    },
+    "counters_identical_to_unchanged": true,
+    "export_run_pvr_sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3",
+    "export_run_pvr_identical": true,
+    "note": "counts are from the no-export run; proof export adds about 157k proof-walk legality calls"
+  },
+  "calls": {
+    "mover_legal": 15171649,
+    "prover_fast_path": 5159465,
+    "fallback": 10012184
+  },
+  "sites": {
+    "in_check": 8220516,
+    "capture": 764200,
+    "king": 915488,
+    "quiet": 111980
+  },
+  "stages": {
+    "trivial": 0,
+    "terminal": 0,
+    "decide_some_true": 1449797,
+    "decide_some_false": 106811,
+    "decide_none_oracle": 235060,
+    "in_check_oracle": 8220516
+  },
+  "projection": {
+    "decided": 1556608,
+    "screen_vb_per_call": 152.3,
+    "screen_v1_per_call": 72.0,
+    "screen_projection_instructions": 124995622,
+    "screen_projection_e9": 0.125,
+    "failed_attempt_penalty_e9": 0.017,
+    "with_penalty_e9": 0.108,
+    "scaled_to_whole_binary_oracle_e9": 0.099,
+    "note": "optimistic screen projection = decided * (VB - V1); still below the 0.15e9 stop threshold"
+  }
+}

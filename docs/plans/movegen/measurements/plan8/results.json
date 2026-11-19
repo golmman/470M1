@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-19",
+  "phase_a_baseline": {
+    "plan2": {"runs": [6569377267, 6569376944, 6569377148], "median": 6569377148, "spread": 323},
+    "candidate": {"runs": [7816219546, 7816218878, 7816219318], "median": 7816219318, "spread": 668},
+    "gap": 1246842170
+  },
+  "phase_a_screen": {
+    "fens": 10,
+    "passes": 2000,
+    "calls_per_operation": 496000,
+    "instructions_per_call": {
+      "v0_attackers_to_plus_by_role": 65.7,
+      "vb_legality_context_oracle": 152.3,
+      "v1_fast_legality_ladder": 72.0,
+      "v3_child_effect": 213.8
+    }
+  },
+  "phase_b_prototype": {
+    "baseline_median": 7816219318,
+    "variants": {
+      "v1_ladder_with_builtin_oracle": {"median": 8034301477, "delta": 218082159},
+      "v1_ladder_counts_only_oracle": {"median": 8106264837, "delta": 290045519},
+      "v1_hybrid_decide_or_none_context_oracle": {"median": 7980337054, "delta": 164117736}
+    },
+    "counters_identical": true,
+    "mate_identical": true,
+    "pvr_sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3",
+    "pvr_identical": true
+  }
+}
