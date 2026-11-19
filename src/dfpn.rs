@@ -673,7 +673,7 @@ impl<'a> Dfpn<'a> {
                 group: true,
             });
         }
-        let step = self.step(pos);
+        let step = self.step(pos, &mover);
         scale(children, attacking, step);
         step
     }
@@ -710,11 +710,11 @@ impl<'a> Dfpn<'a> {
     /// The expanded position's evaluation for the attacker, squashed to a
     /// step from 0, the defender clearly ahead, to 2, the attacker clearly
     /// ahead, when an evaluation guides the search.
-    fn step(&mut self, pos: &Position) -> Option<f32> {
+    fn step(&mut self, pos: &Position, mover: &Mover) -> Option<f32> {
         match self.guide {
             Guide::None => None,
             Guide::Hand => {
-                let value = crate::eval::evaluate(pos);
+                let value = crate::eval::evaluate(pos, mover);
                 Some(self.band(pos, value, HAND_DECISIVE))
             }
         }

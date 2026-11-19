@@ -1,0 +1,70 @@
+# Plan 7 — core, perf stat -e instructions:u
+
+`core` = `r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1`,
+`prove FEN --seconds 10 --memory 192 --seed 0 --json`, no proof export, one
+process at a time. Host `c90face26537`.
+
+## Phase A.1 — session baseline (unchanged tree vs plan 2)
+
+```
+# run 1 470m1
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":486,"nodes":342263,"seed":0}
+6569376940,,instructions:u
+# run 1 470MI
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":581,"nodes":350430,"seed":0}
+8004085863,,instructions:u
+# run 2 470m1
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":486,"nodes":342263,"seed":0}
+6569376891,,instructions:u
+# run 2 470MI
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":582,"nodes":350430,"seed":0}
+8004086384,,instructions:u
+# run 3 470m1
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":495,"nodes":342263,"seed":0}
+6569376916,,instructions:u
+# run 3 470MI
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":595,"nodes":350430,"seed":0}
+8004085681,,instructions:u
+```
+
+Plan 2 6.5693769e9 (spread 100); unchanged tree 8.0040859e9 (spread 703).
+Gap 1.4347090e9 (1.218x).
+
+## Phase C — M12 falsifier (interleaved, candidate vs unchanged HEAD)
+
+```
+# run 1 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":588,"nodes":350430,"seed":0}
+8004085929,,instructions:u
+# run 1 m12
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":565,"nodes":350430,"seed":0}
+7816219316,,instructions:u
+# run 2 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":595,"nodes":350430,"seed":0}
+8004085692,,instructions:u
+# run 2 m12
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":564,"nodes":350430,"seed":0}
+7816219017,,instructions:u
+# run 3 base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":580,"nodes":350430,"seed":0}
+8004086129,,instructions:u
+# run 3 m12
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":558,"nodes":350430,"seed":0}
+7816219109,,instructions:u
+```
+
+Base 8.0040859e9 (spread 437), M12 7.8162191e9 (spread 299); per-pair deltas
+187866613 / 187866675 / 187867020, median **−0.1879e9** (−2.35%), outside both
+spreads and far above the 0.03e9 adoption floor. Median wall 588 -> 564 ms.
+Counters and mate identical in every run.
+
+## Proof identity at seed 0 (base vs M12)
+
+```
+core         mate 14  child_evals 3896430  pvr sha256 714723211c7a0246...
+easy-win     mate 18  child_evals  904368  pvr sha256 32ffb30d96ccb172...
+deep-win     mate 20  child_evals 44828946 pvr sha256 50f062de2a67b1dd...
+```
+
+Identical proof bytes on all three cells, so `M12` is a formulation-only
+change.

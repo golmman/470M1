@@ -1,0 +1,165 @@
+# Plan 7 — perf annotate of Dfpn::evaluate (unchanged tree vs plan 2)
+
+`perf record -e instructions:u -c 200000`, `core`, 10 s, seed 0. First 80
+lines of each binary. Recorded for the next decision only.
+
+ Percent |	Source code & Disassembly of plan7-base-470MI for instructions:u (2114 samples, percent: local period)
+----------------------------------------------------------------------------------------------------------------------
+         : 0      0x218ab0 <<atomic470mi::dfpn::Dfpn>::evaluate>:
+    0.09 :   218ab0:        pushq   %rbp
+    0.09 :   218ab1:        pushq   %r15
+    1.51 :   218ab3:        pushq   %r14
+    0.24 :   218ab5:        pushq   %r13
+    0.09 :   218ab7:        pushq   %r12
+    0.00 :   218ab9:        pushq   %rbx
+    0.85 :   218aba:        subq    $0x238, %rsp
+    0.05 :   218ac1:        movq    %r9, %rbp
+    0.05 :   218ac4:        movl    %r8d, %r9d
+    1.89 :   218ac7:        movq    %rcx, %r10
+    0.09 :   218aca:        movq    %rdi, %rbx
+    0.05 :   218acd:        movl    0x280(%rsp), %r13d
+    0.85 :   218ad5:        movzbl  0x278(%rsp), %r15d
+    1.32 :   218ade:        incq    0x1e8(%rsi)
+    0.09 :   218ae5:        movl    0x10(%rbp), %r8d
+    0.05 :   218ae9:        movabsq $-0x61c8864680b583eb, %rax
+    0.00 :   218af3:        imulq   %rax, %r13
+    1.18 :   218af7:        addq    %rax, %r13
+    0.90 :   218afa:        xorl    %ecx, %ecx
+    0.00 :   218afc:        movq    %rsi, 0x10(%rsp)
+    0.00 :   218b01:        cmpb    $0x0, 0x118(%rsi)
+    0.61 :   218b08:        movq    (%rbp), %rax
+    0.19 :   218b0c:        movq    %rax, 0x18(%rsp)
+    0.00 :   218b11:        cmoveq  %rcx, %r13
+    0.14 :   218b15:        testb   %r15b, %r15b
+    1.47 :   218b18:        movl    $0xa0, %esi
+    0.52 :   218b1d:        movl    $0xb8, %eax
+    0.00 :   218b22:        cmovneq %rsi, %rax
+    0.05 :   218b26:        movl    %r9d, %esi
+    0.90 :   218b29:        shrl    $0x6, %esi
+    0.28 :   218b2c:        andl    $0x3f, %esi
+    0.09 :   218b2f:        leaq    -0x207478(%rip), %r11  # 0x116be
+    0.19 :   218b36:        movzbl  (%rsi,%r11), %esi
+    1.04 :   218b3b:        movzbl  (%rsi,%r11), %esi
+    0.76 :   218b40:        movq    %rdx, 0x30(%rsp)
+    0.00 :   218b45:        movzbl  0x8(%rdx,%rsi), %edx
+    2.18 :   218b4a:        testb   %dl, %dl
+    0.90 :   218b4c:        je      0x218b72 <<atomic470mi::dfpn::Dfpn>::evaluate+0xc2>
+    0.00 :   218b4e:        andb    $0x7, %dl
+    0.09 :   218b51:        decb    %dl
+    0.43 :   218b53:        movzbl  %dl, %edi
+    0.38 :   218b56:        cmpb    $0x6, %dil
+    2.55 :   218b5a:        jae     0x2198c4 <<atomic470mi::dfpn::Dfpn>::evaluate+0xe14>
+    0.00 :   218b60:        leaq    -0x207467(%rip), %rcx  # 0x11700
+    0.19 :   218b67:        movzbl  (%rdi,%rcx), %ecx
+    2.18 :   218b6b:        shll    $0x6, %ecx
+    0.90 :   218b6e:        addq    $0x40, %rcx
+    1.51 :   218b72:        movzwl  %r9w, %edx
+    0.00 :   218b76:        andl    $0x3f, %edx
+    0.00 :   218b79:        movzbl  (%rdx,%r11), %edi
+    0.00 :   218b7e:        orq     %rcx, %rdi
+    2.70 :   218b81:        movq    0x10(%rsp), %rcx
+    0.14 :   218b86:        movq    0x10(%rcx,%rax), %rsi
+    0.00 :   218b8b:        cmpq    %rsi, %rdi
+    1.18 :   218b8e:        jae     0x2198a0 <<atomic470mi::dfpn::Dfpn>::evaluate+0xdf0>
+    0.00 :   218b94:        movq    0x10(%rsp), %rcx
+    0.76 :   218b99:        movq    0x8(%rcx,%rax), %rax
+    0.00 :   218b9e:        movl    (%rax,%rdi,4), %edx
+   10.41 :   218ba1:        movzbl  0x14(%rbp), %r12d
+    0.05 :   218ba6:        testb   %r12b, %r12b
+    0.80 :   218ba9:        je      0x218bc9 <<atomic470mi::dfpn::Dfpn>::evaluate+0x119>
+    0.00 :   218bab:        movzbl  0x111(%r10), %eax
+    0.61 :   218bb3:        cmpq    $0xff, %rax
+    0.14 :   218bb9:        je      0x218bc9 <<atomic470mi::dfpn::Dfpn>::evaluate+0x119>
+    0.00 :   218bbb:        movq    0x8(%rbp), %rcx
+    0.14 :   218bbf:        btq     %rax, %rcx
+    0.14 :   218bc3:        jae     0x218fe2 <<atomic470mi::dfpn::Dfpn>::evaluate+0x532>
+    0.09 :   218bc9:        movl    %edx, 0x4(%rsp)
+    0.95 :   218bcd:        testb   %r15b, %r15b
+    0.00 :   218bd0:        movq    %r8, 0x8(%rsp)
+    0.09 :   218bd5:        movl    %r9d, (%rsp)
+    0.14 :   218bd9:        je      0x218c34 <<atomic470mi::dfpn::Dfpn>::evaluate+0x184>
+    0.00 :   218bdb:        movq    0x8(%rbp), %rdx
+    0.47 :   218bdf:        movzbl  %r12b, %ecx
+    0.05 :   218be3:        movq    %r10, %rdi
+    0.19 :   218be6:        movl    %r9d, %esi
+    0.38 :   218be9:        movl    %r12d, %r14d
+ Percent |	Source code & Disassembly of 470m1 for instructions:u (1703 samples, percent: local period)
+-----------------------------------------------------------------------------------------------------------
+         : 0      0x13a2a0 <<atomic470m1::dfpn::Dfpn>::evaluate>:
+    0.23 :   13a2a0:        pushq   %rbp
+    0.70 :   13a2a1:        pushq   %r15
+    0.18 :   13a2a3:        pushq   %r14
+    0.12 :   13a2a5:        pushq   %r13
+    0.76 :   13a2a7:        pushq   %r12
+    0.00 :   13a2a9:        pushq   %rbx
+    1.64 :   13a2aa:        subq    $0x1b8, %rsp
+    0.06 :   13a2b1:        movq    %rcx, %r11
+    0.47 :   13a2b4:        movq    %rsi, %r13
+    0.47 :   13a2b7:        movq    %rdi, %rbx
+    0.06 :   13a2ba:        movl    0x200(%rsp), %r12d
+    1.59 :   13a2c2:        incq    0x1e8(%rsi)
+    0.18 :   13a2c9:        movzbl  0x1f8(%rsp), %r10d
+    2.06 :   13a2d2:        movabsq $-0x61c8864680b583eb, %rax
+    0.06 :   13a2dc:        imulq   %rax, %r12
+    0.18 :   13a2e0:        addq    %rax, %r12
+    1.12 :   13a2e3:        xorl    %ecx, %ecx
+    0.06 :   13a2e5:        cmpb    $0x0, 0x118(%rsi)
+    0.06 :   13a2ec:        cmoveq  %rcx, %r12
+    0.35 :   13a2f0:        testb   %r10b, %r10b
+    0.12 :   13a2f3:        movl    $0xa0, %esi
+    1.94 :   13a2f8:        movl    $0xb8, %eax
+    0.23 :   13a2fd:        cmovneq %rsi, %rax
+    0.00 :   13a301:        movl    %r8d, %esi
+    0.35 :   13a304:        andl    $0x3f, %esi
+    0.18 :   13a307:        movq    %rdx, 0x28(%rsp)
+    0.12 :   13a30c:        movzbl  (%rdx,%rsi), %edx
+    0.88 :   13a310:        andb    $0x7, %dl
+    0.00 :   13a313:        leal    -0x7(%rdx), %esi
+    2.29 :   13a316:        cmpb    $-0x6, %sil
+    0.12 :   13a31a:        movzbl  %dl, %edx
+    0.00 :   13a31d:        cmovbl  %ecx, %edx
+    0.59 :   13a320:        movzbl  %dl, %ecx
+    0.12 :   13a323:        shll    $0x6, %ecx
+    0.18 :   13a326:        movl    %r8d, %edi
+    0.88 :   13a329:        shrl    $0x6, %edi
+    0.06 :   13a32c:        andl    $0x3f, %edi
+    1.41 :   13a32f:        orl     %ecx, %edi
+    0.18 :   13a331:        movq    0x10(%r13,%rax), %rsi
+    0.65 :   13a336:        cmpq    %rsi, %rdi
+    1.12 :   13a339:        jae     0x13adff <<atomic470m1::dfpn::Dfpn>::evaluate+0xb5f>
+    0.00 :   13a33f:        movq    %r9, %r14
+    0.06 :   13a342:        movl    %r8d, %ebp
+    0.18 :   13a345:        movl    0x10(%r9), %r8d
+    0.59 :   13a349:        movq    (%r9), %r15
+    0.00 :   13a34c:        movq    0x8(%r13,%rax), %rax
+    1.06 :   13a351:        movl    (%rax,%rdi,4), %edx
+    5.05 :   13a354:        movzbl  0x15(%r9), %eax
+    0.00 :   13a359:        movb    %al, 0xb(%rsp)
+    0.76 :   13a35d:        testb   %al, %al
+    0.00 :   13a35f:        je      0x13a37f <<atomic470m1::dfpn::Dfpn>::evaluate+0xdf>
+    0.00 :   13a361:        movzbl  0xa9(%r11), %eax
+    1.41 :   13a369:        cmpq    $0xff, %rax
+    0.12 :   13a36f:        je      0x13a37f <<atomic470m1::dfpn::Dfpn>::evaluate+0xdf>
+    0.00 :   13a371:        movq    0x8(%r14), %rcx
+    0.12 :   13a375:        btq     %rax, %rcx
+    0.18 :   13a379:        jae     0x13a7e0 <<atomic470m1::dfpn::Dfpn>::evaluate+0x540>
+    0.47 :   13a37f:        movl    %edx, 0xc(%rsp)
+    1.12 :   13a383:        testb   %r10b, %r10b
+    0.23 :   13a386:        movq    %r8, 0x10(%rsp)
+    0.18 :   13a38b:        je      0x13a3eb <<atomic470m1::dfpn::Dfpn>::evaluate+0x14b>
+    0.12 :   13a38d:        movq    %r11, %rdi
+    0.18 :   13a390:        movl    %ebp, %esi
+    0.00 :   13a392:        movq    %r14, %rdx
+    0.18 :   13a395:        movq    %r12, 0x18(%rsp)
+    0.35 :   13a39a:        movq    %r13, %r12
+    0.12 :   13a39d:        movq    %rbx, %r13
+    0.29 :   13a3a0:        movq    %r15, %rbx
+    0.06 :   13a3a3:        movl    %ebp, %r15d
+    0.29 :   13a3a6:        movq    %r11, %rbp
+    0.35 :   13a3a9:        callq   0x132640 <<atomic470m1::moves::Mover>::exposes>
+    0.29 :   13a3ae:        movzbl  0x1f8(%rsp), %r10d
+    0.18 :   13a3b7:        movq    %rbp, %r11
+    0.18 :   13a3ba:        movl    %r15d, %ebp
+    0.23 :   13a3bd:        movq    %rbx, %r15
+    0.00 :   13a3c0:        movq    %r13, %rbx
+    0.12 :   13a3c3:        movq    %r12, %r13

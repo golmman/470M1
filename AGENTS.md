@@ -18,23 +18,20 @@ claim.
 
 ## Current state
 
-`parity` is closed (2026-11-17): plan 5 recorded the `P5` row on the product
-default (seed 0) at 10 s, 3/3, geomean **0.945**, 9/9 accepted by both
-checkers. `movegen` is open. Plan 2 fixed the en-passant immediate-explosion
-gap; plan 3 applied the `MD4` rename (`atomic470mi`/`470MI`) and the `M1`
-adapter: the prover runs move generation, legality, effects/keys and null
-moves on `atomic-movegen`'s `Board` with native `Legal` keys; shakmaty remains
-the parser, boundary and checker. The differential is green (`mismatches: 0`,
-`key_mismatches: 0`; `MD3` census 87/0/0), but the 10 s bench **regressed** to
-3/3, geomean **1.206**, 9/9 accepted, `D14` identical. A same-session plan 2
-binary reads 0.987, so the loss is per-node adapter cost. Rollback was
-rejected (`MD1`); the boundary is `MD5`, the bar `MD6`. Crate-led ceiling ~1.12x plan 2. Plan 4 adopted 2.10.0 (`W6`-`W9`):
-differential green, 9/9 accepted, 10 s geomean **1.099** vs old binary
-**0.988**; `W7`/`W8` per-call targets miss, so plan 5 decides. We own
-`golmman/atomic_movegen`; changes go in `wishlistN.md` and enter by an owner
-plan/report. See [`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
+`parity` closed (2026-11-17): `P5` 3/3, geomean **0.945**, 9/9 accepted.
+`movegen` is open: the prover runs move generation, legality, effects/keys and
+null moves on `atomic-movegen`'s `Board` with native `Legal` keys; shakmaty
+stays the parser, boundary and checker. Differential green (`mismatches: 0`,
+`key_mismatches: 0`; `MD3` 87/0/0). Plan 3's adapter regressed to 1.206; plan 4
+adopted 2.10.0 (`W6`-`W9`); plan 5 measured geomean **1.094** vs old **0.997**
+(`MD6` missed); plan 6 falsified `NodeFacts` (+0.038e9) and split the 1.435e9
+`core` gap (rules +0.62e9). Plan 7 adopted eval geometry `M12`: `core`
+**7.816e9** vs plan 2's 6.569e9 (1.190x), geomean **1.056** vs old **0.987**,
+`MD6` still missed. We own `golmman/atomic_movegen`; changes go in
+`wishlistN.md` and enter by an owner plan/report. See
+[`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
 [`wishlist2`](docs/plans/movegen/wishlist2.md) and
-[`report4`](docs/plans/movegen/report4.md).
+[`report7`](docs/plans/movegen/report7.md).
 
 ## Collaboration
 

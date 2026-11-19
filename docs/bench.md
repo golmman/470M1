@@ -168,6 +168,7 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 | movegen plan2 | 2026-11-18 | `f043976fff92` | hand, product default (seed 0) | **0.981** | **0.978** | **0.958** | **0.972** | 10 s |
 | movegen plan3 | 2026-11-19 | `c90face26537` | hand, product default (seed 0) | **1.352** | **1.250** | **1.038** | **1.206** | 10 s |
 | movegen plan5 | 2026-11-19 | `c90face26537` | hand, product default (seed 0) | **1.208** | **1.158** | **0.936** | **1.094** | 10 s |
+| movegen plan7 | 2026-11-19 | `c90face26537` | hand, product default (seed 0) | **1.200** | **1.096** | **0.895** | **1.056** | 10 s |
 
 
 Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
@@ -249,6 +250,19 @@ a regression against the bar, at the pre-recorded crate-led ceiling
 proof, checker or rules change; the adoption stays (`MD1`). See
 `plans/movegen/report5.md` and `plans/movegen/measurements/plan5/`.
 
+Movegen plan7 footnote: **`M12` eval-geometry row, not a pass.** Coverage
+3/3, seed 0, three repeats, protocol `a`, every proof accepted by `470MI check`
+and `provari check` (9/9), `D14` timed and untimed counters identical.
+Candidate proof lengths 14 / 18 / 20 against same-session reference mates
+17 / 15 / 22; `child_evals` 3,896,430 / 904,368 / 44,828,946. The same-session
+plan 2 binary (`470m1`, rebuilt bit-identical from `2f629fd`) reads 1.031 /
+0.978 / 0.955, geomean **0.987** (anchor 0.972). Candidate/old is 1.164 / 1.121
+/ 0.937, geomean **1.070** (was 1.107 in plan 5), so `MD6` is still **not
+held**. `core` falls 8.0041e9 -> **7.8162e9** instructions (−0.1879e9, −2.35%,
+outside both spreads) with identical counters, mate and `.pvr` bytes; gap to
+plan 2 is now **1.190×**. No rules, format, checker, search or scoring change.
+See `plans/movegen/report7.md` and `plans/movegen/measurements/plan7/`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -269,6 +283,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470m1@<sha>` | _owner commits the movegen plan2 tree_ | movegen plan2 |
 | `470MI@<sha>` | _owner commits the movegen plan3 tree_ | movegen plan3 |
 | `470MI@<sha>` | _owner commits the movegen plan5 tree_ | movegen plan5 |
+| `470MI@<sha>` | _owner commits the movegen plan7 tree_ | movegen plan7 |
 
 The product rename is decided (`MD4`, 2026-11-19): rows measured before the
 rename keep `470m1`; the first adapter row and later rows use `470MI`.

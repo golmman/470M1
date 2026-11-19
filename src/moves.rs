@@ -129,6 +129,13 @@ impl<'a> Mover<'a> {
         }
     }
 
+    /// The squares from which one of our roles checks the other king, as the
+    /// evaluation needs them; empty when the kings touch or there is no king.
+    #[inline]
+    pub(crate) fn check_squares(&self) -> &ByRole<Bitboard> {
+        &self.check_squares
+    }
+
     #[inline]
     pub fn effect(&self, m: Move) -> Effect {
         self.pos

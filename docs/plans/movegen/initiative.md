@@ -16,8 +16,13 @@ handoff. Plan 6 resolved the non-rules residual (`M11`): rules are +0.62e9 of
 the 1.435e9 `core` gap, node geometry +0.36e9 (51.7%, but only +0.15e9 once
 the `attackers_to` inlining boundary is accounted for), generation +0.13e9,
 and the `NodeFacts` formulation change (`C1`) was falsified at **+0.038e9**
-instructions with identical counters. Tree unchanged, no ledger row. See
-[`report5.md`](report5.md), [`report6.md`](report6.md),
+instructions with identical counters. Tree unchanged, no ledger row. Plan 7
+adopted the eval-geometry formulation (`M12`): one per-node pass reusing the
+`Mover`'s check masks, **−0.1879e9** instructions on `core` (8.0041e9 ->
+7.8162e9) with identical counters, mate and `.pvr`; 10 s geomean **1.056**
+against a same-session plan 2 binary at **0.987** (candidate/old 1.070, from
+1.107). The gap is now 1.190×; `MD6` is still not held. See
+[`report5.md`](report5.md), [`report6.md`](report6.md), [`report7.md`](report7.md),
 [`hot-path-audit.md`](hot-path-audit.md) and [`wishlist2.md`](wishlist2.md).
 
 ## Goal
@@ -103,6 +108,7 @@ These are placeholders; the next plan turns them into concrete items.
 | M9 | **Rename** | Apply `470MI` / `atomic470mi` before the first adapter bench; historical docs stay unchanged |
 | M10 | **Hot-path cost** | Adopt `W6`-`W9` lean APIs; no translator; measured per call, then by the 10 s row |
 | M11 | **Non-rules residual** | The gap left after the rules layer: node geometry, generation adapter, tree, `null`; **closed negative** (plan 6: split resolved, `NodeFacts` falsified at +0.038e9) |
+| M12 | **Eval geometry** | One per-node pass over roles reuses the `Mover`'s check masks; **adopted** (plan 7: −0.1879e9 on `core`, identical tree/`.pvr`; geomean 1.056, `MD6` still missed) |
 
 ## Gates
 
@@ -131,6 +137,16 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-19** — plan 7 adopted `M12`, the eval-geometry formulation: walk
+  the pieces by role and reuse the `Mover`'s per-role check masks for the side
+  to move, building only the defender's table once. Counted build
+  pre-registered `N − R` = 19 per `evaluate` (median) and a 3,555,443-call
+  reduction; the falsifier measured **−0.1879e9** instructions on `core`
+  (8.0041e9 -> 7.8162e9, outside both spreads) with identical counters, mate
+  and `.pvr`. 10 s row 3/3, 9/9 accepted, `D14` identical, geomean **1.056**
+  against a same-session plan 2 binary at **0.987** (candidate/old 1.070, from
+  1.107); `MD6` still not held. Remaining gap 1.247e9, half rules.
+  [`report7.md`](report7.md), [`measurements/plan7/`](measurements/plan7/README.md).
 - **2026-11-19** — plan 6 resolved the non-rules residual and closed `M11` as
   a negative. Counted build (15 sites) + `perf record -c 500000` on `core`
   reconcile to −0.09%; the 1.435e9 gap is rules **+0.62e9**, node geometry

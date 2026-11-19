@@ -1,0 +1,201 @@
+diff --git a/src/eval.rs b/src/eval.rs
+index e2f7d51..cba5950 100644
+--- a/src/eval.rs
++++ b/src/eval.rs
+@@ -26,6 +26,7 @@ const CHECKER: i32 = 60;
+ 
+ /// The evaluation for the side to move.
+ pub fn evaluate(pos: &Position) -> i32 {
++    crate::counts::eval(pos);
+     let us = pos.turn();
+     terms(pos, us).score() - terms(pos, !us).score()
+ }
+@@ -68,20 +69,28 @@ pub fn material(pos: &Position, color: Color) -> i32 {
+ }
+ 
+ pub fn terms(pos: &Position, color: Color) -> Terms {
++    let mut pieces = 0u32;
++    let mut roles = 0u32;
+     let ours = pos.by_color(color);
+     let theirs = pos.by_color(!color);
+     let occupied = pos.occupied();
+     let kings = pos.by_role(Role::King);
+     let mut terms = Terms::default();
+     for square in ours & !kings {
+-        terms.material += pos.role_at(square).map_or(0, |role| VALUES[role as usize]);
++        if let Some(role) = pos.role_at(square) {
++            terms.material += VALUES[role as usize];
++            pieces += 1;
++            roles |= 1 << (role as u8);
++        }
+     }
+     let (Some(their_king), Some(our_king)) = (pos.king(!color), pos.king(color)) else {
++        crate::counts::terms(pieces, roles.count_ones());
+         return terms;
+     };
+     let ring = attacks::king_attacks(their_king);
+     // Touching kings can be neither checked nor exploded.
+     if ring.contains(our_king) {
++        crate::counts::terms(pieces, roles.count_ones());
+         return terms;
+     }
+     let targets = ring & theirs & !attacks::king_attacks(our_king);
+@@ -92,10 +101,12 @@ pub fn terms(pos: &Position, color: Color) -> Terms {
+         let Some(role) = pos.role_at(square) else {
+             continue;
+         };
++        crate::counts::attacks();
+         let reach = attacks::attacks(square, role.of(color), occupied);
+         attacked |= reach;
+         pressure += (reach & ring).count() as u32;
+         // Squares from which this role would check their king.
++        crate::counts::attacks();
+         let checks = attacks::attacks(their_king, role.of(!color), occupied);
+         if (reach & checks & !ours).any() {
+             checkers += 1;
+@@ -105,5 +116,6 @@ pub fn terms(pos: &Position, color: Color) -> Terms {
+     terms.fuses = (ring & theirs).count() as u32;
+     terms.pressure = pressure;
+     terms.checkers = checkers;
++    crate::counts::terms(pieces, roles.count_ones());
+     terms
+ }
+diff --git a/src/lib.rs b/src/lib.rs
+index baa52f2..73bf500 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -11,6 +11,7 @@
+ 
+ pub mod board;
+ pub mod check;
++pub mod counts;
+ pub mod clock;
+ pub mod dfpn;
+ pub mod eval;
+diff --git a/src/main.rs b/src/main.rs
+index 71a246f..3c182ea 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -159,6 +159,7 @@ fn prove(args: &[String]) -> Result<(), String> {
+     let mut json = false;
+     let mut seed = 0u64;
+     let mut evals = None;
++    let mut counts = false;
+     let mut args = args.iter();
+     while let Some(arg) = args.next() {
+         let mut value = || args.next().ok_or(format!("{arg} needs a value"));
+@@ -174,6 +175,7 @@ fn prove(args: &[String]) -> Result<(), String> {
+             }
+             "--evals" => evals = Some(parse_positive_u64(value()?, "--evals")?),
+             "--json" => json = true,
++            "--counts" => counts = true,
+             unknown if unknown.starts_with("--") => {
+                 return Err(format!("unknown option {unknown}: see 470MI --help"));
+             }
+@@ -235,6 +237,9 @@ fn prove(args: &[String]) -> Result<(), String> {
+         },
+         "seed": seed,
+     });
++    if counts {
++        result["counts"] = atomic470mi::counts::snapshot();
++    }
+     if let Some(header) = &written {
+         result["proof_moves"] = json!(header.positions);
+         result["proof_path"] = json!(proofs);
+--- a/src/counts.rs
++++ b/src/counts.rs
+@@ -0,0 +1,94 @@
++//! TEMPORARY measurement instrument (plan 7, Phase A): eval geometry counts.
++//! Not for commit; timing must never be read from this build.
++
++use std::sync::atomic::{AtomicU64, Ordering};
++
++use shakmaty::Role;
++
++use crate::board::Position;
++
++/// Histogram shape: pieces 0..=32, roles 0..=5.
++const SLOTS: usize = 33 * 6;
++
++static TERMS: AtomicU64 = AtomicU64::new(0);
++static ATTACKS: AtomicU64 = AtomicU64::new(0);
++static PIECES: AtomicU64 = AtomicU64::new(0);
++static ROLES: AtomicU64 = AtomicU64::new(0);
++static EVALS: AtomicU64 = AtomicU64::new(0);
++static EVAL_PIECES: AtomicU64 = AtomicU64::new(0);
++static EVAL_ROLES: AtomicU64 = AtomicU64::new(0);
++/// Per `evaluate`: total non-king pieces (both sides) and defender roles.
++static EVAL_HIST: [AtomicU64; SLOTS] = [const { AtomicU64::new(0) }; SLOTS];
++/// Per `terms` call: that side's non-king pieces and roles present.
++static SIDE_HIST: [AtomicU64; SLOTS] = [const { AtomicU64::new(0) }; SLOTS];
++
++#[inline]
++fn bump(counter: &AtomicU64) {
++    counter.fetch_add(1, Ordering::Relaxed);
++}
++
++#[inline]
++fn add(counter: &AtomicU64, value: u64) {
++    counter.fetch_add(value, Ordering::Relaxed);
++}
++
++#[inline]
++pub fn terms(pieces: u32, roles: u32) {
++    bump(&TERMS);
++    add(&PIECES, u64::from(pieces));
++    add(&ROLES, u64::from(roles));
++    let slot = usize::try_from(pieces).unwrap().min(32) * 6 + usize::try_from(roles).unwrap().min(5);
++    bump(&SIDE_HIST[slot]);
++}
++
++#[inline]
++pub fn attacks() {
++    bump(&ATTACKS);
++}
++
++/// One `eval::evaluate`: total pieces and the defender's distinct role masks.
++#[inline]
++pub fn eval(pos: &Position) {
++    let occupied = pos.occupied();
++    let kings = pos.by_role(Role::King);
++    let pieces = (occupied & !kings).count() as u32;
++    let theirs = pos.by_color(!pos.turn()) & !kings;
++    let mut roles = 0u32;
++    for role in [Role::Pawn, Role::Knight, Role::Bishop, Role::Rook, Role::Queen] {
++        if (theirs & pos.by_role(role)).any() {
++            roles += 1;
++        }
++    }
++    bump(&EVALS);
++    add(&EVAL_PIECES, u64::from(pieces));
++    add(&EVAL_ROLES, u64::from(roles));
++    let slot = usize::try_from(pieces).unwrap().min(32) * 6 + usize::try_from(roles).unwrap().min(5);
++    bump(&EVAL_HIST[slot]);
++}
++
++fn hist(values: &[AtomicU64; SLOTS], pieces: &str, roles: &str) -> serde_json::Value {
++    let mut out = Vec::new();
++    for n in 0..33usize {
++        for r in 0..6usize {
++            let count = values[n * 6 + r].load(Ordering::Relaxed);
++            if count > 0 {
++                out.push(serde_json::json!({pieces: n, roles: r, "calls": count}));
++            }
++        }
++    }
++    serde_json::Value::Array(out)
++}
++
++pub fn snapshot() -> serde_json::Value {
++    serde_json::json!({
++        "terms": TERMS.load(Ordering::Relaxed),
++        "attacks": ATTACKS.load(Ordering::Relaxed),
++        "terms_pieces": PIECES.load(Ordering::Relaxed),
++        "terms_roles": ROLES.load(Ordering::Relaxed),
++        "evals": EVALS.load(Ordering::Relaxed),
++        "eval_pieces": EVAL_PIECES.load(Ordering::Relaxed),
++        "eval_roles": EVAL_ROLES.load(Ordering::Relaxed),
++        "eval_hist": hist(&EVAL_HIST, "pieces", "roles"),
++        "terms_hist": hist(&SIDE_HIST, "pieces", "roles"),
++    })
++}
