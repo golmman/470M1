@@ -68,3 +68,6 @@ open decisions?
 3. Option B
 4. the name `470MI` is final
 
+---
+
+Plan session for movegen: profile the M1 adapter against the stored plan 2 binary, identify the per-node regression in pseudo_legal, legal and effect, and propose the smallest measured fix that brings the 10 s row back to <= 1.0.
