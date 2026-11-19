@@ -167,6 +167,7 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 | plan5 | 2026-11-17 | `8f5ca2f2750a` | hand, product default (seed 0) | **0.936** | **0.962** | **0.938** | **0.945** | 10 s |
 | movegen plan2 | 2026-11-18 | `f043976fff92` | hand, product default (seed 0) | **0.981** | **0.978** | **0.958** | **0.972** | 10 s |
 | movegen plan3 | 2026-11-19 | `c90face26537` | hand, product default (seed 0) | **1.352** | **1.250** | **1.038** | **1.206** | 10 s |
+| movegen plan5 | 2026-11-19 | `c90face26537` | hand, product default (seed 0) | **1.208** | **1.158** | **0.936** | **1.094** | 10 s |
 
 
 Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
@@ -233,6 +234,21 @@ plan's adoption bar (`<= 1.0`) did not hold; no search or eval tuning was
 made. See `plans/movegen/report3.md` and
 `plans/movegen/measurements/plan3/`.
 
+Movegen plan5 footnote: **`M1` decision row, not a pass.** Measures the tree
+adopted in plan 4 (`atomic-movegen` 2.10.0); plan 4 appended no row. Coverage
+3/3, seed 0, three repeats, protocol `a`, every proof accepted by `470MI check`
+and `provari check` (9/9), `D14` timed and untimed counters identical.
+Candidate proof lengths 14 / 18 / 20 against same-session reference mates
+17 / 15 / 22; `child_evals` 3,896,430 / 904,368 / 44,828,946. The same-session
+plan 2 binary (`470m1`, rebuilt bit-identical from `2f629fd`) reads 1.014 /
+1.015 / 0.962, geomean **0.997** (anchor 0.972). Candidate/old is 1.208 / 1.149
+/ 0.978, geomean **1.107**: `MD6` is **not held**, and the row is classified as
+a regression against the bar, at the pre-recorded crate-led ceiling
+(~1.12×). `core` instructions are 8.004e9 against plan 2's 6.569e9; the per-call
+`W7` (121.9) and `W8` (215.2) targets are still missed. No search, evaluation,
+proof, checker or rules change; the adoption stays (`MD1`). See
+`plans/movegen/report5.md` and `plans/movegen/measurements/plan5/`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -252,6 +268,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470m1@<sha>` | _owner commits the plan5 tree_ | plan5 |
 | `470m1@<sha>` | _owner commits the movegen plan2 tree_ | movegen plan2 |
 | `470MI@<sha>` | _owner commits the movegen plan3 tree_ | movegen plan3 |
+| `470MI@<sha>` | _owner commits the movegen plan5 tree_ | movegen plan5 |
 
 The product rename is decided (`MD4`, 2026-11-19): rows measured before the
 rename keep `470m1`; the first adapter row and later rows use `470MI`.

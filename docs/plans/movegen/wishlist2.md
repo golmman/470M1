@@ -2,8 +2,9 @@
 
 **Status:** a request list, not a plan. All four asks landed in `atomic-movegen`
 2.10.0 (`5083647`, MIT), adopted by [`plan4.md`](plan4.md); the acceptance
-numbers are measured in [`report4.md`](report4.md). **Baseline:** 2.9.0
-(`af3faf0`). **Evidence:** [`hot-path-audit.md`](hot-path-audit.md);
+numbers are measured in [`report4.md`](report4.md) and re-measured unchanged in
+[`report5.md`](report5.md) (`W7` 121.9, `W8` 215.2; both still open).
+**Baseline:** 2.9.0 (`af3faf0`). **Evidence:** [`hot-path-audit.md`](hot-path-audit.md);
 per-call instruction counts on the ten-FEN probe, and whole-binary runs of the
 `core` cell. **Supersedes nothing:** [`wishlist1.md`](wishlist1.md) stays
 open (`W4` watchlist, `W5` only on a key-driven regression).

@@ -1,0 +1,20 @@
+# run 1 470m1
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":491,"nodes":342263,"seed":0}
+6569378638,,instructions:u,493916321,100.00,,
+2273756032,,cycles:u,493916321,100.00,,
+493.92,msec,task-clock:u,493916321,100.00,,
+# run 1 470MI
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":568,"nodes":350430,"seed":0}
+8004087295,,instructions:u,569954515,100.00,,
+2657169710,,cycles:u,569954515,100.00,,
+569.95,msec,task-clock:u,569954515,100.00,,
+# run 2 470m1
+{"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":492,"nodes":342263,"seed":0}
+6569378720,,instructions:u,493886789,100.00,,
+2261284590,,cycles:u,493886789,100.00,,
+493.89,msec,task-clock:u,493886789,100.00,,
+# run 2 470MI
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":564,"nodes":350430,"seed":0}
+8004087113,,instructions:u,566154593,100.00,,
+2641236329,,cycles:u,566154593,100.00,,
+566.15,msec,task-clock:u,566154593,100.00,,

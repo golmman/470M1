@@ -2,31 +2,18 @@
 
 ## Status
 
-**Open (2026-11-17).** `parity` reached `P5`; its closure row is in
-[`../../bench.md`](../../bench.md). Plan 1 delivered the differential harness
-and found two blockers; plan 2 fixed the en-passant immediate-explosion gap.
-Plan 3 applied the `MD4` rename and the `M1` adapter: the prover now uses
-`atomic_movegen::Board` for move generation, pseudo-legality, legality,
-effects/child keys and null moves, with movegen's native `Legal` keys and the
-`MD3` census recorded (87 EP children, 0 verdicts, 0 differences). The full
-differential is green (`mismatches: 0`, `key_mismatches: 0`). The 10 s bench
-**regressed** to 3/3, 9/9 accepted, geomean **1.206** (1.352 / 1.250 / 1.038);
-a same-session plan 2 binary reads 0.987, so the loss is the adapter's
-per-node cost. The adoption bar did not hold and is reported, not tuned away.
-The owner rejected a rollback (`MD1` reaffirmed) and set the hot-path boundary
-(`MD5`) and the same-session bench bar (`MD6`); [`hot-path-audit.md`](hot-path-audit.md)
-measures where the 2.46e9 instructions go and records three negative designs.
-[`wishlist2.md`](wishlist2.md) is the narrower cost list (`W6`-`W9`).
-Plan 4 adopted the owner-triggered `atomic-movegen` **2.10.0**
-(`5083647`): `W6`-`W9` are on the rules path, the differential is green
-(0 mismatches, 0 key mismatches, EP 87/0/0), all gates and the veto pass, and
-the 10 s row is 3/3, 9/9 accepted, geomean **1.099** against a same-session
-plan 2 binary at **0.988**. The adoption is a near miss, not a pass: per-call
-legality is 121.9 (target ≤100) and effect+key 215.2 (target ≤120), and `core`
-is 8.004e9 instructions against plan 2's 6.569e9. [`plan5.md`](plan5.md)
-measures it against the `MD6` bar. See [`report3.md`](report3.md),
-[`report4.md`](report4.md) and [`wishlist2.md`](wishlist2.md). The checker
-stays on shakmaty.
+**Open (2026-11-17).** Plan 3 applied the `MD4` rename and moved the prover's
+rules hot path onto `atomic-movegen` with native `Legal` keys (`M1`); plan 4
+adopted 2.10.0 (`W6`-`W9`). The differential is green (`mismatches: 0`,
+`key_mismatches: 0`, EP 87/0/0) and the checker stays on shakmaty. Plan 5
+measured the adopted tree against the `MD6` bar: 3/3 cells, 9/9 accepted,
+`D14` identical, geomean **1.094** vs the same-session plan 2 binary's
+**0.997** (candidate/old **1.107**). The bar is **not held**: a regression
+against it, at the pre-recorded ~1.12× crate-led ceiling, with the `W7`
+(121.9) and `W8` (215.2) per-call targets still missed. The adoption stays
+(`MD1`); `M1`'s performance part and `M6` stay open, and there is no `M8`
+handoff. See [`report5.md`](report5.md),
+[`hot-path-audit.md`](hot-path-audit.md) and [`wishlist2.md`](wishlist2.md).
 
 ## Goal
 
@@ -138,6 +125,16 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-19** — plan 5 decided the `M1` question on the `MD6` bar: the
+  adopted 2.10.0 tree measured 1.208 / 1.158 / 0.936, geomean **1.094**,
+  3/3 and 9/9 accepted, `D14` identical, against a same-session plan 2 binary
+  at 1.014 / 1.015 / 0.962, geomean **0.997** (candidate/old **1.107**). The
+  bar is not held; the row is a regression against it, within the
+  pre-recorded ~1.12× crate-led ceiling. `core` is 8.004e9 instructions vs
+  6.569e9; `W7` 121.9 and `W8` 215.2 remain missed. No source, search,
+  evaluation, proof or checker change; no `M8` handoff. Ledger row and pins
+  appended. [`report5.md`](report5.md),
+  [`measurements/plan5/`](measurements/plan5/README.md).
 - **2026-11-19** — plan 4 pinned and adopted `atomic-movegen` 2.10.0
   (`5083647`): native move storage, `LegalityContext`, `ChildEffect` and
   `null_for_advanced`, with the `Setup` null rebuild and per-candidate
