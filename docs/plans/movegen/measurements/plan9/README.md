@@ -1,6 +1,9 @@
 # Plan 9 measurements — evasion mask (`ev`) and `unsafe-optimizations` (`uo`)
 
-**Status:** driver ready, bench-host run pending. Plan: [`../../plan9.md`](../../plan9.md).
+**Status:** bench-host run complete, **release** branch for `ev`
+(`wishlist3` `W10`, `MD8`); `uo` is a material win recorded for an owner
+decision. Plan: [`../../plan9.md`](../../plan9.md); report:
+[`../../report9.md`](../../report9.md).
 
 ## Files
 
@@ -16,6 +19,32 @@
   only, because `MD5` forbids prover-side legality.
 - `uo.patch` — `Cargo.toml` with `features = ["unsafe-optimizations"]`. The
   lockfile is unchanged.
+
+## Bench-host run (2026-11-20, `c90face26537`, x86_64)
+
+`make oracle` built pinned provari `bceb1ee` (0.4.0); `make test` was green
+before and after. Three `perf stat -e instructions:u` rounds per cell, order
+`base`, `ev`, `uo`, `--seconds 10 --memory 192 --seed 0 --json`, no export.
+The `base` binary is sha256 `b7c16c94…` — the plan 8 bench-host binary — and
+`core` reads 7,816,219,508 (spread 672), reproducing plan 8's 7.8162193e9.
+The driver's `bench_host`/`provisional` flags are a `socket.gethostname()`
+equality and read `false`/`true` inside this container (UTS name
+`36f35886a6b3`); host identity rests on the binary hash, the platform string
+and the base reading.
+
+| Cell | base | `ev` | `ev` fall | `uo` | `uo` fall | `uo` fall % | spreads (base/`ev`/`uo`) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `core` | 7,816,219,508 | 7,091,614,362 | **724,605,146** (9.271%) | 7,713,283,724 | 102,935,784 | 1.317 | 672 / 296 / 650 |
+| `easy-win` | 1,640,875,322 | 1,556,631,861 | 84,243,461 (5.134%) | 1,619,316,966 | 21,558,356 | 1.314 | 251 / 652 / 636 |
+| `deep-win` | 82,738,904,410 | 77,443,772,287 | 5,295,132,123 (6.400%) | 81,680,942,381 | 1,057,962,029 | 1.279 | 635 / 456 / 359 |
+
+`core` `ev` pair falls are 724,605,146 / 724,605,024 / 724,604,648. `uo` is
+material on every cell (>3× the larger spread, ≥0.5%). Both variants:
+differential `mismatches: 0`, `key_mismatches: 0`, EP 87/0/0; counters/mate
+identical in every round; `.pvr` byte-identical on all three cells; our
+checker and `provari check` accept 9/9. `decision.json` branches `ev` to
+**release**; `uo` is `owner decision` (enable in `Cargo.toml` with a
+`PROVENANCE.md` note and a feature-test gate, or keep defaults).
 
 ## Plan-session census (seed 0, instrumented `Mover::legal`, `/tmp/evasion-probe`)
 

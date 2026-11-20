@@ -1,0 +1,24 @@
+{
+  "rule": "release (W10 + MD8) iff core ev fall >= 0.31e9 instructions:u with identical counters/mate and byte-identical .pvr on all three cells and differential 0",
+  "bench_host": false,
+  "provisional": true,
+  "ev": {
+    "core_fall": 724605146,
+    "correct": true,
+    "branch": "release"
+  },
+  "uo": {
+    "falls": {
+      "core": 102935784,
+      "easy-win": 21558356,
+      "deep-win": 1057962029
+    },
+    "fall_pct": {
+      "core": 1.317,
+      "easy-win": 1.314,
+      "deep-win": 1.279
+    },
+    "correct": true,
+    "branch": "owner decision"
+  }
+}

@@ -24,11 +24,21 @@ against a same-session plan 2 binary at **0.987** (candidate/old 1.070, from
 1.107). The gap is now 1.190×; `MD6` is still not held. Plan 8 decided the
 rules endgame: the exposed `FastLegality` ladder was correct but **slower** on
 `core` in every shape (best **+0.1641e9**, census projection ≤0.125e9), so the
-rules residual is accepted as the dated `MD7` miss; no fourth release, no
-`wishlist3`. `M12` is the last measured prover-side gain; `M1`'s performance
-part and `M6` close as a documented miss, and `M8` is the only open item. See
-[`report5.md`](report5.md), [`report6.md`](report6.md), [`report7.md`](report7.md),
-[`hot-path-audit.md`](hot-path-audit.md) and [`wishlist2.md`](wishlist2.md).
+rules residual was accepted as the dated `MD7` miss. Plan 9 measured an
+evasion-aware legality screen on the same 82% in-check population:
+**−0.7246e9** on `core` (**9.271%**), −0.0842e9 on `easy-win` and −5.2951e9 on
+`deep-win`, with identical counters/mate, a byte-identical `.pvr` and 9/9
+accepted, against a 0.31e9 rule. That reopens one lever: `MD8` and
+[`wishlist3.md`](wishlist3.md) **`W10`**; it is crate-side legality, so `MD5`
+forbids adopting the prototype in `src/`. Plan 9 also measured
+`unsafe-optimizations` at **−1.28% to −1.32%** on all three cells (material by
+the 3×spread and ≥0.5% reading), recorded for an owner decision. Nothing is
+adopted from plan 9; the tree is unchanged. `M12` is the last adopted
+prover-side gain, `M1`'s performance part and `M6` remain documented misses,
+and `M8` and `M14` are open. See [`report5.md`](report5.md),
+[`report6.md`](report6.md), [`report7.md`](report7.md),
+[`hot-path-audit.md`](hot-path-audit.md), [`report9.md`](report9.md) and
+[`wishlist3.md`](wishlist3.md).
 
 ## Goal
 
@@ -83,6 +93,7 @@ One-line resolutions; full text and rationale in [`decisions.md`](decisions.md).
 | MD5 | Hot-path boundary | Direct crate calls on the rules path; conversions only at the FEN/checker/proof edge; a needed conversion is a wishlist item |
 | MD6 | What "no regression" means | Same-session plan 2 reference, 3/3 and 9/9, reference near 0.972; `1.0` against provari is not the bar |
 | MD7 | Rules residual | Accepted as a dated `MD6` miss (plan 8: ladder +0.1641e9, projection ≤0.125e9); no fourth release |
+| MD8 | Evasion mask | Reopens `MD7` for one lever (plan 9: −0.7246e9 on `core`, 9.271%, identical counters/`.pvr`); crate ask `W10`, adoption needs an owner release plan and a same-session `MD6` row |
 
 ## Upstream ownership and wishlists
 
@@ -116,6 +127,7 @@ These are placeholders; the next plan turns them into concrete items.
 | M11 | **Non-rules residual** | The gap left after the rules layer: node geometry, generation adapter, tree, `null`; **closed negative** (plan 6: split resolved, `NodeFacts` falsified at +0.038e9) |
 | M12 | **Eval geometry** | One per-node pass over roles reuses the `Mover`'s check masks; **adopted** (plan 7: −0.1879e9 on `core`, identical tree/`.pvr`; geomean 1.056, `MD6` still missed) |
 | M13 | **Rules endgame decision** | Expose `FastLegality` and measure the ladder on `core`; **closed negative** (plan 8: best +0.1641e9, projection ≤0.125e9; dated `MD7`, no release) |
+| M14 | **Evasion-aware legality** | Reject quiet non-king moves that cannot answer a single-slider check, and castling in check; the plan 9 prototype clears the rule at **−0.7246e9** on `core`, so the lever is the upstream ask `W10` (`MD8`), not a prover patch under `MD5` |
 
 ## Gates
 
@@ -144,6 +156,19 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-20** — plan 9 measured two levers on the bench host. An
+  evasion-aware legality screen (reject quiet non-king moves outside
+  `between(king, checker)` under a single-slider check, plus castling in
+  check) falls **0.7246e9** on `core` (7.8162e9 → 7.0916e9, **9.271%**),
+  0.0842e9 on `easy-win` and 5.2951e9 on `deep-win`, against a 0.31e9 rule.
+  Counters and mate are identical, the `.pvr` is byte-identical and 9/9 are
+  accepted; the differential is 0/0 (EP 87/0/0). The branch is **release**:
+  [`wishlist3.md`](wishlist3.md) `W10` and a dated `MD8`; adoption needs an
+  owner release plan with a same-session `MD6` row. `unsafe-optimizations`
+  falls 1.317% / 1.314% / 1.279% on the three cells (material by the
+  3×spread and ≥0.5% reading) and is recorded for an owner decision, not
+  adopted. Tree unchanged: no pin, no ledger row, no `src/` edit.
+  [`report9.md`](report9.md), [`measurements/plan9/`](measurements/plan9/README.md).
 - **2026-11-19** — plan 8 closed the rules endgame as a dated `MD7` miss. The
   exposed `FastLegality` ladder is oracle-equivalent (counters, mate and
   `.pvr` identical) but costs **+0.1641e9** instructions on `core` in its best

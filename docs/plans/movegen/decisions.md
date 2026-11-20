@@ -157,3 +157,35 @@ ledger row. A future performance attempt needs a new plan and a measured lever
 outside the rules layer, or a new crate shape that first passes the 0.31e9
 whole-binary rule. The checker stays shakmaty and the differential remains the
 correctness gate.
+
+## MD8 — Evasion mask reopens the rules lever
+
+**Resolution (2026-11-20).** `MD7` is reopened for one lever only: an
+evasion-aware legality screen. The plan 9 prototype rejects a quiet
+non-commoner move that cannot answer a single-slider check, and rejects
+castling in check; all other candidates keep the existing oracle. On the bench
+host it measures **−724,605,146** instructions on `core` (7,816,219,508 →
+7,091,614,362, **9.271%**), −84,243,461 on `easy-win` (5.134%) and
+−5,295,132,123 on `deep-win` (6.400%), against the pre-registered 0.31e9 rule.
+Counters and mate are identical in every round on all three cells, the `.pvr`
+is byte-identical, our checker and `provari check` accept all 9 proofs, and
+the full differential reports `mismatches: 0`, `key_mismatches: 0`, EP 87/0/0.
+
+The census behind it: of 8,220,516 in-check oracle calls on `core`, 6,128,196
+are quiet non-king and **5,882,026 are rejected by the mask, none of them
+legal**; `easy-win` rejects 761,648 of 1,038,152 and `deep-win` 45,072,205 of
+61,347,947. On `deep-win` 21 castling/EP calls in check are legal, so en
+passant stays with the oracle.
+
+**Rationale.** `MD7` was decided on the only cheap lever then available, the
+exposed `FastLegality` ladder, which costs +0.1641e9. The evasion mask attacks
+the same 82% in-check population from the other side: it rejects what the
+ladder could only defer, and the measured fall is 2.3× the 0.31e9 rule. It is
+crate-side legality, so `MD5` forbids a prover patch; the lever is an upstream
+ask ([`wishlist3.md`](wishlist3.md) `W10`), not an adoption.
+
+**Consequences.** Adoption needs an owner-triggered release plan (plan 10):
+implement `W10` upstream, then pin, `PROVENANCE.md`, differential, gates, veto
+and a **same-session `MD6` row**. No pin, no `PROVENANCE.md` change, no ledger
+row and no `src/` edit follow from this report. `MD7`'s text is unchanged; the
+remaining rules residual and the other `MD7` buckets are unaffected.
