@@ -1,0 +1,82 @@
+# Plan 11 — perf stat -e instructions:u, fedf389, prove FEN --seconds 10 --memory 192 --seed 0 --json
+# round 1 core base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":536,"nodes":350430,"seed":0}
+7147609020,,instructions:u
+# round 1 core uo
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":529,"nodes":350430,"seed":0}
+7057344524,,instructions:u
+# round 1 core sm
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":541,"nodes":350430,"seed":0}
+7165712800,,instructions:u
+# round 1 easy-win base
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":136,"nodes":68692,"seed":0}
+1560746879,,instructions:u
+# round 1 easy-win uo
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":133,"nodes":68692,"seed":0}
+1540249935,,instructions:u
+# round 1 easy-win sm
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":134,"nodes":68692,"seed":0}
+1564463545,,instructions:u
+# round 1 deep-win base
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5588,"nodes":3553009,"seed":0}
+77783668781,,instructions:u
+# round 1 deep-win uo
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5649,"nodes":3553009,"seed":0}
+76808909883,,instructions:u
+# round 1 deep-win sm
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5648,"nodes":3553009,"seed":0}
+77974146737,,instructions:u
+# round 2 core base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":537,"nodes":350430,"seed":0}
+7147609115,,instructions:u
+# round 2 core uo
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":530,"nodes":350430,"seed":0}
+7057344156,,instructions:u
+# round 2 core sm
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":541,"nodes":350430,"seed":0}
+7165712721,,instructions:u
+# round 2 easy-win base
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":133,"nodes":68692,"seed":0}
+1560746930,,instructions:u
+# round 2 easy-win uo
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":132,"nodes":68692,"seed":0}
+1540249857,,instructions:u
+# round 2 easy-win sm
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":136,"nodes":68692,"seed":0}
+1564463617,,instructions:u
+# round 2 deep-win base
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5593,"nodes":3553009,"seed":0}
+77783667751,,instructions:u
+# round 2 deep-win uo
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5570,"nodes":3553009,"seed":0}
+76808909938,,instructions:u
+# round 2 deep-win sm
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5554,"nodes":3553009,"seed":0}
+77974146801,,instructions:u
+# round 3 core base
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":528,"nodes":350430,"seed":0}
+7147608781,,instructions:u
+# round 3 core uo
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":529,"nodes":350430,"seed":0}
+7057344073,,instructions:u
+# round 3 core sm
+{"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":533,"nodes":350430,"seed":0}
+7165713195,,instructions:u
+# round 3 easy-win base
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":132,"nodes":68692,"seed":0}
+1560746733,,instructions:u
+# round 3 easy-win uo
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":134,"nodes":68692,"seed":0}
+1540249780,,instructions:u
+# round 3 easy-win sm
+{"child_evals":904368,"expansions":53237,"found":true,"guide":"hand","mate":18,"ms":135,"nodes":68692,"seed":0}
+1564463209,,instructions:u
+# round 3 deep-win base
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5557,"nodes":3553009,"seed":0}
+77783668246,,instructions:u
+# round 3 deep-win uo
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5555,"nodes":3553009,"seed":0}
+76808909151,,instructions:u
+# round 3 deep-win sm
+{"child_evals":44828946,"expansions":2487550,"found":true,"guide":"hand","mate":20,"ms":5601,"nodes":3553009,"seed":0}
+77974146841,,instructions:u

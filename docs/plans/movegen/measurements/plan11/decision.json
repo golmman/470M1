@@ -1,0 +1,28 @@
+{
+  "rules": {
+    "sm": "W11 (masked indices) iff sm recovers >=70% of uo's fall on every cell, same witnesses",
+    "uo": "else adopt the feature iff uo falls >=0.5% on every cell, same witnesses",
+    "close": "else close uo with the finding"
+  },
+  "phase_a": {
+    "call_sites_closed": true,
+    "note": "crate also panics on Square::NONE at the safe ENTRIES load; prover call sites audited"
+  },
+  "bench_host": false,
+  "provisional": true,
+  "sm_recovery": {
+    "core": -0.20056286796155812,
+    "easy-win": -0.18132712156917233,
+    "deep-win": -0.19541104978444795
+  },
+  "uo_fall_pct": {
+    "core": 1.263,
+    "easy-win": 1.313,
+    "deep-win": 1.253
+  },
+  "correct": {
+    "uo": true,
+    "sm": true
+  },
+  "branch": "uo"
+}

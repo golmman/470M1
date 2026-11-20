@@ -41,9 +41,14 @@ byte-identical `.pvr`, 9/9 accepted and differential 0/0 (EP 87/0/0). The
 same-session 10 s row is 3/3 and 9/9 with `D14` identical, geomean **1.018**
 against a plan 2 binary at **0.991** (candidate/old **1.028**): `MD6` is still
 not held, but `core` is now **1.088×** plan 2, down from 1.190×. `M14` closes;
-`M12`'s row stays historical. The `uo` owner decision remains open. `M1`'s
-performance part and `M6` remain documented misses, and `M8` is the open work
-item. See [`report5.md`](report5.md), [`report6.md`](report6.md),
+`M12`'s row stays historical. Plan 11 audited the feature and measured a safe
+masked-index alternative (`sm`): `sm` is slower than `base`, while `uo` falls
+1.263% / 1.313% / 1.253% with every witness, so `MD9` **adopts** it. `core` is
+**7.0573e9** (−0.0903e9, **1.074×** plan 2); the same-session row is geomean
+**1.003** against a plan 2 binary at 0.991 (candidate/old **1.012**, still an
+`MD6` miss). `M15` closes; the guard is `make unsafe-feature` plus the
+prepared upstream CI patch. `M1`'s performance part and `M6` remain documented
+misses, and `M8` is the open work item. See [`report5.md`](report5.md), [`report6.md`](report6.md),
 [`report7.md`](report7.md), [`hot-path-audit.md`](hot-path-audit.md),
 [`report9.md`](report9.md), [`report10.md`](report10.md) and
 [`wishlist3.md`](wishlist3.md).
@@ -68,7 +73,8 @@ movegen bug cannot hide in both the prover and the checker.
   moves, terminal outcomes, hashes, en passant, castling, promotions and
   insufficient material. **Met:** [`rules-surface.md`](rules-surface.md).
 - A pinned `atomic-movegen` version is chosen and recorded in
-  `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.11.0 (`0aaf958`), default features.
+  `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.11.0 (`0aaf958`), default features
+  plus the audited `unsafe-optimizations` (`MD9`).
 - A differential harness exists that compares the two rules implementations
   on the fixtures, the bench corpus and random play-out positions. **Met:**
   [`tests/differential.rs`](../../../tests/differential.rs) is green after
@@ -136,6 +142,7 @@ These are placeholders; the next plan turns them into concrete items.
 | M12 | **Eval geometry** | One per-node pass over roles reuses the `Mover`'s check masks; **adopted** (plan 7: −0.1879e9 on `core`, identical tree/`.pvr`; geomean 1.056, `MD6` still missed) |
 | M13 | **Rules endgame decision** | Expose `FastLegality` and measure the ladder on `core`; **closed negative** (plan 8: best +0.1641e9, projection ≤0.125e9; dated `MD7`, no release) |
 | M14 | **Evasion-aware legality** | **Closed, adopted** (plan 10): `atomic-movegen` 2.11.0 `W10`, one `legality_context_with_state` call in `Mover::new`; **−0.6686e9** on `core` (8.554%), identical counters/mate/`.pvr`, 9/9 accepted; `MD6` still missed at 1.088× plan 2 |
+| M15 | **Build-shape decision** | **Closed, adopted** (plan 11, `MD9`): `unsafe-optimizations` on 2.11.0 after the three-site audit; `sm` masked indices failed (−20% of the fall, slower than `base`); `uo` **−0.0903e9** on `core` (1.263%), all witnesses; `MD6` still missed at 1.074× plan 2. Guard: `make unsafe-feature`; upstream CI patch prepared |
 
 ## Gates
 
@@ -163,6 +170,24 @@ These are placeholders; the next plan turns them into concrete items.
 | Scope creep into search tuning | Movegen is a rules-layer initiative; search changes need their own item and gate |
 
 ## History
+
+- **2026-11-20** — plan 11 audited `unsafe-optimizations` on the adopted
+  2.11.0 pin, measured a safe masked-index alternative (`sm`) and decided the
+  build shape. `sm` masks `ZOBRIST.piece` and the `ENTRIES[sq]` loads but
+  cannot mask the flat magic table; it is **slower than `base`** on every cell
+  (+0.253% / +0.238% / +0.245%), recovering none of the fall. `uo` falls
+  **0.0903e9** on `core` (1.263%), 0.0205e9 on `easy-win` (1.313%) and
+  0.9748e9 on `deep-win` (1.253%), with identical counters/mate,
+  byte-identical `.pvr`, both checkers 9/9 and differential 0/0 (EP 87/0/0).
+  `MD9` adopts the feature; the three unsafe blocks are audited (the
+  `ENTRIES[sq]` loads stay safe and still panic on `NONE`; only
+  `piece_key_raw` could be UB and no prover call site sends `NONE`). Upstream
+  `0aaf958` has no CI, so `measurements/plan11/upstream-ci.patch` is prepared
+  and `make unsafe-feature` is the enforceable guard. The same-session `MD6`
+  row is geomean **1.003** against the plan 2 binary at 0.991
+  (candidate/old **1.012**, from 1.028); `core` is **7.0573e9**, 1.074× plan
+  2. `M15` closes; `M8` remains open. `report11.md`,
+  [`measurements/plan11/`](measurements/plan11/README.md).
 
 - **2026-11-20** — plan 10 pinned and adopted `atomic-movegen` 2.11.0
   (`0aaf958`, `W10`) with one call: `Mover::new` builds the cached legality

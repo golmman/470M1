@@ -1,0 +1,23 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..b9ead7d
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,17 @@
++name: CI
++
++on:
++  push:
++  pull_request:
++
++jobs:
++  test:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: dtolnay/rust-toolchain@stable
++      - run: cargo fmt --check
++      - run: cargo clippy --all-targets -- -D warnings
++      - run: cargo test
++      - run: cargo clippy --all-targets --features unsafe-optimizations -- -D warnings
++      - run: cargo test --features unsafe-optimizations

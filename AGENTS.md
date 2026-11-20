@@ -21,15 +21,17 @@ claim.
 `parity` closed (2026-11-17): `P5` 3/3, geomean **0.945**, 9/9 accepted.
 `movegen` is open: the prover runs move generation, legality, effects/keys and
 null moves on `atomic-movegen`'s `Board` with native `Legal` keys; shakmaty
-stays the parser, boundary and checker. Differential green (`mismatches: 0`,
-`key_mismatches: 0`; `MD3` 87/0/0). Plan 4 adopted 2.10.0; plan 5 measured
+stays the parser, boundary and checker. Differential green (0 mismatches/keys;
+`MD3` 87/0/0). Plan 4 adopted 2.10.0; plan 5 measured
 1.094 vs old 0.997 (`MD6` missed); plan 7 adopted `M12` (`core` 7.816e9,
 1.190x; geomean 1.056); plan 8's ladder cost +0.164e9 (`MD7` miss) and plan
-9's evasion prototype fell 0.725e9, producing `W10`/`MD8`;
-`unsafe-optimizations` (~−1.3%) still awaits the owner. Plan 10 adopted 2.11.0
-(`0aaf958`, `W10`): `core` **7.1476e9** (−0.6686e9), identical counters/`.pvr`,
-9/9, differential 0/0; geomean **1.018** vs old 0.991 (`MD6` still missed,
-1.088x plan 2). `M14` closes; `M8` is open. We own
+9's evasion prototype fell 0.725e9, producing `W10`/`MD8`. Plan 10 adopted
+2.11.0 (`0aaf958`, `W10`): `core` **7.1476e9** (−0.6686e9), identical
+counters/`.pvr`, 9/9, differential 0/0; geomean **1.018** vs old 0.991 (`MD6`
+missed, 1.088x plan 2). Plan 11 adopted the audited `unsafe-optimizations`
+feature (`MD9`): `core` **7.0573e9** (−0.0903e9), safe masks failed; geomean
+**1.003** vs old 0.991 (`MD6` missed, 1.012x). `M14`/`M15` close; `M8`
+is open. We own
 `golmman/atomic_movegen`; changes go in `wishlistN.md` and enter by an owner
 plan/report. See
 [`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),

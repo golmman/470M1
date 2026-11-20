@@ -1,10 +1,11 @@
-.PHONY: test test-full lint licence oracle veto bench bench2 fmt clippy doc
+.PHONY: test test-full lint licence oracle veto unsafe-feature bench bench2 fmt clippy doc
 
 test: lint licence
 	cargo test
 
 test-full: test
 	cargo test -- --ignored
+	$(MAKE) unsafe-feature
 	$(MAKE) veto
 
 licence:
@@ -22,6 +23,9 @@ clippy:
 
 doc:
 	cargo doc --no-deps
+
+unsafe-feature:
+	scripts/unsafe_feature_gate.sh
 
 oracle:
 	scripts/build_oracle.sh

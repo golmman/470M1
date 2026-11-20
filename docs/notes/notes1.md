@@ -116,3 +116,7 @@ Check the changelog and draft a plan for adoption.
 
 Last session we finished with `docs/plans/movegen/report10.md`.
 Let's draft a plan to check `unsafe-optimizations`.
+
+---
+
+Perform a thorough code clean up.

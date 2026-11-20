@@ -16,7 +16,7 @@ licence. A copied file keeps its upstream copyright and licence notice.
 | `aiorla/provari` | `v0.1.0` (`48686bc6c786d6ea70568f0b2ad4002cf0520206`) | GPL-3.0-or-later | Single-threaded search core copied/adapted in plan2; see the rows below |
 | `golmman/atomi` | `a4802e7cbe7ea6338e99dd21d3b84dbd6f871f76` | MIT | Ideas, measured levers, bench/planning structure; code/data may be copied with provenance |
 | `golmman/atomic_solver` | `14abcf27ae34ec71f46d8bc82f300d44e02f5f57` | MIT | Ideas, fixtures, bench driver; code/data may be copied with provenance |
-| `golmman/atomic_movegen` | `0aaf9583a9c5536baf860ecdee047b89b8ff087f` (`v2.11.0`) | MIT | Prover rules layer since movegen plan 3; adopted at 2.11.0 by plan 10 (`W10` evasion-aware legality; previously 2.10.0 by plan 4), including move generation, legality, effects/child keys, null moves and the differential harness; released dependency, no copied source |
+| `golmman/atomic_movegen` | `0aaf9583a9c5536baf860ecdee047b89b8ff087f` (`v2.11.0`) | MIT | Prover rules layer since movegen plan 3; adopted at 2.11.0 by plan 10 (`W10` evasion-aware legality; previously 2.10.0 by plan 4), including move generation, legality, effects/child keys, null moves and the differential harness; released dependency, no copied source. Plan 11 (`MD9`) enables the crate's `unsafe-optimizations` feature: three audited blocks — `board.rs` `piece_key_raw` (`sq < 64`, `raw < 16`) and `magic.rs` `bishop_attacks`/`rook_attacks` (the `idx` shift bound and the builder's exact allocation; the preceding `ENTRIES[sq]` load is safe and still panics on `Square::NONE`). Guarded by `make unsafe-feature` (the pinned crate's own feature tests) and the prepared upstream CI patch; no copied source |
 
 ## Copied material
 

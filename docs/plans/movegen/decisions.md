@@ -189,3 +189,45 @@ implement `W10` upstream, then pin, `PROVENANCE.md`, differential, gates, veto
 and a **same-session `MD6` row**. No pin, no `PROVENANCE.md` change, no ledger
 row and no `src/` edit follow from this report. `MD7`'s text is unchanged; the
 remaining rules residual and the other `MD7` buckets are unaffected.
+
+## MD9 — `unsafe-optimizations` adopted on the audited pin
+
+**Resolution (2026-11-20).** On `atomic-movegen` 2.11.0 the safe-Rust
+alternative `sm` — masking the `ZOBRIST.piece` indices and the `ENTRIES[sq]`
+loads with `& 63` / `& 15` — was built and measured against the default
+(`base`) and the feature (`uo`). It is **not** a substitute: `sm` is slightly
+slower than `base` on every cell (`core` +18,103,780 instructions, +0.253%;
+`easy-win` +3,716,666, +0.238%; `deep-win` +190,478,555, +0.245%), so it
+recovers −20.1% / −18.1% / −19.5% of `uo`'s fall against the 70% line. `uo`
+falls 90,264,864 (1.263%), 20,497,022 (1.313%) and 974,758,363 (1.253%) on
+the same three cells, with counters/mate identical, byte-identical `.pvr`,
+both checkers 9/9 and differential 0/0 (EP 87/0/0). The pre-registered rule
+therefore selects **adopt**, not `W11` and not close.
+
+The audit closes the call sites. The three unsafe blocks are exactly the
+census: `piece_key_raw`, `bishop_attacks` and `rook_attacks`. In 2.11.0 the
+`BISHOP_ENTRIES[sq]` / `ROOK_ENTRIES[sq]` loads preceding the unsafe table
+loads are **safe array indexing**, so `Square::NONE` still panics before the
+unsafe access; the plan's panic→UB delta does not hold for the magic paths.
+Only `piece_key_raw` could read out of bounds on `NONE`, and the prover never
+sends it: moves decode `bits & 63`, bitboard iterations yield real squares,
+`attackers_to` receives move endpoints, iterated targets, `Some(king)` or the
+`maybe_ep_square()` value, and `checked_after` is unused. Our `src/moves.rs`
+`attacks::bishop_attacks` / `rook_attacks` calls are **shakmaty's**, not the
+crate's; the crate's magic is reached through `Board` internals.
+
+**Guard.** Upstream `0aaf958` has no `.github` directory and no CI job.
+`measurements/plan11/upstream-ci.patch` adds a workflow that tests the feature;
+the enforceable guard in this repository is `make unsafe-feature`, a script
+that runs the pinned crate's own test suite with
+`--features unsafe-optimizations` from the registry copy Cargo builds, wired
+into `make test-full`. Landing the upstream workflow is an owner action and
+does not change the pin.
+
+**Consequences.** `Cargo.toml` enables the feature on `=2.11.0`; the pin and
+`PROVENANCE.md` row are unchanged except for the audit note. The same-session
+`MD6` row reads 1.093 / 1.066 / 0.867 (geomean **1.003**) against the plan 2
+binary's 1.002 / 1.015 / 0.957 (geomean 0.991), so candidate/old is
+1.091 / 1.050 / 0.906, geomean **1.012**: `MD6` is still **not held**,
+improved from 1.028. `core` is **7.0573e9**, **1.074×** plan 2, from 1.088×.
+`M15` closes; the product win is 1.3% and a cleaner `M8` baseline, not parity.

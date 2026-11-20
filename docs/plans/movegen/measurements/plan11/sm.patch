@@ -1,0 +1,31 @@
+--- a/src/board.rs	2026-11-20 19:32:54.349732636 +0000
++++ b/src/board.rs	2026-11-20 19:32:54.369904629 +0000
+@@ -3706,7 +3706,7 @@
+     }
+     #[cfg(not(feature = "unsafe-optimizations"))]
+     {
+-        crate::zobrist::ZOBRIST.piece[sq as usize][raw as usize]
++        crate::zobrist::ZOBRIST.piece[(sq as usize) & 63][(raw as usize) & 15]
+     }
+ }
+ 
+--- a/src/magic.rs	2026-11-20 19:32:54.349926415 +0000
++++ b/src/magic.rs	2026-11-20 19:32:54.370438418 +0000
+@@ -486,7 +486,7 @@
+ /// Panics for [`Square::NONE`], which cannot index the precomputed entries.
+ #[inline(always)]
+ pub fn bishop_attacks(sq: Square, occupied: Bitboard) -> Bitboard {
+-    let e = &BISHOP_ENTRIES[sq as usize];
++    let e = &BISHOP_ENTRIES[(sq as usize) & 63];
+     let idx = ((occupied & e.mask).0.wrapping_mul(e.magic)) >> e.shift;
+     let table_idx = e.offset as usize + idx as usize;
+     #[cfg(feature = "unsafe-optimizations")]
+@@ -509,7 +509,7 @@
+ /// Panics for [`Square::NONE`]; see [`bishop_attacks`].
+ #[inline(always)]
+ pub fn rook_attacks(sq: Square, occupied: Bitboard) -> Bitboard {
+-    let e = &ROOK_ENTRIES[sq as usize];
++    let e = &ROOK_ENTRIES[(sq as usize) & 63];
+     let idx = ((occupied & e.mask).0.wrapping_mul(e.magic)) >> e.shift;
+     let table_idx = e.offset as usize + idx as usize;
+     #[cfg(feature = "unsafe-optimizations")]
