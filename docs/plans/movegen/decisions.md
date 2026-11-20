@@ -231,3 +231,62 @@ binary's 1.002 / 1.015 / 0.957 (geomean 0.991), so candidate/old is
 1.091 / 1.050 / 0.906, geomean **1.012**: `MD6` is still **not held**,
 improved from 1.028. `core` is **7.0573e9**, **1.074×** plan 2, from 1.088×.
 `M15` closes; the product win is 1.3% and a cleaner `M8` baseline, not parity.
+
+## MD10 — `movegen` closes with the dated `MD6` miss
+
+**Resolution (2026-11-20).** `movegen` is **closed** on `MD1`'s done definition:
+the prover runs parser, FEN display, value/attack vocabulary, movegen, legality,
+effects/keys, null moves, proof paths and line output on `atomic-movegen`;
+`src/check.rs` stays shakmaty-only and shares no code with the prover; the
+differential is `0/0` (EP 87/0/0); the three `.pvr` files are byte-identical
+through plans 10–12; both checkers accept 9/9. No active item remains.
+
+The `MD6` no-regression clause stays a **dated miss**. The plan 12 row is
+**1.001** product / **1.013** candidate-vs-plan-2 (reference 0.988), and
+closure appends no ledger row and changes no source, pin, dependency or
+`PROVENANCE.md` byte. The `MD6` reference anchor is re-anchored only at the next
+measured row; it is still 0.972 here.
+
+**The export split.** Plan 13 measured the proof-export arm on `core` (median
+of 3, one process at a time), with `--proofs` minus without: plan 12
+**770,035,750** instructions for 1,009 written positions, plan 2
+**486,382,391** for 1,021, oracle **1,346,284** for 1,021. The written proof is
+byte-identical to plan 12's with identical `child_evals` 3,896,430 and `mate`
+14; both checkers read back **9,617** `won_positions`, exactly the walk's
+`prove` count. The 1,009 entries are the move-bearing nodes; the 9,617 are the
+distinct won attacker nodes of the proof tree, so the walk visits the proof it
+writes rather than re-proving offline.
+
+**The oracle always walks.** provari computes `mate` from `format::walk` in
+both arms; `--proofs` only decides whether the bytes are written. A `SKIP_WALK`
+short-circuit on a clean build isolates the oracle's walk at **491,509,701**
+instructions; its 1.35e6 with/without delta is the file write alone. The real
+comparison is therefore walk to walk: movegen **0.770e9**, plan 2 **0.486e9**,
+oracle **0.492e9** on `core` — **1.58×** plan 2 and **1.57×** the oracle, with
+plan 2 matching the oracle. The ledger row already charges both sides a walk,
+so it is walk-for-walk; `kill-review1`'s 0.944 "search-only" comparison removed
+the candidate's walk but left the oracle's in, and flatters the candidate.
+
+**No re-derivable plan.** The proof table holds a proof for 6,688 of 9,617
+`prove` calls and misses 2,929; on the decision the walk makes,
+`wins_in_two`, it is not an oracle: of 2,502 successes **0** are labelled
+length 2 and all **311** length-2 cases are false positives, because it stores
+the search's proof, not the format's canonical answer. Exact repeats across
+`prove`/`wins_in_two`/`legal_moves`/`judge`/`play` are worth **≤0.08e9** at
+the very most, and the one byte-identical memo tried (`reuse.patch`) **adds
+55.9e6** instructions. The 0.770e9 is per-candidate rules work: `wins_in_two`
+38%, the `prove` candidate scan 28%, strategy-tree write 13%, deep `prove` 4%,
+judge/unattributed 17%. No encoder plan and no search plan follow.
+
+**Rationale.** The remaining gap is the `MD7` rules residual at the walk's
+call mix, not a redundancy and not a format bug. Every measured byte-identical
+lever is negative or inside the instrument's spread, and `MD1`'s non-goals
+forbid a search change. A search that stored the canonical walk answer would be
+a search change and would grow the 12-byte proof-table entry.
+
+**Consequences.** `M6`/`MD6` remains the one documented performance miss; the
+`M7` wishlist and owner-triggered-release protocol outlives the initiative
+(`golmman/atomic_movegen` is ours). A future performance attempt needs a new
+initiative or a measured lever outside the rules layer. The `PROVENANCE.md`
+`v2.11.0` tag label (upstream has no such tag; the version and commit are
+right) remains an owner label-only fix, not a pin change.

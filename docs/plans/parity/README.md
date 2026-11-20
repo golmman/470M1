@@ -42,16 +42,16 @@ a decision record, a measurement record, or a historical plan/report.
   it is a regression row, not a speed claim.
 - Plan 5 complete: `P5` closure row on the product default (seed 0) at 10 s,
   geomean **0.945**, coverage 3/3, 9/9 accepted by both checkers, `D14`
-  identical. `parity` is closed; `movegen` is open with a rules surface and a
-  candidate `atomic-movegen` pin.
+  identical. `parity` is closed; `movegen`, opened here, closed on
+  2026-11-20 with its `MD6` clause as a dated miss.
 - Measurements are in [`measurements/plan1/`](measurements/plan1/),
   [`measurements/plan2/`](measurements/plan2/),
   [`measurements/plan3/`](measurements/plan3/),
   [`measurements/plan4/`](measurements/plan4/) and
   [`measurements/plan5/`](measurements/plan5/); ledger rows are in
   [`../../bench.md`](../../bench.md).
-- Next: kill review 2 over plans 4–5, then `movegen` plan 1 (differential
-  harness first).
+- Next: no active parity item. Both initiatives are closed; see
+  [`../README.md`](../README.md) and [`../movegen/report13.md`](../movegen/report13.md).
 
 ## Conventions
 

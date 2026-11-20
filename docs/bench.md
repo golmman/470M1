@@ -314,6 +314,14 @@ parity against the plan 11 product (`core` +0.061%, `easy-win` −0.260%,
 `b287d7eb…`, the platform string and the base `core` reading. See
 `plans/movegen/report12.md` and `plans/movegen/measurements/plan12/`.
 
+Plan 13 footnote (no row): the export split shows the with/without `--proofs`
+delta is the rules layer's walk, not format logic. Walk to walk on `core` the
+plan 12 product is **0.770e9** instructions against plan 2's **0.486e9** and
+the oracle's **0.492e9** (1.58x / 1.57x). The oracle always walks — `--proofs`
+only writes the bytes — so this row is walk-for-walk. Re-derivable work is at
+most **0.08e9** and the one byte-identical memo measured is slower; the row
+letter is unchanged. See `plans/movegen/report13.md`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -345,9 +353,17 @@ rename keep `470m1`; the first adapter row and later rows use `470MI`.
 ## History
 
 Chronological entries — including every plan session that appended no row —
-are in the active initiative's `history.md`. Only ledger-structure changes are
-kept here:
+are in the active initiative's history (`history.md`, or the initiative's own
+history section). Only ledger-structure and lifecycle changes are kept here:
 
+- **2026-11-20** — `movegen` closed with **no ledger row**. Plan 13's counted
+export split is ≤0.08e9 re-derivable and its one byte-identical memo is
+negative (+55.9e6), so there is no encoder plan. It also corrects the oracle
+comparison: provari always computes its walk (`--proofs` only writes bytes),
+isolated at **491,509,701** instructions; walk to walk on `core` the movegen
+product is **0.770e9** vs plan 2's 0.486e9 and the oracle's 0.492e9. The last
+row (movegen plan12) is unchanged: **1.001** product, `MD6` **1.013**. See
+`plans/movegen/report13.md` and `MD10`.
 - **2026-11-19** — product name `470MI` recorded; earlier rows keep the
   `470m1` pin label (`MD4`). No measurement change.
 - **2026-11-17** — file opened for the `parity` initiative. The bench set,

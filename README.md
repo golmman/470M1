@@ -11,12 +11,14 @@ independent checker stays on `shakmaty`. The final product name is `470MI`
 
 **Status:** `parity` is closed. Plan 5 recorded the `P5` closure row on the
 product default (seed 0) at 10 s: 3/3 coverage, geomean 0.945, 9/9 proofs
-accepted by both checkers, `D14` counters identical. `movegen` is open: `MD1`
-is met, the differential is green, and plan 12 closed `M8` by removing
-shakmaty from the prover (the checker stays shakmaty-only). The `MD6` row is
-still a miss at 1.013x the old binary; see
-[`AGENTS.md`](AGENTS.md#current-state) for the current figures and the next
-plan.
+accepted by both checkers, `D14` counters identical. `movegen` is closed
+(2026-11-20) on `MD1`'s done definition: shakmaty is gone from the prover (the
+checker stays shakmaty-only), the differential is 0/0, the `.pvr` files are
+byte-identical and 9/9 are accepted. The `MD6` no-regression clause remains a
+recorded miss at 1.013x the old binary (1.001 product); plan 13's export split
+closed it with no ledger row. See
+[`AGENTS.md`](AGENTS.md#current-state) and
+[`report13.md`](docs/plans/movegen/report13.md) for the figures.
 
 ## Documents
 

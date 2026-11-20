@@ -19,22 +19,23 @@ claim.
 ## Current state
 
 `parity` closed (2026-11-17): `P5` 3/3, geomean **0.945**, 9/9 accepted.
-`movegen`'s `MD1` done definition is met (2026-11-20): the prover runs parser,
-FEN display, value/attack vocabulary, movegen, legality, effects/keys, null
-moves, proof paths and line output on `atomic-movegen` with native `Legal`
-keys; `src/check.rs` stays shakmaty-only. Differential green (0 mismatches/keys;
-`MD3` 87/0/0). Plans 4-11 adopted 2.10.0, the eval geometry, 2.11.0 (`W10`) and
-the audited `unsafe-optimizations` feature (`MD9`); `core` fell 8.004e9 ->
-7.0573e9 while the `MD6` bar stayed a miss (plan 11: 1.003 vs old 0.991,
-1.012x). Plan 12 closed `M8`: shakmaty is gone from the prover (`src/types.rs`
-is the native vocabulary), `.pvr` byte-identical, differential 0/0,
-instructions parity (`core` +0.061%, other cells fall), `MD6` row 1.001 vs old
-0.988 (1.013x, still a miss). `M14`/`M15`/`M8` close. We own
-`golmman/atomic_movegen`; changes go in `wishlistN.md` and enter by an owner
-plan/report. See
+`movegen` closed (2026-11-20) on `MD1`'s done definition: the prover runs
+parser, FEN display, value/attack vocabulary, movegen, legality, effects/keys,
+null moves, proof paths and line output on `atomic-movegen`; `src/check.rs`
+stays shakmaty-only; differential 0/0 (EP 87/0/0); `.pvr` byte-identical; 9/9
+accepted. Plans 4-12 adopted 2.10.0, the eval geometry, 2.11.0 (`W10`), the
+audited `unsafe-optimizations` (`MD9`) and the `M8` removal; `core` fell
+8.004e9 -> 7.0573e9. The `MD6` no-regression clause is a **dated miss** (plan
+12 row: 1.001 product, 1.013 vs old 0.988). Plan 13's export split closed it
+([`report13`](docs/plans/movegen/report13.md), `MD10`): the walk is 1.58x plan
+2 / 1.57x the oracle, the re-derivable share is <=0.08e9 and the measured
+byte-identical memo is slower; no ledger row, no source or pin change. The
+oracle always walks (`--proofs` only writes bytes). We own
+`golmman/atomic_movegen`; wishlists and owner-triggered releases are the `M7`
+protocol that outlives the initiative. See
 [`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
-[`wishlist3`](docs/plans/movegen/wishlist3.md), [`report11`](docs/plans/movegen/report11.md)
-and [`report12`](docs/plans/movegen/report12.md).
+[`wishlist3`](docs/plans/movegen/wishlist3.md), [`report12`](docs/plans/movegen/report12.md)
+and [`report13`](docs/plans/movegen/report13.md).
 
 ## Collaboration
 
@@ -51,7 +52,7 @@ and [`report12`](docs/plans/movegen/report12.md).
 - "Should we X?": answer yes/no first, give the strongest case each way, then
   the cheapest decisive experiment.
 
-## Architecture (planned)
+## Architecture (as built)
 
 The parity layout follows provari's separation of concerns:
 
@@ -75,11 +76,10 @@ The parity layout follows provari's separation of concerns:
 - `tests/`, `bench/`, `scripts/` — integration tests, corpus/driver, oracle
   build.
 
-The movegen initiative later swaps the prover's rules layer to
-`atomic-movegen`; the checker stays on shakmaty so the two rules
-implementations remain independent.
+The prover's rules layer is `atomic-movegen`; the checker stays on shakmaty so
+the two rules implementations remain independent.
 
-## Commands (to be created by plan 1)
+## Commands
 
 - `cargo test` — fast unit and integration tests.
 - `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo doc` — lint and

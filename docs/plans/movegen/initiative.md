@@ -2,7 +2,21 @@
 
 ## Status
 
-**Open (2026-11-17); `MD1` done definition met (2026-11-20).** Plan 3 applied the `MD4` rename and moved the prover's
+**Closed (2026-11-20).** `MD1`'s done definition is met (2026-11-20): the
+prover runs on `atomic-movegen` (parser, FEN display, value/attack vocabulary,
+movegen, legality, effects/keys, null moves, proof paths, line output), the
+checker stays shakmaty-only, the differential is `0/0` (EP 87/0/0), and all
+three `.pvr` files are byte-identical through plans 10-12 with 9/9 accepted.
+The `MD6` no-regression clause is a **dated miss**, closed by plan 13's export
+split ([`report13.md`](report13.md), [`MD10`](decisions.md)): the row letter
+stays **1.001** product / **1.013** against the plan 2 binary; the product walk
+is 1.58x plan 2 (1.57x the oracle), the re-derivable share is <=0.08e9, and the
+one byte-identical memo measured is slower. Closure appended no ledger row and
+changed no source, pin or `PROVENANCE.md` byte; it also records that the oracle
+always walks. `M7`'s wishlist/owner-release protocol outlives the initiative.
+No active items remain. The run's chronology follows.
+
+Plan 3 applied the `MD4` rename and moved the prover's
 rules hot path onto `atomic-movegen` with native `Legal` keys (`M1`); plan 4
 adopted 2.10.0 (`W6`-`W9`). The differential is green (`mismatches: 0`,
 `key_mismatches: 0`, EP 87/0/0) and the checker stays on shakmaty. Plan 5
@@ -115,6 +129,8 @@ One-line resolutions; full text and rationale in [`decisions.md`](decisions.md).
 | MD6 | What "no regression" means | Same-session plan 2 reference, 3/3 and 9/9, reference near 0.972; `1.0` against provari is not the bar |
 | MD7 | Rules residual | Accepted as a dated `MD6` miss (plan 8: ladder +0.1641e9, projection ≤0.125e9); no fourth release |
 | MD8 | Evasion mask | Reopens `MD7` for one lever (plan 9: −0.7246e9 on `core`, 9.271%, identical counters/`.pvr`); crate ask `W10`, adoption needs an owner release plan and a same-session `MD6` row |
+| MD9 | Build shape | Adopt `unsafe-optimizations` on 2.11.0 after the three-site audit; the safe masked-index alternative is slower; guard `make unsafe-feature` |
+| MD10 | Closure | Closed on `MD1`; `MD6` is a dated miss with the plan 13 export split (walk 1.58x plan 2, re-derivable <=0.08e9, oracle always walks); no ledger row, no source or pin change |
 
 ## Upstream ownership and wishlists
 
@@ -131,7 +147,8 @@ and measure the bench. No implicit sync.
 
 ## Candidate work items
 
-These are placeholders; the next plan turns them into concrete items.
+All items below are closed at initiative closure (2026-11-20); the dated
+`MD6` miss is the only open performance claim and it is not carried forward.
 
 | # | Item | Note |
 | --- | --- | --- |
@@ -178,6 +195,21 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-20** — plan 13 closed `movegen` on `MD1`'s done definition with no
+  product change and no ledger row. The counted export split found the
+  re-derivable share at most ~0.08e9 (the one byte-identical memo, `reuse.patch`,
+  **adds 55.9e6**), so there is no encoder plan: the 0.770e9 `core` export delta
+  is the rules layer's per-candidate work, the `MD7` residual. The proof table
+  cannot supply the format's canonical answer (0 of 2,502 `wins_in_two`
+  successes are labelled length 2; all 311 length-2 cases are false positives).
+  It also corrected the oracle comparison: provari computes `mate` from the
+  walk in both arms, and `--proofs` only writes bytes; `SKIP_WALK` isolates its
+  walk at **491,509,701** instructions. Walk to walk on `core`: movegen
+  **0.770e9**, plan 2 **0.486e9**, oracle **0.492e9** (1.58x / 1.57x), so the
+  row is walk-for-walk and the `kill-review1` 0.944 search-only reading removed
+  only the candidate's walk. The letter stays **1.001** product / **1.013**
+  `MD6`; `MD10` records the closure. [`report13.md`](report13.md),
+  [`measurements/export-split/`](measurements/export-split/README.md).
 - **2026-11-20** — plan 12 closed `M8`, complete shakmaty removal from the
   prover. `src/types.rs` is the native vocabulary; `lib::position` is
   `Board::from_fen_with(_, Lichess)`; `format`/`walk`/`lines`/`search`/`dfpn`

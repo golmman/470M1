@@ -7,8 +7,9 @@ all three cells proved at 10 s, geomean **0.945** against `provari --guide
 hand`, 9/9 proofs accepted by both checkers, `D14` counters identical. The
 closure row is in [`../../bench.md`](../../bench.md) and
 [`measurements/plan5/`](measurements/plan5/). No active items remain. The
-`movegen` initiative is open; see [`../movegen/initiative.md`](../movegen/initiative.md)
-and [`report5.md`](report5.md).
+`movegen` initiative is closed (2026-11-20) with its `MD6` no-regression
+clause as a dated miss; see [`../movegen/initiative.md`](../movegen/initiative.md)
+and [`../movegen/report13.md`](../movegen/report13.md).
 
 ## Reference
 
