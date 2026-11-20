@@ -127,6 +127,8 @@ Run one counted split of the proof-export walk in 470MI: using a scratch tree (n
 
 ---
 
+Brainstorming session.
+
 Propose future initiative we can work on to improve this project.
 
 Here are some ideas
@@ -136,3 +138,5 @@ Here are some ideas
 * proofdb - proof export inspired by `atomic_solver`
 * tt - transposition table improvements like bucketing, salts, etc.
 * perf - raw performance profiling and optimizations
+
+Look at `atomic_solver`, `atomi` and `provari` for more ideas and come up with your own suggestions.
