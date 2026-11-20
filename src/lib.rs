@@ -1,4 +1,4 @@
-//! `470M1`: an Atomic win prover and an independent proof checker.
+//! `470MI`: an Atomic win prover and an independent proof checker.
 //!
 //! The crate supplies the rules helpers, the compact proof format, a proof
 //! walk, the independent checker, the hand-guided DF-PN search and the `line`
@@ -20,67 +20,66 @@ pub mod moves;
 pub mod proofs;
 pub mod search;
 pub mod table;
+pub mod types;
 pub mod walk;
 
-use shakmaty::{
-    CastlingMode, Color, EnPassantMode, KnownOutcome, Outcome, Position as _, PositionError,
-    PositionErrorKinds, Setup, fen::Fen, variant::Atomic, zobrist::Zobrist64,
-};
+use atomic_movegen::{Board, FenLoadError, FenPolicy, ValidationErrors};
 
-/// An Atomic position from its FEN, read as `from_setup` reads one.
-pub fn position(fen: &str) -> Result<Atomic, String> {
-    let fen: Fen = fen.parse().map_err(|e| format!("bad FEN: {e}"))?;
-    from_setup(fen.into_setup()).map_err(|flaws| format!("illegal position: {flaws}"))
+use crate::board::Position;
+
+/// An Atomic position from its FEN, read as Lichess reads one: a castling
+/// right not backed by its pieces and an impossible en passant square are
+/// dropped, more material than a game can reach is allowed, and any other
+/// flaw makes it no position. The error says which in words.
+pub fn position(fen: &str) -> Result<Position, String> {
+    let board = Board::from_fen_with(fen, FenPolicy::Lichess).map_err(read_error)?;
+    Ok(Position::from_board(board))
 }
 
-/// An Atomic position, castling as in standard chess. As Lichess does, it
-/// drops castling rights and an en passant square the position cannot have,
-/// and lets more material be than a game can reach; any other flaw makes it
-/// no position, and the error says which in words.
-pub fn from_setup(setup: Setup) -> Result<Atomic, String> {
-    let turn = setup.turn;
-    setup
-        .position(CastlingMode::Standard)
-        .or_else(PositionError::ignore_invalid_castling_rights)
-        .or_else(PositionError::ignore_invalid_ep_square)
-        .or_else(PositionError::ignore_too_much_material)
-        .map_err(|error| flaws(error.kinds(), turn))
+/// Why a FEN was not read as a position.
+fn read_error(error: FenLoadError) -> String {
+    match error {
+        FenLoadError::Syntax(error) => format!("bad FEN: {error}"),
+        FenLoadError::InvalidPosition(kinds) => format!("illegal position: {}", flaws(kinds)),
+    }
 }
 
-/// Why a setup with `turn` to move is no position.
-fn flaws(kinds: PositionErrorKinds, turn: Color) -> String {
-    if kinds.contains(PositionErrorKinds::EMPTY_BOARD) {
+/// Why a position is not one a game reaches.
+fn flaws(kinds: ValidationErrors) -> String {
+    if kinds.contains(ValidationErrors::EMPTY_BOARD) {
         return "the board is empty".to_owned();
     }
-    let name = |color: Color| if color.is_white() { "White" } else { "Black" };
-    let (us, them) = (name(turn), name(!turn));
     let words = [
         (
-            PositionErrorKinds::MISSING_KING,
-            format!("{them} has no king while {us} is to move"),
+            ValidationErrors::MISSING_COMMONER_WHITE,
+            "White has no king",
         ),
         (
-            PositionErrorKinds::TOO_MANY_KINGS,
-            "a side has more than one king".to_owned(),
+            ValidationErrors::MISSING_COMMONER_BLACK,
+            "Black has no king",
         ),
         (
-            PositionErrorKinds::PAWNS_ON_BACKRANK,
-            "a pawn stands on the first or last rank".to_owned(),
+            ValidationErrors::TOO_MANY_COMMONERS_WHITE,
+            "White has more than one king",
         ),
         (
-            PositionErrorKinds::OPPOSITE_CHECK,
-            format!("{them} is in check while {us} is to move"),
+            ValidationErrors::TOO_MANY_COMMONERS_BLACK,
+            "Black has more than one king",
         ),
         (
-            PositionErrorKinds::IMPOSSIBLE_CHECK,
-            format!("no game reaches the check on {us}"),
+            ValidationErrors::PAWNS_ON_BACKRANK,
+            "a pawn stands on the first or last rank",
         ),
         (
-            PositionErrorKinds::VARIANT,
-            "it breaks a rule of Atomic chess".to_owned(),
+            ValidationErrors::OPPOSITE_CHECK,
+            "the side that just moved is in check",
+        ),
+        (
+            ValidationErrors::IMPOSSIBLE_CHECK,
+            "no game reaches the check",
         ),
     ];
-    let found: Vec<String> = words
+    let found: Vec<&str> = words
         .into_iter()
         .filter(|(kind, _)| kinds.contains(*kind))
         .map(|(_, words)| words)
@@ -94,22 +93,20 @@ fn flaws(kinds: PositionErrorKinds, turn: Color) -> String {
 
 /// How the game has ended at `pos`, if it has: the winner, none for a draw,
 /// and why, as Lichess names it.
-pub fn ending(pos: &Atomic) -> Option<(Option<Color>, &'static str)> {
-    match pos.variant_outcome() {
-        Outcome::Known(KnownOutcome::Decisive { winner }) => {
-            return Some((Some(winner), "variant_loss"));
+pub fn ending(pos: &Position) -> Option<(Option<board::Color>, &'static str)> {
+    for color in [board::Color::White, board::Color::Black] {
+        if pos.king(color).is_none() {
+            return Some((Some(color.flip()), "variant_loss"));
         }
-        Outcome::Known(KnownOutcome::Draw) => return Some((None, "variant_draw")),
-        Outcome::Unknown => {}
     }
-    if pos.legal_moves().is_empty() {
-        return Some(if pos.is_check() {
-            (Some(!pos.turn()), "checkmate")
+    if !moves::has_legal_move(pos) {
+        return Some(if pos.in_check() {
+            (Some(pos.turn().flip()), "checkmate")
         } else {
             (None, "stalemate")
         });
     }
-    if pos.is_insufficient_material() {
+    if moves::cannot_win(pos, board::Color::White) && moves::cannot_win(pos, board::Color::Black) {
         return Some((None, "insufficient_material"));
     }
     if pos.halfmoves() >= 100 {
@@ -120,8 +117,8 @@ pub fn ending(pos: &Atomic) -> Option<(Option<Color>, &'static str)> {
 
 /// A position's Zobrist hash, including the en passant file only where taking
 /// there is legal.
-pub fn hash(pos: &Atomic) -> u64 {
-    pos.zobrist_hash::<Zobrist64>(EnPassantMode::Legal).0
+pub fn hash(pos: &Position) -> u64 {
+    pos.hash()
 }
 
 /// How a game stands after a move, for the attacker.
@@ -132,22 +129,25 @@ pub enum Status {
     Open,
 }
 
-pub fn status(pos: &Atomic, attacker: Color) -> Status {
-    match pos.variant_outcome() {
-        Outcome::Known(KnownOutcome::Decisive { winner }) if winner == attacker => {
-            return Status::Won;
-        }
-        Outcome::Known(_) => return Status::Over,
-        Outcome::Unknown => {}
+pub fn status(pos: &Position, attacker: board::Color) -> Status {
+    if pos.king(attacker).is_none() {
+        return Status::Over;
     }
-    if pos.is_check() && pos.legal_moves().is_empty() {
+    if pos.king(attacker.flip()).is_none() {
+        return Status::Won;
+    }
+    // Only a position in check can be mate; a stalemate stays open and fails
+    // when the search finds no move in it.
+    if pos.in_check() && !moves::has_legal_move(pos) {
         return if pos.turn() != attacker {
             Status::Won
         } else {
             Status::Over
         };
     }
-    if pos.is_insufficient_material() || pos.halfmoves() >= 100 {
+    if (moves::cannot_win(pos, board::Color::White) && moves::cannot_win(pos, board::Color::Black))
+        || pos.halfmoves() >= 100
+    {
         return Status::Over;
     }
     Status::Open
@@ -156,10 +156,10 @@ pub fn status(pos: &Atomic, attacker: Color) -> Status {
 #[cfg(test)]
 mod tests {
     use super::{ending, position};
-    use shakmaty::{Color, EnPassantMode, fen::Fen};
+    use crate::board::Color;
 
     fn read(fen: &str) -> Result<String, String> {
-        position(fen).map(|pos| Fen::from_position(&pos, EnPassantMode::Legal).to_string())
+        position(fen).map(|pos| pos.to_fen())
     }
 
     #[test]
@@ -171,11 +171,11 @@ mod tests {
         for (fen, error) in [
             (
                 "rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1",
-                "illegal position: Black has no king while White is to move",
+                "illegal position: Black has no king",
             ),
             (
                 "4k3/8/8/8/8/8/4Q3/4K3 w - - 0 1",
-                "illegal position: Black is in check while White is to move",
+                "illegal position: the side that just moved is in check",
             ),
         ] {
             assert_eq!(read(fen), Err(error.to_owned()), "{fen}");

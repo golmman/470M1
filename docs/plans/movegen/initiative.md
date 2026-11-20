@@ -2,7 +2,7 @@
 
 ## Status
 
-**Open (2026-11-17).** Plan 3 applied the `MD4` rename and moved the prover's
+**Open (2026-11-17); `MD1` done definition met (2026-11-20).** Plan 3 applied the `MD4` rename and moved the prover's
 rules hot path onto `atomic-movegen` with native `Legal` keys (`M1`); plan 4
 adopted 2.10.0 (`W6`-`W9`). The differential is green (`mismatches: 0`,
 `key_mismatches: 0`, EP 87/0/0) and the checker stays on shakmaty. Plan 5
@@ -47,11 +47,18 @@ masked-index alternative (`sm`): `sm` is slower than `base`, while `uo` falls
 **7.0573e9** (−0.0903e9, **1.074×** plan 2); the same-session row is geomean
 **1.003** against a plan 2 binary at 0.991 (candidate/old **1.012**, still an
 `MD6` miss). `M15` closes; the guard is `make unsafe-feature` plus the
-prepared upstream CI patch. `M1`'s performance part and `M6` remain documented
-misses, and `M8` is the open work item. See [`report5.md`](report5.md), [`report6.md`](report6.md),
+prepared upstream CI patch. Plan 12 removed shakmaty from the prover (`M8`):
+parser, FEN display, value types, attack tables, proof paths and line output
+are the crate's; `check.rs` is untouched. The differential stays 0/0 (EP
+87/0/0), all three `.pvr` files are byte-identical to plans 10/11, 9/9 are
+accepted, and instructions are parity against plan 11 (`core` +0.061%,
+`easy-win`/`deep-win` fall). The same-session row is geomean **1.001** against
+a plan 2 binary at 0.988 (candidate/old **1.013**): `MD6` remains a recorded
+miss. `M1`'s performance part and `M6` remain documented misses; `M8` closes,
+so `MD1`'s done definition is met. See [`report5.md`](report5.md), [`report6.md`](report6.md),
 [`report7.md`](report7.md), [`hot-path-audit.md`](hot-path-audit.md),
-[`report9.md`](report9.md), [`report10.md`](report10.md) and
-[`wishlist3.md`](wishlist3.md).
+[`report9.md`](report9.md), [`report10.md`](report10.md),
+[`report12.md`](report12.md) and [`wishlist3.md`](wishlist3.md).
 
 ## Goal
 
@@ -135,7 +142,7 @@ These are placeholders; the next plan turns them into concrete items.
 | M5 | **Differential harness** | Compare legal moves, outcomes, hashes and proof acceptance on fixtures, corpus and random play-outs |
 | M6 | **No regression, stretch faster** | Re-run the 10 s bench at every stage; a regression is a finding, not an adoption; **closed as a documented `MD6` miss** (plan 8, `MD7`) |
 | M7 | **Upstream asks** | File measured API requests in `wishlistN.md`; integrate a release only by an owner-triggered plan/report and pin update |
-| M8 | **Complete shakmaty removal** | Parser, display, proof paths and line output leave the prover; `check.rs` stays shakmaty |
+| M8 | **Complete shakmaty removal** | **Closed** (plan 12): parser, display, value/attack vocabulary, proof paths and line output leave the prover; `check.rs` stays shakmaty; differential 0/0, `.pvr` byte-identical, instructions parity (+0.061% `core`, falls on the other cells); `MD6` 1.013 miss |
 | M9 | **Rename** | Apply `470MI` / `atomic470mi` before the first adapter bench; historical docs stay unchanged |
 | M10 | **Hot-path cost** | Adopt `W6`-`W9` lean APIs; no translator; measured per call, then by the 10 s row |
 | M11 | **Non-rules residual** | The gap left after the rules layer: node geometry, generation adapter, tree, `null`; **closed negative** (plan 6: split resolved, `NodeFacts` falsified at +0.038e9) |
@@ -170,6 +177,24 @@ These are placeholders; the next plan turns them into concrete items.
 | Scope creep into search tuning | Movegen is a rules-layer initiative; search changes need their own item and gate |
 
 ## History
+
+- **2026-11-20** — plan 12 closed `M8`, complete shakmaty removal from the
+  prover. `src/types.rs` is the native vocabulary; `lib::position` is
+  `Board::from_fen_with(_, Lichess)`; `format`/`walk`/`lines`/`search`/`dfpn`
+  take our `Position`/`Move`; `moves`/`eval` use the crate's attack tables;
+  `from_atomic`/`to_atomic`/`to_shakmaty`/`board_move` are gone. `check.rs` is
+  untouched and `tests/differential.rs` keeps shakmaty as the independent
+  oracle. The release differential is 0/0 (84/11 FENs, 27,088 positions,
+  540,383 moves/keys, EP 87/0/0); `core`/`easy-win`/`deep-win` `.pvr` are
+  byte-identical to plans 10/11 and 9/9 are accepted. The first removal cost
+  +2.50% instructions on `core`; an `#[inline(always)]` attack dispatch and a
+  direct bit-scan iterator close it to **+0.061%** on `core`, while
+  `easy-win` falls 0.260% and `deep-win` 0.162% against the plan 11 product.
+  The same-session `MD6` row is geomean **1.001** against the plan 2 binary at
+  **0.988** (candidate/old **1.013**, plan 11: 1.012); `MD6` is still not
+  held. Gates, veto and the feature gate are green. `M8` closes; `MD1`'s done
+  definition is met. [`report12.md`](report12.md),
+  [`measurements/plan12/`](measurements/plan12/README.md).
 
 - **2026-11-20** — plan 11 audited `unsafe-optimizations` on the adopted
   2.11.0 pin, measured a safe masked-index alternative (`sm`) and decided the

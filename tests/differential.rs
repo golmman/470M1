@@ -15,14 +15,17 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 use atomic_movegen::{
-    Board, Color as TheirColor, EnPassantMode as TheirEp, FenPolicy, Move as TheirMove, Outcome,
-    PieceType as TheirPiece, StateInfo, TerminalReason, movegen,
+    Board, Color as TheirColor, EnPassantMode as TheirEp, FenPolicy, Move as TheirMove, NO_PIECE,
+    Outcome, PieceType as TheirPiece, StateInfo, TerminalReason, movegen,
 };
-use atomic470mi::board::{Move as OurMove, Position as OurPosition};
+use atomic470mi::board::{Color, Move as OurMove, Position as OurPosition, Role, Square};
 use atomic470mi::moves::{self, Mover};
+use atomic470mi::types::{
+    BitboardExt, attacks as our_attacks, castle_king_to, castle_rook_to, castle_side, piece_of,
+};
 use atomic470mi::{ending, position};
 use shakmaty::fen::Fen;
-use shakmaty::{Color, EnPassantMode, Position as _, Role, Square, uci::UciMove, variant::Atomic};
+use shakmaty::{CastlingMode, Position as _, Setup as ShakSetup, uci::UciMove, variant::Atomic};
 
 const STANDARD: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -256,26 +259,27 @@ fn without_piece(fen: &str, square: &str) -> String {
 }
 
 fn their_color(color: Color) -> TheirColor {
-    if color.is_white() {
-        TheirColor::White
-    } else {
-        TheirColor::Black
-    }
+    color
 }
 
 fn their_role(role: Role) -> TheirPiece {
-    match role {
-        Role::Pawn => TheirPiece::Pawn,
-        Role::Knight => TheirPiece::Knight,
-        Role::Bishop => TheirPiece::Bishop,
-        Role::Rook => TheirPiece::Rook,
-        Role::Queen => TheirPiece::Queen,
-        Role::King => TheirPiece::Commoner,
-    }
+    role
 }
 
 fn their_square(square: Square) -> atomic_movegen::Square {
-    atomic_movegen::Square::from_u8(square as u8)
+    square
+}
+
+/// The independent shakmaty position for a FEN, under the old Lichess policy.
+fn shak_position(fen: &str) -> Result<Atomic, String> {
+    let parsed: Fen = fen.parse().map_err(|e| format!("bad FEN: {e}"))?;
+    let setup: ShakSetup = parsed.into_setup();
+    setup
+        .position(CastlingMode::Standard)
+        .or_else(shakmaty::PositionError::ignore_invalid_castling_rights)
+        .or_else(shakmaty::PositionError::ignore_invalid_ep_square)
+        .or_else(shakmaty::PositionError::ignore_too_much_material)
+        .map_err(|e| format!("illegal position: {}", e.kinds().bits()))
 }
 
 fn to_their_move(m: OurMove) -> TheirMove {
@@ -296,6 +300,15 @@ fn uci(m: shakmaty::Move) -> String {
     UciMove::from_standard(m).to_string()
 }
 
+/// Our move played on the shakmaty side, through its UCI text.
+fn to_shak_move(pos: &Atomic, m: OurMove) -> shakmaty::Move {
+    m.to_uci()
+        .parse::<UciMove>()
+        .expect("a UCI move")
+        .to_move(pos)
+        .expect("a legal move")
+}
+
 fn our_legal(pos: &OurPosition) -> Vec<OurMove> {
     let mover = Mover::new(pos);
     pos.pseudo_legal()
@@ -306,8 +319,8 @@ fn our_legal(pos: &OurPosition) -> Vec<OurMove> {
         .collect()
 }
 
-fn our_uci(pos: &OurPosition, m: OurMove) -> String {
-    uci(pos.to_shakmaty(m))
+fn our_uci(_pos: &OurPosition, m: OurMove) -> String {
+    m.to_uci()
 }
 
 fn their_legal(board: &Board) -> Vec<TheirMove> {
@@ -316,16 +329,9 @@ fn their_legal(board: &Board) -> Vec<TheirMove> {
     list.as_slice().to_vec()
 }
 
-/// The same piece, if any: our shakmaty piece and their piece on one square.
-fn same_piece(our: Option<shakmaty::Piece>, their: atomic_movegen::Piece) -> bool {
-    match (our, their.color(), their.type_of()) {
-        (None, None, None) => true,
-        (Some(our), Some(their_color), Some(their_type)) => {
-            (our.color.is_white() == (their_color == TheirColor::White))
-                && their_role(our.role) == their_type
-        }
-        _ => false,
-    }
+/// The same piece, if any: our piece and their piece on one square.
+fn same_piece(our: Option<atomic_movegen::Piece>, their: atomic_movegen::Piece) -> bool {
+    our.unwrap_or(NO_PIECE) == their
 }
 
 fn square_set(raw: u64) -> BTreeSet<u8> {
@@ -337,25 +343,25 @@ fn square_set(raw: u64) -> BTreeSet<u8> {
 /// move. The scoring's `threats` is EP-blind; the census compares against
 /// this count.
 fn exploding_captures_ep(pos: &OurPosition, side: Color) -> u32 {
-    let Some(king) = pos.king(!side) else {
+    let Some(king) = pos.king(side.flip()) else {
         return 0;
     };
     let own = pos
         .king(side)
-        .map_or(shakmaty::Bitboard::EMPTY, shakmaty::attacks::king_attacks);
+        .map_or(atomic_movegen::Bitboard::EMPTY, our_attacks::king_attacks);
     let occupied = pos.occupied();
-    let capturers = pos.by_color(side) & !pos.by_role(Role::King);
-    let mut count = (shakmaty::attacks::king_attacks(king) & pos.by_color(!side) & !own)
-        .into_iter()
+    let capturers = pos.by_color(side) & !pos.by_role(Role::Commoner);
+    let mut count = (our_attacks::king_attacks(king) & pos.by_color(side.flip()) & !own)
+        .squares()
         .filter(|&target| (pos.attackers_to(target, occupied) & capturers).any())
         .count() as u32;
     if pos.turn() == side
         && let Some(to) = pos.maybe_ep_square()
     {
-        let takers = pos.attackers_to(to, occupied) & pos.by_piece(side.pawn());
-        for from in takers {
+        let takers = pos.attackers_to(to, occupied) & pos.by_piece(piece_of(side, Role::Pawn));
+        for from in takers.squares() {
             let m = pos.en_passant_move(from, to);
-            if pos.legal(m) && pos.play(m).king(!side).is_none() {
+            if pos.legal(m) && pos.play(m).king(side.flip()).is_none() {
                 count += 1;
                 break;
             }
@@ -371,7 +377,7 @@ fn compare_placement(
     occupied: Option<u64>,
 ) {
     for index in 0..64u8 {
-        let square = Square::new(u32::from(index));
+        let square = Square::from_u8(index);
         let theirs = post.piece_on(atomic_movegen::Square::from_u8(index));
         assert!(
             same_piece(our.piece_at(square), theirs),
@@ -382,7 +388,7 @@ fn compare_placement(
     }
     if let Some(occupied) = occupied {
         let mut ours = 0u64;
-        for square in our.occupied() {
+        for square in our.occupied().squares() {
             ours |= 1 << (square as u8);
         }
         assert_eq!(
@@ -393,7 +399,7 @@ fn compare_placement(
     }
 }
 
-fn compare_terminal(label: &str, our: &Atomic, board: &Board, stats: &mut Stats) {
+fn compare_terminal(label: &str, our: &OurPosition, board: &Board, stats: &mut Stats) {
     let ours = ending(our);
     let theirs = board.terminal();
     if let Some(terminal) = theirs
@@ -410,7 +416,7 @@ fn compare_terminal(label: &str, our: &Atomic, board: &Board, stats: &mut Stats)
     let expected = theirs.map(|terminal| {
         let winner = match terminal.outcome {
             Outcome::Win => Some(turn),
-            Outcome::Loss => Some(!turn),
+            Outcome::Loss => Some(turn.flip()),
             Outcome::Draw => None,
             _ => unreachable!("two outcomes"),
         };
@@ -428,7 +434,7 @@ fn compare_terminal(label: &str, our: &Atomic, board: &Board, stats: &mut Stats)
         ours,
         expected,
         "{label}: terminality differs; FEN {}",
-        Fen::from_position(our, EnPassantMode::Legal)
+        our.to_fen()
     );
 }
 
@@ -446,7 +452,7 @@ fn compare_explosion_witness(
         child.is_legal(their_witness),
         "{context}: witness {their_witness} is not legal"
     );
-    let target = their_color(!our_child.turn());
+    let target = their_color(our_child.turn().flip());
     let mut after = child.clone();
     let mut state = StateInfo::new();
     after.do_move(their_witness, &mut state);
@@ -457,12 +463,7 @@ fn compare_explosion_witness(
 }
 
 fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, stats: &mut Stats) {
-    let context = || {
-        format!(
-            "{label}: FEN {}",
-            Fen::from_position(shak, EnPassantMode::Legal)
-        )
-    };
+    let context = || format!("{label}: FEN {}", our.to_fen());
     stats.positions += 1;
 
     // Keys: the prover now uses movegen's native table. The Legal policy
@@ -598,7 +599,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
 
         let mut removed = 0u64;
         if !m.is_castle() {
-            for square in our.occupied().without(child.occupied()) {
+            for square in (our.occupied() & !child.occupied()).squares() {
                 removed |= 1 << (square as u8);
             }
             removed &= !(1u64 << (m.from() as u8));
@@ -622,7 +623,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
         if let Some(role) = m.promotion() {
             // A capture-promotion's new piece is at ground zero and dies; a
             // quiet promotion stays. Full placement is compared above.
-            let expected = (!effect.capture).then(|| role.of(our.turn()));
+            let expected = (!effect.capture).then(|| piece_of(our.turn(), role));
             assert_eq!(
                 child.piece_at(m.to()),
                 expected,
@@ -631,18 +632,18 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
             );
         }
         if m.is_castle() {
-            let side = shakmaty::CastlingSide::from_queen_side(m.to() < m.from());
-            let king_to = side.king_to(our.turn());
-            let rook_to = side.rook_to(our.turn());
+            let side = castle_side(m.to() < m.from());
+            let king_to = castle_king_to(side, our.turn());
+            let rook_to = castle_rook_to(side, our.turn());
             assert_eq!(
                 child.piece_at(king_to),
-                Some(our.turn().king()),
+                Some(piece_of(our.turn(), Role::Commoner)),
                 "{}: castling commoner differs for {am}",
                 context()
             );
             assert_eq!(
                 child.piece_at(rook_to),
-                Some(our.turn().rook()),
+                Some(piece_of(our.turn(), Role::Rook)),
                 "{}: castling rook differs for {am}",
                 context()
             );
@@ -698,7 +699,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
                 );
                 let after = child.play(witness);
                 assert!(
-                    after.king(!child.turn()).is_none(),
+                    after.king(child.turn().flip()).is_none(),
                     "{}: our witness {witness:?} does not explode after {am}",
                     context()
                 );
@@ -750,7 +751,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
         }
     }
 
-    compare_terminal(&context(), shak, board, stats);
+    compare_terminal(&context(), our, board, stats);
 }
 
 fn run_acceptance(fen: &str, stats: &mut Stats) {
@@ -764,14 +765,14 @@ fn run_acceptance(fen: &str, stats: &mut Stats) {
         theirs.as_ref().err()
     );
     match (ours, theirs) {
-        (Ok(shak), Ok(board)) => {
+        (Ok(our), Ok(board)) => {
             stats.fen_accepted += 1;
-            let our = OurPosition::from_atomic(&shak);
-            let our_fen = Fen::from_position(&shak, EnPassantMode::Legal).to_string();
+            let shak = shak_position(fen).expect("shakmaty accepted an accepted FEN");
+            let our_fen = our.to_fen();
             let their_fen = board.fen_with(TheirEp::Legal);
             assert_eq!(our_fen, their_fen, "accepted FEN differs for {fen:?}");
             assert_eq!(
-                shak.maybe_ep_square().map(|sq| sq as u8),
+                our.maybe_ep_square().map(|sq| sq as u8),
                 board.ep_square().map(|sq| sq as u8),
                 "stored en passant differs for {fen:?}"
             );
@@ -808,8 +809,8 @@ fn run_playouts(
     for (seed_index, &seed) in seeds.iter().enumerate() {
         for game in 0..games {
             let fen = &starts[(seed_index * games + game) % starts.len()];
-            let shak = position(fen).expect("an accepted start");
-            let mut our = OurPosition::from_atomic(&shak);
+            let shak = shak_position(fen).expect("an accepted start");
+            let mut our = position(fen).expect("an accepted start");
             let mut board = Board::from_fen_with(fen, FenPolicy::Lichess).expect("accepted");
             let mut rng = Lcg::new(seed ^ (game as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15));
             let mut seen = BTreeSet::new();
@@ -829,7 +830,7 @@ fn run_playouts(
                 let (_, chosen) = &legal[(rng.next() % legal.len() as u64) as usize];
                 let chosen = *chosen;
                 let am = to_their_move(chosen);
-                let shak_move = our.to_shakmaty(chosen);
+                let shak_move = to_shak_move(&shak, chosen);
                 our = our.play(chosen);
                 shak.play_unchecked(shak_move);
                 let mut state = StateInfo::new();
@@ -870,8 +871,7 @@ fn fen_acceptance_and_rules_smoke() {
 #[test]
 fn en_passant_explosion_regression() {
     for fen in ep_fens() {
-        let shak = position(&fen).expect("an accepted en passant FEN");
-        let our = OurPosition::from_atomic(&shak);
+        let our = position(&fen).expect("an accepted en passant FEN");
         let board = Board::from_fen_with(&fen, FenPolicy::Lichess).expect("an accepted FEN");
         let ctx = board.effect_context();
         let mover = Mover::new(&our);
@@ -940,8 +940,7 @@ fn native_keys_match_movegen() {
     fens.extend(base_fens());
     fens.extend(ep_fens());
     for fen in &fens {
-        let shak = position(fen).expect("an accepted FEN");
-        let our = OurPosition::from_atomic(&shak);
+        let our = position(fen).expect("an accepted FEN");
         let board = Board::from_fen_with(fen, FenPolicy::Lichess).expect("an accepted FEN");
         assert_eq!(
             our.hash(),
@@ -977,8 +976,6 @@ fn native_keys_are_deterministic() {
     {
         let first = position(fen).expect("an accepted FEN");
         let second = position(fen).expect("an accepted FEN");
-        let first = OurPosition::from_atomic(&first);
-        let second = OurPosition::from_atomic(&second);
         assert_eq!(first.hash(), second.hash(), "{fen}: root key moved");
         for &m in our_legal(&first).iter() {
             assert_eq!(
@@ -999,15 +996,15 @@ fn material_divergence_is_explicit() {
         ("k7/8/8/8/8/8/8/KN6 w - - 0 1", Role::Knight),
         ("k7/8/8/8/8/8/8/KR6 w - - 0 1", Role::Rook),
     ] {
-        let shak = position(fen).expect("a legal position");
-        let our = OurPosition::from_atomic(&shak);
+        let shak = shak_position(fen).expect("a legal position");
+        let our = position(fen).expect("a legal position");
         let board = Board::from_fen_with(fen, FenPolicy::Lichess).expect("a legal position");
         assert!(
             shak.is_insufficient_material(),
             "{fen}: shakmaty should call this insufficient"
         );
         assert_eq!(
-            ending(&shak),
+            ending(&our),
             Some((None, "insufficient_material")),
             "{fen}: the prover's ending should use the broad rule"
         );

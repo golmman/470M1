@@ -7,7 +7,6 @@ use std::time::{Duration, Instant};
 use atomic470mi::check::check_proof;
 use atomic470mi::dfpn::{self, Dfpn, Guide};
 use atomic470mi::{format, position};
-use shakmaty::Position as _;
 
 const CELLS: [(&str, &str); 3] = [
     (
@@ -59,9 +58,7 @@ fn run(fen: &str) -> Run {
     let proof = if mate.is_some() {
         let (_, bytes) = format::encode(&root, root.turn(), |pos| {
             let key = (pos.hash(), pos.halfmoves());
-            search
-                .winning_move(&pos.to_atomic(), &key)
-                .and_then(|m| format::board_move(pos, &m))
+            search.winning_move(pos, &key)
         })
         .unwrap();
         bytes

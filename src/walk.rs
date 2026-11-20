@@ -8,10 +8,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use shakmaty::{Color, Move, Position as _, variant::Atomic};
-
-use crate::board::Position;
-use crate::{Status, status};
+use crate::Status;
+use crate::board::{Move, Position};
+use crate::status;
+use crate::types::Color;
 
 /// Attacker boards and their winning moves.
 pub type Moves = HashMap<u64, Option<Move>>;
@@ -24,17 +24,13 @@ pub struct Measure {
 }
 
 /// A capture that wins at once, which the checkers find for themselves.
-pub fn winning_capture(pos: &Atomic, attacker: Color) -> Option<Move> {
-    pos.legal_moves().into_iter().find(|m| {
-        m.is_capture() && {
-            let mut next = pos.clone();
-            next.play_unchecked(*m);
-            matches!(status(&next, attacker), Status::Won)
-        }
-    })
+pub fn winning_capture(pos: &Position, attacker: Color) -> Option<Move> {
+    pos.legal_moves()
+        .into_iter()
+        .find(|&m| pos.effect(m).capture && matches!(status(&pos.play(m), attacker), Status::Won))
 }
 
-fn wins_by_capture(pos: &Atomic, attacker: Color) -> bool {
+fn wins_by_capture(pos: &Position, attacker: Color) -> bool {
     winning_capture(pos, attacker).is_some()
 }
 
@@ -43,7 +39,7 @@ fn wins_by_capture(pos: &Atomic, attacker: Color) -> bool {
 #[derive(Default)]
 pub struct Walk {
     pub measures: HashMap<u64, Measure>,
-    pub positions: HashMap<u64, Atomic>,
+    pub positions: HashMap<u64, Position>,
     active: HashSet<u64>,
     /// Whether to leave `positions` empty, for walks that only measure.
     measures_only: bool,
@@ -62,12 +58,12 @@ impl Walk {
 /// Measures the subproof of an attacker position, memoised by position; an
 /// error for a missing move or a cycle.
 pub fn measure(
-    pos: &Atomic,
+    pos: &Position,
     attacker: Color,
     moves: &Moves,
     walk: &mut Walk,
 ) -> Result<Measure, String> {
-    let here = Position::from_atomic(pos).hash();
+    let here = pos.hash();
     if walk.active.contains(&here) {
         return Err("the proof repeats a position".into());
     }
@@ -83,8 +79,7 @@ pub fn measure(
             .flatten()
             .ok_or("a position of the proof has no winning move")?;
         walk.active.insert(here);
-        let mut after = pos.clone();
-        after.play_unchecked(m);
+        let after = pos.play(m);
         let replies = measure_after(&after, attacker, moves, walk);
         // Off the line whether or not it failed, so that the walk can go on.
         walk.active.remove(&here);
@@ -104,7 +99,7 @@ pub fn measure(
 /// The replies' subproofs after an attacker's move: their tree sizes summed
 /// and their longest length.
 pub fn measure_after(
-    after: &Atomic,
+    after: &Position,
     attacker: Color,
     moves: &Moves,
     walk: &mut Walk,
@@ -114,8 +109,7 @@ pub fn measure_after(
         return Ok(total);
     }
     for reply in after.legal_moves() {
-        let mut next = after.clone();
-        next.play_unchecked(reply);
+        let next = after.play(reply);
         if matches!(status(&next, attacker), Status::Open) {
             let child = measure(&next, attacker, moves, walk)?;
             total.tree = total.tree.saturating_add(child.tree);

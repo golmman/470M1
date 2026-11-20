@@ -13,11 +13,10 @@ use crate::clock::Instant;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hasher};
 
-use shakmaty::{
-    Color, EnPassantMode, KnownOutcome, Move, MoveList, Outcome, Position, Role, fen::Fen,
-    variant::Atomic, zobrist::Zobrist64,
-};
-
+use crate::Status;
+use crate::board::{Move, Position};
+use crate::status;
+use crate::types::{Color, Role};
 /// A position and its 50-move counter, which can turn a win into a draw.
 pub type Key = (u64, u32);
 
@@ -47,11 +46,11 @@ impl Hasher for KeyHasher {
 
 pub type Table<V> = HashMap<Key, V, BuildHasherDefault<KeyHasher>>;
 
-pub fn hash(pos: &Atomic) -> u64 {
-    pos.zobrist_hash::<Zobrist64>(EnPassantMode::Legal).0
+pub fn hash(pos: &Position) -> u64 {
+    pos.hash()
 }
 
-pub fn key(pos: &Atomic) -> Key {
+pub fn key(pos: &Position) -> Key {
     (hash(pos), pos.halfmoves())
 }
 
@@ -61,14 +60,6 @@ enum Bound {
     Won(u32),
     /// Not won within this many.
     NotWithin(u32),
-}
-
-pub enum Status {
-    /// The game ended with the attacker winning.
-    Won,
-    /// The game ended otherwise.
-    Over,
-    Open,
 }
 
 pub struct Search {
@@ -84,7 +75,7 @@ pub struct Search {
 }
 
 impl Search {
-    pub fn new(root: &Atomic, deadline: Instant, capacity: usize) -> Search {
+    pub fn new(root: &Position, deadline: Instant, capacity: usize) -> Search {
         Search {
             attacker: root.turn(),
             known: Table::default(),
@@ -99,7 +90,7 @@ impl Search {
 
     /// The fewest attacker moves that win, if a win within `most` is found in
     /// time.
-    pub fn solve(&mut self, root: &Atomic, most: u32) -> Option<u32> {
+    pub fn solve(&mut self, root: &Position, most: u32) -> Option<u32> {
         match status(root, self.attacker) {
             Status::Won => return Some(0),
             Status::Over => return None,
@@ -116,7 +107,7 @@ impl Search {
         None
     }
 
-    fn attacker_to_move(&mut self, pos: &Atomic, moves: u32) -> bool {
+    fn attacker_to_move(&mut self, pos: &Position, moves: u32) -> bool {
         if self.tick() {
             return false;
         }
@@ -128,19 +119,17 @@ impl Search {
         }
         let legal = pos.legal_moves();
         // A move that ends the game is tried before any deeper line.
-        for m in &legal {
-            let mut child = pos.clone();
-            child.play_unchecked(*m);
+        for &m in &legal {
+            let child = pos.play(m);
             if matches!(status(&child, self.attacker), Status::Won) {
-                self.record(key, *m, 1);
+                self.record(key, m, 1);
                 return true;
             }
         }
         if moves > 1 {
             self.path.push(key.0);
-            for m in attacker_order(legal) {
-                let mut child = pos.clone();
-                child.play_unchecked(m);
+            for m in attacker_order(pos, legal) {
+                let child = pos.play(m);
                 if !matches!(status(&child, self.attacker), Status::Open) || self.repeats(&child) {
                     continue;
                 }
@@ -162,7 +151,7 @@ impl Search {
     }
 
     /// Every defence loses within `moves` attacker moves.
-    fn defender_to_move(&mut self, pos: &Atomic, moves: u32) -> bool {
+    fn defender_to_move(&mut self, pos: &Position, moves: u32) -> bool {
         if self.tick() {
             return false;
         }
@@ -172,9 +161,8 @@ impl Search {
         }
         self.path.push(key(pos).0);
         let mut holds = true;
-        for m in defender_order(legal) {
-            let mut child = pos.clone();
-            child.play_unchecked(m);
+        for m in defender_order(pos, legal) {
+            let child = pos.play(m);
             let lost = match status(&child, self.attacker) {
                 Status::Won => true,
                 Status::Over => false,
@@ -189,7 +177,7 @@ impl Search {
         holds
     }
 
-    fn repeats(&self, pos: &Atomic) -> bool {
+    fn repeats(&self, pos: &Position) -> bool {
         self.path.contains(&key(pos).0)
     }
 
@@ -226,39 +214,15 @@ impl Search {
     }
 }
 
-/// How a game stands after a move, for the attacker.
-pub fn status(pos: &Atomic, attacker: Color) -> Status {
-    match pos.variant_outcome() {
-        Outcome::Known(KnownOutcome::Decisive { winner }) if winner == attacker => {
-            return Status::Won;
-        }
-        Outcome::Known(_) => return Status::Over,
-        Outcome::Unknown => {}
-    }
-    // Only a position in check can be mate; a stalemate stays open and
-    // fails when the search finds no move in it.
-    if pos.is_check() && pos.legal_moves().is_empty() {
-        return if pos.turn() != attacker {
-            Status::Won
-        } else {
-            Status::Over
-        };
-    }
-    if pos.is_insufficient_material() || pos.halfmoves() >= 100 {
-        return Status::Over;
-    }
-    Status::Open
-}
-
 /// Reads a proof back from the root, handing `emit` every attacker position
 /// the win reaches with the move a search recorded for it, or none for a
 /// tablebase win, in the order a checker meets them; except where a capture
 /// wins at once (an explosion of the king, as a rule), which the checkers find
 /// for themselves. Returns how many positions it handed over.
 pub fn read_proof(
-    root: &Atomic,
-    mut winning_move: impl FnMut(&Atomic, &Key) -> Option<Move>,
-    mut emit: impl FnMut(&Atomic, Option<Move>) -> Result<(), String>,
+    root: &Position,
+    mut winning_move: impl FnMut(&Position, &Key) -> Option<Move>,
+    mut emit: impl FnMut(&Position, Option<Move>) -> Result<(), String>,
 ) -> Result<usize, String> {
     let attacker = root.turn();
     match status(root, attacker) {
@@ -277,20 +241,16 @@ pub fn read_proof(
         if wins_by_capture(&pos, attacker) {
             continue;
         }
-        let m = winning_move(&pos, &key).ok_or_else(|| {
-            let fen = Fen::from_position(&pos, EnPassantMode::Legal);
-            format!("no winning move recorded for {fen}")
-        })?;
+        let m = winning_move(&pos, &key)
+            .ok_or_else(|| format!("no winning move recorded for {}", pos.to_fen()))?;
         emit(&pos, Some(m))?;
         count += 1;
-        let mut after = pos.clone();
-        after.play_unchecked(m);
+        let after = pos.play(m);
         if !matches!(status(&after, attacker), Status::Open) {
             continue;
         }
         for reply in after.legal_moves() {
-            let mut next = after.clone();
-            next.play_unchecked(reply);
+            let next = after.play(reply);
             if matches!(status(&next, attacker), Status::Open) {
                 pending.push(next);
             }
@@ -301,28 +261,26 @@ pub fn read_proof(
 
 /// Whether a capture wins at once, as the checkers look for one: an explosion
 /// of the king, en passant included, or a mate.
-fn wins_by_capture(pos: &Atomic, attacker: Color) -> bool {
-    pos.legal_moves().iter().any(|m| {
-        let mut next = pos.clone();
-        next.play_unchecked(*m);
-        m.is_capture() && matches!(status(&next, attacker), Status::Won)
-    })
+fn wins_by_capture(pos: &Position, attacker: Color) -> bool {
+    pos.legal_moves()
+        .into_iter()
+        .any(|m| pos.effect(m).capture && matches!(status(&pos.play(m), attacker), Status::Won))
 }
 
 /// Captures first: in Atomic every capture explodes.
-fn attacker_order(legal: MoveList) -> Vec<Move> {
-    let mut moves: Vec<Move> = legal.into_iter().collect();
-    moves.sort_by_key(|m| if m.is_capture() { 0 } else { 1 });
+fn attacker_order(pos: &Position, legal: Vec<Move>) -> Vec<Move> {
+    let mut moves = legal;
+    moves.sort_by_key(|&m| if pos.effect(m).capture { 0 } else { 1 });
     moves
 }
 
 /// Captures first, then king moves: the likeliest escapes.
-fn defender_order(legal: MoveList) -> Vec<Move> {
-    let mut moves: Vec<Move> = legal.into_iter().collect();
-    moves.sort_by_key(|m| {
-        if m.is_capture() {
+fn defender_order(pos: &Position, legal: Vec<Move>) -> Vec<Move> {
+    let mut moves = legal;
+    moves.sort_by_key(|&m| {
+        if pos.effect(m).capture {
             0
-        } else if m.role() == Role::King {
+        } else if pos.role_at(m.from()) == Some(Role::Commoner) {
             1
         } else {
             2
@@ -334,25 +292,19 @@ fn defender_order(legal: MoveList) -> Vec<Move> {
 #[cfg(test)]
 mod tests {
     use super::{Search, read_proof};
-    use shakmaty::variant::Atomic;
+    use crate::board::Position;
     use std::time::{Duration, Instant};
 
     #[test]
     fn a_root_draw_precedes_a_capture_that_would_win() {
         for clock in [99, 100] {
-            let root = crate::position(&format!(
+            let root = Position::from_fen(&format!(
                 "rnbqkb1r/pp1p3p/2pBppp1/8/3PP3/2N5/PPP2P1P/R2QKB1R w KQ - {clock} 2"
             ))
             .unwrap();
             let mut search = Search::new(&root, Instant::now() + Duration::from_secs(1), 100);
             assert_eq!(search.solve(&root, 1), (clock == 99).then_some(1));
-            let winning_move = |pos: &Atomic, _: &_| {
-                "d6f8"
-                    .parse::<shakmaty::uci::UciMove>()
-                    .unwrap()
-                    .to_move(pos)
-                    .ok()
-            };
+            let winning_move = |pos: &Position, _: &_| crate::board::Move::from_uci(pos, "d6f8");
             let proof = read_proof(&root, winning_move, |_, _| Ok(()));
             assert_eq!(proof.is_ok(), clock == 99);
         }

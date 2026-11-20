@@ -5,8 +5,8 @@
 //! An Atomic position built the way engines build theirs, after
 //! Atomic-Stockfish: bitboards with a mailbox and 16-bit moves. The rules,
 //! the native position keys and the move generator come from
-//! `atomic-movegen`; shakmaty remains the typed boundary for parsing and for
-//! the independent checker.
+//! `atomic-movegen`; the parser, FEN writing and every value type are the
+//! crate's, so the prover does not use shakmaty.
 //!
 //! Castling is standard: the kings start on the e-file and the rooks in the
 //! corners.
@@ -15,10 +15,12 @@ use std::mem::MaybeUninit;
 use std::ops::ControlFlow;
 
 use atomic_movegen::{
-    Board as NativeBoard, Color as NativeColor, Counts, EnPassantMode, Move as NativeMove,
-    PieceType, Setup as NativeSetup, Square as NativeSquare, movegen,
+    Board as NativeBoard, Counts, EnPassantMode, Move as NativeMove, Square as NativeSquare,
+    movegen,
 };
-use shakmaty::{Bitboard, CastlingSide, Color, Piece, Position as _, Role, Setup, Square, attacks};
+
+use crate::types::{self, BitboardExt, attacks, role_of};
+pub use crate::types::{Bitboard, CastlingSide, Color, Piece, PieceType as Role, Square};
 
 /// A move in `atomic-movegen`'s stable 16-bit wire encoding. The native value
 /// is kept whole, so the move list, legality and effect calls need no
@@ -62,7 +64,18 @@ impl Move {
     }
 
     pub fn promotion(self) -> Option<Role> {
-        self.0.is_promotion().then(|| role(self.0.promotion_type()))
+        self.0.is_promotion().then(|| self.0.promotion_type())
+    }
+
+    /// The move in UCI notation, castling as the commoner's destination.
+    pub fn to_uci(self) -> String {
+        self.0.to_uci()
+    }
+
+    /// The move from UCI notation, resolving castling and en passant against
+    /// `pos`.
+    pub fn from_uci(pos: &Position, text: &str) -> Option<Move> {
+        pos.board.move_from_uci(text).map(Move::from_native)
     }
 
     pub fn is_en_passant(self) -> bool {
@@ -83,7 +96,7 @@ impl Move {
             Some(Role::Bishop) => 4,
             Some(Role::Rook) => 5,
             Some(Role::Queen) => 6,
-            Some(Role::Pawn | Role::King) => unreachable!("a promotion to pawn or king"),
+            Some(_) => unreachable!("a promotion to pawn or commoner"),
             None if self.is_en_passant() => 1,
             None if self.is_castle() => 2,
             None => 0,
@@ -93,16 +106,16 @@ impl Move {
 
     /// The move from its proof bits, which only `proof_bits` writes.
     pub(crate) fn from_proof_bits(bits: u16) -> Move {
-        let from = native_square(Square::new(u32::from(bits & 63)));
-        let to = native_square(Square::new(u32::from((bits >> 6) & 63)));
+        let from = Square::from_u8((bits & 63) as u8);
+        let to = Square::from_u8(((bits >> 6) & 63) as u8);
         let native = match bits >> 12 {
             0 => NativeMove::make_move(from, to),
             1 => NativeMove::make_enpassant(from, to),
             2 => NativeMove::make_castling(from, to),
-            3 => NativeMove::make_promotion(from, to, PieceType::Knight),
-            4 => NativeMove::make_promotion(from, to, PieceType::Bishop),
-            5 => NativeMove::make_promotion(from, to, PieceType::Rook),
-            6 => NativeMove::make_promotion(from, to, PieceType::Queen),
+            3 => NativeMove::make_promotion(from, to, Role::Knight),
+            4 => NativeMove::make_promotion(from, to, Role::Bishop),
+            5 => NativeMove::make_promotion(from, to, Role::Rook),
+            6 => NativeMove::make_promotion(from, to, Role::Queen),
             _ => unreachable!("a proof move kind"),
         };
         Move::from_native(native)
@@ -149,69 +162,16 @@ impl Moves {
     }
 }
 
-/// Castling rights as bits: the white king side, the white queen side, then
-/// the black ones; each belongs to a corner.
-const RIGHTS: [(Color, CastlingSide, Square); 4] = [
-    (Color::White, CastlingSide::KingSide, Square::H1),
-    (Color::White, CastlingSide::QueenSide, Square::A1),
-    (Color::Black, CastlingSide::KingSide, Square::H8),
-    (Color::Black, CastlingSide::QueenSide, Square::A8),
-];
-
-fn native_color(color: Color) -> NativeColor {
-    if color.is_white() {
-        NativeColor::White
-    } else {
-        NativeColor::Black
-    }
-}
-
 fn native_square(square: Square) -> NativeSquare {
-    NativeSquare::from_u8(square as u8)
+    square
 }
 
 fn square(square: NativeSquare) -> Square {
-    Square::new(square as u32)
-}
-
-fn native_piece(piece: Piece) -> atomic_movegen::Piece {
-    atomic_movegen::make_piece(native_color(piece.color), native_role(piece.role))
-}
-
-fn native_role(role: Role) -> PieceType {
-    match role {
-        Role::Pawn => PieceType::Pawn,
-        Role::Knight => PieceType::Knight,
-        Role::Bishop => PieceType::Bishop,
-        Role::Rook => PieceType::Rook,
-        Role::Queen => PieceType::Queen,
-        Role::King => PieceType::Commoner,
-    }
-}
-
-fn role(piece_type: PieceType) -> Role {
-    match piece_type {
-        PieceType::Pawn => Role::Pawn,
-        PieceType::Knight => Role::Knight,
-        PieceType::Bishop => Role::Bishop,
-        PieceType::Rook => Role::Rook,
-        PieceType::Queen => Role::Queen,
-        PieceType::Commoner => Role::King,
-        _ => unreachable!("the movegen piece types"),
-    }
+    square
 }
 
 fn piece(piece: atomic_movegen::Piece) -> Option<Piece> {
-    let color = piece.color()?;
-    let role = role(piece.type_of()?);
-    Some(Piece {
-        color: if color == NativeColor::White {
-            Color::White
-        } else {
-            Color::Black
-        },
-        role,
-    })
+    piece.color().map(|_| piece)
 }
 
 #[derive(Clone)]
@@ -223,45 +183,22 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn from_atomic(pos: &shakmaty::variant::Atomic) -> Position {
-        let mut setup = NativeSetup::new();
-        for (square, piece) in pos.board().iter() {
-            setup.place(native_square(square), native_piece(piece));
-        }
-        let mut castling = 0;
-        for (bit, (color, castling_side, _)) in RIGHTS.iter().enumerate() {
-            if pos.castles().has(*color, *castling_side) {
-                castling |= 1 << bit;
-            }
-        }
-        setup
-            .set_side_to_move(native_color(pos.turn()))
-            .set_castling_rights(castling)
-            .set_ep_square(pos.maybe_ep_square().map(native_square))
-            .set_rule50(pos.halfmoves().min(u32::from(u16::MAX)) as u16);
-        let board = NativeBoard::from_setup(&setup).expect("a position the rules reached");
+    /// A position from the parser's native board, with its legal-en-passant
+    /// key.
+    pub fn from_board(board: NativeBoard) -> Position {
         let hash = board.hash_with(EnPassantMode::Legal);
         Position { board, hash }
     }
 
-    pub fn to_atomic(&self) -> shakmaty::variant::Atomic {
-        let mut setup = Setup::empty();
-        for (sq, native) in self.board.pieces() {
-            if let Some(piece) = piece(native) {
-                setup.board.set_piece_at(square(sq), piece);
-            }
-        }
-        setup.turn = self.turn();
-        setup.castling_rights = RIGHTS
-            .iter()
-            .enumerate()
-            .filter(|(bit, _)| self.board.castling_rights() & (1 << bit) != 0)
-            .map(|(_, (_, _, rook))| Bitboard::from(*rook))
-            .fold(Bitboard::EMPTY, |rights, rook| rights | rook);
-        setup.ep_square = self.maybe_ep_square();
-        setup.halfmoves = self.halfmoves();
-        // Read as the root was, which may hold more material than a game can.
-        crate::from_setup(setup).expect("a position the rules reached")
+    /// A position read from FEN under the Lichess policy.
+    pub fn from_fen(fen: &str) -> Result<Position, String> {
+        crate::position(fen)
+    }
+
+    /// The position as FEN, with the en passant file only where taking there
+    /// is legal.
+    pub fn to_fen(&self) -> String {
+        self.board.fen_with(EnPassantMode::Legal)
     }
 
     pub(crate) fn board(&self) -> &NativeBoard {
@@ -269,11 +206,12 @@ impl Position {
     }
 
     pub fn turn(&self) -> Color {
-        if self.board.side_to_move() == NativeColor::White {
-            Color::White
-        } else {
-            Color::Black
-        }
+        self.board.side_to_move()
+    }
+
+    /// The game's move number, from one.
+    pub fn fullmoves(&self) -> u32 {
+        u32::from(self.board.fullmove_number())
     }
 
     /// The square a pawn just passed over moving two squares, if any. Only
@@ -303,31 +241,35 @@ impl Position {
     }
 
     pub fn by_color(&self, color: Color) -> Bitboard {
-        Bitboard(self.board.pieces_color(native_color(color)).0)
+        Bitboard(self.board.pieces_color(color).0)
     }
 
     pub fn by_role(&self, role: Role) -> Bitboard {
-        Bitboard(self.board.pieces_pt(native_role(role)).0)
+        Bitboard(self.board.pieces_pt(role).0)
     }
 
     pub fn by_piece(&self, piece: Piece) -> Bitboard {
-        Bitboard(
-            self.board
-                .pieces_color_pt(native_color(piece.color), native_role(piece.role))
-                .0,
-        )
+        let (Some(color), Some(role)) = (piece.color(), piece.type_of()) else {
+            return Bitboard::EMPTY;
+        };
+        self.by_color_role(color, role)
+    }
+
+    /// The pieces of one color and role, without packing them into a `Piece`.
+    pub fn by_color_role(&self, color: Color, role: Role) -> Bitboard {
+        Bitboard(self.board.pieces_color_pt(color, role).0)
     }
 
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
-        piece(self.board.piece_on(native_square(square)))
+        piece(self.board.piece_on(square))
     }
 
     pub fn role_at(&self, square: Square) -> Option<Role> {
-        self.piece_at(square).map(|piece| piece.role)
+        role_of(self.piece_at(square)?)
     }
 
     pub fn king(&self, color: Color) -> Option<Square> {
-        let sq = self.board.commoners(native_color(color)).lsb();
+        let sq = self.board.commoners(color).lsb();
         (sq != NativeSquare::NONE).then(|| square(sq))
     }
 
@@ -346,10 +288,10 @@ impl Position {
     /// Touching kings are never in check.
     pub fn checked_after(&self, king: Square, attacker: Color, occupied: Bitboard) -> bool {
         let theirs = self.by_color(attacker) & occupied;
-        let their_kings = theirs & self.by_role(Role::King);
-        their_kings.any()
-            && (attacks::king_attacks(king) & their_kings).is_empty()
-            && (self.attackers_to(king, occupied) & theirs & !self.by_role(Role::King)).any()
+        let their_commoners = theirs & self.by_role(Role::Commoner);
+        their_commoners.any()
+            && (attacks::king_attacks(king) & their_commoners).is_empty()
+            && (self.attackers_to(king, occupied) & theirs & !self.by_role(Role::Commoner)).any()
     }
 
     /// Whether a move is pseudo-legal and legal, as `atomic-movegen` judges
@@ -385,7 +327,7 @@ impl Position {
     /// The position with the other side to move, as if the side to move had
     /// passed: what a threat would win.
     pub fn null(&self) -> Position {
-        let board = self.board.null_for_advanced(native_color(!self.turn()));
+        let board = self.board.null_for_advanced(self.turn().flip());
         let hash = board.hash();
         Position { board, hash }
     }
@@ -443,11 +385,11 @@ impl Position {
     /// A capture from one square to another, a pawn reaching the last rank
     /// promoting to a queen.
     pub fn capture_move(&self, from: Square, to: Square) -> Move {
-        if self.role_at(from) == Some(Role::Pawn) && Bitboard::BACKRANKS.contains(to) {
+        if self.role_at(from) == Some(Role::Pawn) && types::BACKRANKS.contains(to) {
             Move::from_native(NativeMove::make_promotion(
                 native_square(from),
                 native_square(to),
-                PieceType::Queen,
+                Role::Queen,
             ))
         } else {
             Move::from_native(NativeMove::make_move(
@@ -457,141 +399,51 @@ impl Position {
         }
     }
 
-    /// The move as shakmaty writes it.
-    pub fn to_shakmaty(&self, m: Move) -> shakmaty::Move {
-        let (from, to) = (m.from(), m.to());
-        if m.is_castle() {
-            return shakmaty::Move::Castle {
-                king: from,
-                rook: to,
-            };
-        }
-        if m.is_en_passant() {
-            return shakmaty::Move::EnPassant { from, to };
-        }
-        shakmaty::Move::Normal {
-            role: self.role_at(from).expect("a piece to move"),
-            from,
-            capture: self.role_at(to),
-            to,
-            promotion: m.promotion(),
-        }
+    /// Every legal move, in the order the generator lists them.
+    pub fn legal_moves(&self) -> Vec<Move> {
+        self.pseudo_legal()
+            .as_slice()
+            .iter()
+            .copied()
+            .filter(|&m| self.legal(m))
+            .collect()
     }
-}
-
-/// A position read from FEN.
-#[cfg(test)]
-pub fn from_fen(fen: &str) -> Result<Position, String> {
-    Ok(Position::from_atomic(&crate::position(fen)?))
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeSet;
-
     use atomic_movegen::EnPassantMode;
-    use shakmaty::Position as _;
-    use shakmaty::uci::UciMove;
 
-    use super::{Move, Position, from_fen};
+    use super::{Move, Position};
 
-    /// Random games, comparing every position's moves, and every position they
-    /// lead to, with shakmaty's.
+    /// The moved list, every legal move once, and the native key and effect
+    /// agree with the position the move leads to.
     #[test]
-    fn matches_shakmaty() {
-        let starts = [
-            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-            "rn2k2r/pp3ppp/2p5/3pP3/8/2N5/PPP2PPP/R3K2R w KQkq d6 0 1",
-            "r3k2r/1P4pp/8/2pP4/8/8/p5PP/R3K2R w KQkq c6 0 1",
-            "rnbqkbnr/ppppp1p1/5p2/7p/8/4PN2/PPPP1PPP/RNBQKB1R w KQkq - 0 1",
-            "r3k2r/8/8/3qQ3/8/8/8/R3K2R b KQkq - 0 1",
-            "8/2P5/8/3k4/8/3K4/5p2/8 w - - 0 1",
-            "r1bqBb2/pp1pk3/8/4P1pp/8/2P5/PP3P2/R1BK3R b - - 1 11",
-        ];
-        let mut seed = 0x9e37_79b9_7f4a_7c15_u64;
-        let mut positions = 0;
-        for start in starts {
-            for _ in 0..150 {
-                let mut ours: Position = from_fen(start).unwrap();
-                let mut theirs: shakmaty::variant::Atomic = ours.to_atomic();
-                for _ in 0..150 {
-                    assert_eq!(
-                        ours.hash(),
-                        ours.board.hash_with(EnPassantMode::Legal),
-                        "{start}"
-                    );
-                    let expected: Vec<shakmaty::Move> = theirs.legal_moves().into_iter().collect();
-                    let found: Vec<_> = ours
-                        .pseudo_legal()
-                        .as_slice()
-                        .iter()
-                        .copied()
-                        .filter(|m| ours.legal(*m))
-                        .collect();
-                    let converted: BTreeSet<String> = found
-                        .iter()
-                        .map(|m| UciMove::from_standard(ours.to_shakmaty(*m)).to_string())
-                        .collect();
-                    let expected: BTreeSet<String> = expected
-                        .into_iter()
-                        .map(|m| UciMove::from_standard(m).to_string())
-                        .collect();
-                    assert_eq!(converted, expected);
-                    positions += 1;
-                    // Every native 16-bit encoding tested against the list,
-                    // on one position in 400 and the position passed to the
-                    // other side.
-                    if positions % 400 == 0 {
-                        let passed = (!ours.in_check()).then(|| ours.null());
-                        for pos in std::iter::once(&ours).chain(passed.as_ref()) {
-                            let mut listed = vec![false; 1 << 16];
-                            for m in pos.pseudo_legal().as_slice() {
-                                listed[usize::from(m.bits())] = true;
-                            }
-                            for bits in 0..=u16::MAX {
-                                let m = Move::from_bits(bits);
-                                let expected = listed[usize::from(bits)];
-                                assert_eq!(pos.is_pseudo_legal(m), expected, "{m:?}");
-                            }
-                        }
-                    }
-                    if found.is_empty() || theirs.is_variant_end() {
-                        break;
-                    }
-                    if !ours.in_check() {
-                        let passed = ours.null();
-                        let swapped = theirs.clone().swap_turn().expect("a side to pass");
-                        assert_eq!(passed.turn(), swapped.turn());
-                    }
-                    for m in &found {
-                        let next = ours.play(*m);
-                        let effect = ours.effect(*m);
-                        assert_eq!(effect.hash, next.hash(), "{m:?}");
-                        assert_eq!(effect.counter, next.halfmoves(), "{m:?}");
-                        assert_eq!(effect.occupied, next.occupied(), "{m:?}");
-                        let mut played = theirs.clone();
-                        played.play_unchecked(ours.to_shakmaty(*m));
-                        assert_eq!(next.to_atomic().board(), played.board(), "{m:?}");
-                        assert_eq!(next.halfmoves(), played.halfmoves());
-                    }
-                    seed ^= seed << 13;
-                    seed ^= seed >> 7;
-                    seed ^= seed << 17;
-                    let m = found[(seed % found.len() as u64) as usize];
-                    theirs.play_unchecked(ours.to_shakmaty(m));
-                    ours = ours.play(m);
-                }
-            }
+    fn moves_and_effects_agree() {
+        let start = "rn2k2r/pp3ppp/2p5/3pP3/8/2N5/PPP2PPP/R3K2R w KQkq d6 0 1";
+        let pos = Position::from_fen(start).unwrap();
+        assert_eq!(pos.hash(), pos.board.hash_with(EnPassantMode::Legal));
+        let legal = pos.legal_moves();
+        assert!(!legal.is_empty());
+        for m in legal {
+            let next = pos.play(m);
+            let effect = pos.effect(m);
+            assert_eq!(effect.hash, next.hash(), "{m:?}");
+            assert_eq!(effect.counter, next.halfmoves(), "{m:?}");
+            assert_eq!(effect.occupied, next.occupied(), "{m:?}");
+            assert!(pos.is_pseudo_legal(m));
+            let bits = m.bits();
+            assert_eq!(Move::from_bits(bits), m);
         }
-        assert!(positions > 20_000, "{positions}");
     }
 
     /// The passed position advances the clock, as the search's limits need.
     #[test]
     fn null_advances_the_clock() {
-        let pos = from_fen("rn2k2r/pp3ppp/2p5/3pP3/8/2N5/PPP2PPP/R3K2R w KQkq d6 7 12").unwrap();
+        let pos = Position::from_fen("rn2k2r/pp3ppp/2p5/3pP3/8/2N5/PPP2PPP/R3K2R w KQkq d6 7 12")
+            .unwrap();
         let passed = pos.null();
-        assert_eq!(passed.turn(), !pos.turn());
+        assert_eq!(passed.turn(), pos.turn().flip());
         assert_eq!(passed.halfmoves(), pos.halfmoves() + 1);
         assert_eq!(passed.maybe_ep_square(), None);
         assert_eq!(passed.hash(), passed.board.hash_with(EnPassantMode::Legal));

@@ -62,13 +62,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::clock::Instant;
 
-use shakmaty::{Color, variant::Atomic};
-
 use crate::board::{Effect, Move, Position};
 use crate::moves::{self, Mover};
 use crate::proofs::{Proof, Proofs};
-use crate::search::{Key, Status, status};
+use crate::search::Key;
 use crate::table::{self, Known, Table};
+use crate::types::{BitboardExt, Color, Role};
+use crate::{Status, status};
 
 const INFINITY: u32 = 1 << 30;
 /// The starting proof numbers of attacker moves: a check or a threat to
@@ -248,20 +248,25 @@ pub struct Dfpn<'a> {
 
 impl<'a> Dfpn<'a> {
     /// A search of `root` with a table and proofs of these megabytes.
-    pub fn new(root: &Atomic, guide: Guide, deadline: Instant, memory: (usize, usize)) -> Dfpn<'a> {
+    pub fn new(
+        root: &Position,
+        guide: Guide,
+        deadline: Instant,
+        memory: (usize, usize),
+    ) -> Dfpn<'a> {
         Dfpn::try_new(root, guide, deadline, memory)
             .unwrap_or_else(|error| panic!("the search's memory: {error}"))
     }
 
     /// As `new`, unless the memory cannot be had.
     pub fn try_new(
-        root: &Atomic,
+        root: &Position,
         guide: Guide,
         deadline: Instant,
         (table_mb, proofs_mb): (usize, usize),
     ) -> Result<Dfpn<'a>, TryReserveError> {
         Ok(Dfpn {
-            attacker: shakmaty::Position::turn(root),
+            attacker: root.turn(),
             guide,
             table: Table::new(table_mb)?,
             proofs: Proofs::new(proofs_mb)?,
@@ -333,13 +338,13 @@ impl<'a> Dfpn<'a> {
     }
 
     /// How many attacker moves the proven win takes, if one is found in time.
-    pub fn solve(&mut self, root: &Atomic) -> Option<u32> {
+    pub fn solve(&mut self, root: &Position) -> Option<u32> {
         // The search settles a position that has ended before reaching it;
         // a root that has ended, such as a sampled defender position, is
         // settled here, for the attacker as set.
         match status(root, self.attacker) {
             Status::Won => {
-                self.add_proof(Position::from_atomic(root).hash(), Proof::FINISHED);
+                self.add_proof(root.hash(), Proof::FINISHED);
                 self.root_numbers = Some((0, INFINITY));
                 return Some(0);
             }
@@ -349,8 +354,8 @@ impl<'a> Dfpn<'a> {
             }
             Status::Open => {}
         }
-        self.root_attacking = shakmaty::Position::turn(root) == self.attacker;
-        let root = Position::from_atomic(root);
+        self.root_attacking = root.turn() == self.attacker;
+        let root = root.clone();
         let numbers = self.mid(&root, INFINITY, INFINITY).numbers;
         self.root_numbers = Some((numbers.proof, numbers.disproof));
         // Once the proofs are full, a win may rest on a proof never kept.
@@ -371,7 +376,7 @@ impl<'a> Dfpn<'a> {
     /// shorter win exists.
     pub fn shorten(
         &mut self,
-        root: &Atomic,
+        root: &Position,
         mut length: u32,
         mut improved: impl FnMut(&Self, u32),
     ) -> Shortening {
@@ -407,13 +412,11 @@ impl<'a> Dfpn<'a> {
     /// The winning move for an attacker position, for reading the proof back:
     /// once the proofs have dropped their mates in one, a mate in one found
     /// again.
-    pub fn winning_move(&self, pos: &Atomic, key: &Key) -> Option<shakmaty::Move> {
-        let pos = Position::from_atomic(pos);
-        let m = match self.proof_at(key.0, key.1) {
-            Some(proof) => proof.m?,
-            None => self.dropped_mate(&pos)?,
-        };
-        Some(pos.to_shakmaty(m))
+    pub fn winning_move(&self, pos: &Position, key: &Key) -> Option<Move> {
+        match self.proof_at(key.0, key.1) {
+            Some(proof) => proof.m,
+            None => self.dropped_mate(pos),
+        }
     }
 
     /// Has the proofs drop their mates in one once they hold this share of
@@ -903,7 +906,7 @@ impl<'a> Dfpn<'a> {
         if !attacking {
             // A defence likely to refute is tried first: a check, a blast
             // that removes an attacking piece, or kings that can touch.
-            let attackers = pos.by_color(self.attacker) & !pos.by_role(shakmaty::Role::Pawn);
+            let attackers = pos.by_color(self.attacker) & !pos.by_role(Role::Pawn);
             let good = check
                 || (effect.capture && (attackers & !effect.occupied).any())
                 || mover.connectable(m, effect);
@@ -1018,7 +1021,7 @@ impl<'a> Dfpn<'a> {
             limit,
         };
         // A capture that explodes the king at once is not kept.
-        if after.king(!self.attacker).is_some() {
+        if after.king(self.attacker.flip()).is_some() {
             self.keep_attacker(pos, proof, mates);
         }
         Some((proof.length, proof.limit))
@@ -1034,7 +1037,7 @@ impl<'a> Dfpn<'a> {
         budget: &mut u32,
         line: &mut Vec<u64>,
     ) -> Option<(u32, u32)> {
-        if pos.king(!self.attacker).is_none() {
+        if pos.king(self.attacker.flip()).is_none() {
             return Some((0, u32::MAX));
         }
         let counter = pos.halfmoves();
@@ -1882,10 +1885,7 @@ fn mates(mover: &Mover, pos: &Position, m: Move) -> bool {
 mod tests {
     use std::time::{Duration, Instant};
 
-    use shakmaty::Position as _;
-
     use super::{Child, Dfpn, Guide, INFINITY, Numbers, Value, combine, share, widen};
-    use crate::board::Position;
 
     fn child_at(hash: u64, proof: u32, disproof: u32) -> Child {
         Child {
@@ -2003,9 +2003,7 @@ mod tests {
             assert!(moves.is_some(), "seed {seed}: no win");
             let (_, bytes) = crate::format::encode(&root, root.turn(), |pos| {
                 let key = (pos.hash(), pos.halfmoves());
-                search
-                    .winning_move(&pos.to_atomic(), &key)
-                    .and_then(|m| crate::format::board_move(pos, &m))
+                search.winning_move(pos, &key)
             })
             .unwrap();
             let checked = crate::check::check_proof("core", &bytes);
@@ -2022,7 +2020,7 @@ mod tests {
             Instant::now() + Duration::from_secs(1),
             (1, 1),
         );
-        let hash = Position::from_atomic(&root).hash();
+        let hash = root.hash();
         let bit = (hash >> 54) as usize;
         search.repetitions[bit >> 6] |= 1 << (bit & 63);
         search.path.push(hash);
@@ -2055,9 +2053,7 @@ mod tests {
         assert_eq!(search.solve(&root), Some(14));
         let (header, bytes) = crate::format::encode(&root, root.turn(), |pos| {
             let key = (pos.hash(), pos.halfmoves());
-            search
-                .winning_move(&pos.to_atomic(), &key)
-                .and_then(|m| crate::format::board_move(pos, &m))
+            search.winning_move(pos, &key)
         })
         .unwrap();
         assert_eq!(header.moves, 14);

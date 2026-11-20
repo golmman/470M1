@@ -171,6 +171,7 @@ re-measured per row inside its own 10 s budget. Decisions append no row.
 | movegen plan7 | 2026-11-19 | `c90face26537` | hand, product default (seed 0) | **1.200** | **1.096** | **0.895** | **1.056** | 10 s |
 | movegen plan10 | 2026-11-20 | `c90face26537` | hand, product default (seed 0) | **1.131** | **1.083** | **0.862** | **1.018** | 10 s |
 | movegen plan11 | 2026-11-20 | `c90face26537` | hand, product default (seed 0) | **1.093** | **1.066** | **0.867** | **1.003** | 10 s |
+| movegen plan12 | 2026-11-20 | `c90face26537` | hand, product default (seed 0) | **1.116** | **1.059** | **0.849** | **1.001** | 10 s |
 
 
 Plan2 footnote: coverage 3/3, seeds 0–2, three repeats, every proof accepted
@@ -297,6 +298,22 @@ binary sha256 `b287d7eb…`, the platform string and the base `core` reading
 (the container's UTS name is not the owner's host label). See
 `plans/movegen/report11.md` and `plans/movegen/measurements/plan11/`.
 
+Movegen plan12 footnote: **`M8` removal row, not an `MD6` pass.** Coverage
+3/3, seed 0, three repeats, protocol `a`, every proof accepted by `470MI check`
+and `provari check` (9/9), `D14` timed and untimed counters identical.
+Candidate proof lengths 14 / 18 / 20 against same-session reference mates
+17 / 15 / 22; `child_evals` 3,896,430 / 904,368 / 44,828,946. The same-session
+plan 2 binary (`470m1`, rebuilt bit-identical from `2f629fd`) reads 0.998 /
+1.007 / 0.961, geomean **0.988** (anchor 0.972). Candidate/old is 1.118 / 1.052
+/ 0.883, geomean **1.013**, so `MD6` is still **not held**. Plan 12 removes
+shakmaty from the prover (`M8`): parser, FEN display, value/attack vocabulary,
+proof paths and line output are `atomic-movegen`; `src/check.rs` is untouched.
+The three `.pvr` files are byte-identical to plans 10/11 and instructions are
+parity against the plan 11 product (`core` +0.061%, `easy-win` −0.260%,
+`deep-win` −0.162%). Host identity is the plan 11 product binary sha256
+`b287d7eb…`, the platform string and the base `core` reading. See
+`plans/movegen/report12.md` and `plans/movegen/measurements/plan12/`.
+
 Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
 hand wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
@@ -320,6 +337,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470MI@<sha>` | _owner commits the movegen plan7 tree_ | movegen plan7 |
 | `470MI@<sha>` | _owner commits the movegen plan10 tree_ | movegen plan10 |
 | `470MI@<sha>` | _owner commits the movegen plan11 tree_ | movegen plan11 |
+| `470MI@<sha>` | _owner commits the movegen plan12 tree_ | movegen plan12 |
 
 The product rename is decided (`MD4`, 2026-11-19): rows measured before the
 rename keep `470m1`; the first adapter row and later rows use `470MI`.

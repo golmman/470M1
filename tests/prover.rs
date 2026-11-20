@@ -8,7 +8,6 @@ use std::time::{Duration, Instant};
 use atomic470mi::check::check_proof;
 use atomic470mi::dfpn::{Dfpn, Guide};
 use atomic470mi::{format, position};
-use shakmaty::Position as _;
 
 fn rows(name: &str) -> Vec<(String, String, String)> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -42,9 +41,7 @@ fn prove(fen: &str, seconds: u64) -> (Option<u32>, Vec<u8>) {
     let bytes = if moves.is_some() {
         let (_, bytes) = format::encode(&root, root.turn(), |pos| {
             let key = (pos.hash(), pos.halfmoves());
-            search
-                .winning_move(&pos.to_atomic(), &key)
-                .and_then(|m| format::board_move(pos, &m))
+            search.winning_move(pos, &key)
         })
         .unwrap();
         bytes

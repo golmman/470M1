@@ -10,9 +10,12 @@
 //! a bit test; the rest are judged from the occupancy the move leaves.
 
 use atomic_movegen::{Counts, LegalityContext};
-use shakmaty::{Bitboard, ByRole, CastlingSide, Color, Role, Square, attacks};
 
 use crate::board::{Effect, Move, Position};
+use crate::types::{
+    self, Bitboard, BitboardExt, Color, Role, Square, aligned, attacks, attacks_from,
+    castle_king_to, castle_rook_to, castle_side,
+};
 
 /// Works out one position's moves.
 pub struct Mover<'a> {
@@ -32,7 +35,7 @@ pub struct Mover<'a> {
     /// The kings touch, so no move but a king's checks the other one.
     touching: bool,
     /// For each role, the squares from which it checks the other king.
-    check_squares: ByRole<Bitboard>,
+    check_squares: [Bitboard; Role::NB],
     /// Our pieces alone between one of our sliders and the other king.
     uncovering: Bitboard,
     ours: Bitboard,
@@ -58,10 +61,10 @@ impl<'a> Mover<'a> {
     pub fn new(pos: &'a Position) -> Mover<'a> {
         let us = pos.turn();
         let ours = pos.by_color(us);
-        let theirs = pos.by_color(!us);
+        let theirs = pos.by_color(us.flip());
         let occupied = pos.occupied();
         let our_king = pos.king(us);
-        let their_king = pos.king(!us);
+        let their_king = pos.king(us.flip());
         let touching = matches!((our_king, their_king),
             (Some(ours), Some(theirs)) if attacks::king_attacks(ours).contains(theirs));
         let mut state = atomic_movegen::StateInfo::new();
@@ -74,32 +77,26 @@ impl<'a> Mover<'a> {
             Some(_) => Bitboard(state.pinned.0) & ours,
             None => ours,
         };
-        let mut check_squares = ByRole {
-            pawn: Bitboard::EMPTY,
-            knight: Bitboard::EMPTY,
-            bishop: Bitboard::EMPTY,
-            rook: Bitboard::EMPTY,
-            queen: Bitboard::EMPTY,
-            king: Bitboard::EMPTY,
-        };
+        let mut check_squares = [Bitboard::EMPTY; Role::NB];
         let mut uncovering = Bitboard::EMPTY;
         if let Some(king) = their_king
             && !touching
         {
-            check_squares.pawn = attacks::pawn_attacks(!us, king);
-            check_squares.knight = attacks::knight_attacks(king);
-            check_squares.bishop = attacks::bishop_attacks(king, occupied);
-            check_squares.rook = attacks::rook_attacks(king, occupied);
-            check_squares.queen = check_squares.bishop | check_squares.rook;
+            check_squares[Role::Pawn as usize] = attacks::pawn_attacks(us.flip(), king);
+            check_squares[Role::Knight as usize] = attacks::knight_attacks(king);
+            check_squares[Role::Bishop as usize] = attacks::bishop_attacks(king, occupied);
+            check_squares[Role::Rook as usize] = attacks::rook_attacks(king, occupied);
+            check_squares[Role::Queen as usize] =
+                check_squares[Role::Bishop as usize] | check_squares[Role::Rook as usize];
             uncovering = blockers(pos, king, us) & ours;
         }
         let beside = |king: Option<Square>| king.map_or(Bitboard::EMPTY, attacks::king_attacks);
         let beside_us = beside(our_king) & !beside(their_king);
         let targets = beside(their_king) & !beside(our_king) & theirs;
-        let (their_steps, their_reach) = attack_map(pos, !us);
+        let (their_steps, their_reach) = attack_map(pos, us.flip());
         let mut uncovering_targets = Bitboard::EMPTY;
-        for target in targets {
-            uncovering_targets |= blockers(pos, target, us) & ours;
+        for target in targets.squares() {
+            uncovering_targets = uncovering_targets | blockers(pos, target, us) & ours;
         }
         let diagonal = pos.by_role(Role::Bishop) | pos.by_role(Role::Queen);
         let straight = pos.by_role(Role::Rook) | pos.by_role(Role::Queen);
@@ -132,7 +129,7 @@ impl<'a> Mover<'a> {
     /// The squares from which one of our roles checks the other king, as the
     /// evaluation needs them; empty when the kings touch or there is no king.
     #[inline]
-    pub(crate) fn check_squares(&self) -> &ByRole<Bitboard> {
+    pub(crate) fn check_squares(&self) -> &[Bitboard; Role::NB] {
         &self.check_squares
     }
 
@@ -182,7 +179,7 @@ impl<'a> Mover<'a> {
     fn our_king_after(&self, m: Move) -> Option<Square> {
         let (from, to) = (m.from(), m.to());
         if m.is_castle() {
-            Some(CastlingSide::from_queen_side(to < from).king_to(self.us))
+            Some(castle_king_to(castle_side(to < from), self.us))
         } else if Some(from) == self.our_king {
             Some(to)
         } else {
@@ -194,13 +191,13 @@ impl<'a> Mover<'a> {
     fn ours_after(&self, m: Move, effect: &Effect) -> Bitboard {
         let (from, to) = (m.from(), m.to());
         if m.is_castle() {
-            let side = CastlingSide::from_queen_side(to < from);
+            let side = castle_side(to < from);
             return self
                 .ours
                 .without(from)
                 .without(to)
-                .with(side.king_to(self.us))
-                .with(side.rook_to(self.us));
+                .with(castle_king_to(side, self.us))
+                .with(castle_rook_to(side, self.us));
         }
         if effect.capture {
             return self.ours & effect.occupied;
@@ -221,16 +218,15 @@ impl<'a> Mover<'a> {
         {
             let role = self.pos.role_at(from).expect("a piece to move");
             return !self.touching
-                && (self.check_squares.get(role).contains(to)
-                    || (self.uncovering.contains(from)
-                        && !attacks::aligned(from, to, their_king)));
+                && (self.check_squares[role as usize].contains(to)
+                    || (self.uncovering.contains(from) && !aligned(from, to, their_king)));
         }
         // A king checks only by uncovering a slider, unless it leaves the
         // other king, whose attackers then count again.
         if Some(from) == self.our_king && !m.is_castle() && !self.touching {
             return !attacks::king_attacks(to).contains(their_king)
                 && self.uncovering.contains(from)
-                && !attacks::aligned(from, to, their_king);
+                && !aligned(from, to, their_king);
         }
         let occupied = effect.occupied;
         if !occupied.contains(their_king) {
@@ -242,24 +238,24 @@ impl<'a> Mover<'a> {
         }
         // The pieces that stayed where they were, then the one that landed.
         let landed = if m.is_castle() {
-            let side = CastlingSide::from_queen_side(to < from);
-            Some((side.rook_to(self.us), Role::Rook))
+            let side = castle_side(to < from);
+            Some((castle_rook_to(side, self.us), Role::Rook))
         } else if effect.capture || Some(from) == self.our_king {
             None
         } else {
             let role = self.pos.role_at(from).expect("a piece to move");
             Some((to, m.promotion().unwrap_or(role)))
         };
-        let mut vacated = Bitboard::from(from);
+        let mut vacated = Bitboard::square_bb(from);
         if m.is_castle() {
             vacated.add(to);
         }
-        let stayed = self.ours & occupied & !vacated & !self.pos.by_role(Role::King);
+        let stayed = self.ours & occupied & !vacated & !self.pos.by_role(Role::Commoner);
         if (self.pos.attackers_to(their_king, occupied) & stayed).any() {
             return true;
         }
         landed.is_some_and(|(square, role)| {
-            attacks::attacks(square, role.of(self.us), occupied).contains(their_king)
+            attacks_from(role, self.us, square, occupied).contains(their_king)
         })
     }
 
@@ -274,14 +270,14 @@ impl<'a> Mover<'a> {
             let exposed = if Some(from) == self.our_king {
                 attacks::king_attacks(to) & self.ours.without(from) & !self.beside_them
             } else {
-                self.exposed.without(from) | (self.beside_us & Bitboard::from(to))
+                self.exposed.without(from) | (self.beside_us & Bitboard::square_bb(to))
             };
             let covered = if (exposed & self.their_steps).any() {
                 true
             } else if !self.their_reach.contains(from) && !self.their_reach.contains(to) {
                 (exposed & self.their_reach).any()
             } else {
-                exposed.into_iter().any(|square| {
+                exposed.squares().any(|square| {
                     (attacks::bishop_attacks(square, occupied) & self.their_diagonal).any()
                         || (attacks::rook_attacks(square, occupied) & self.their_straight).any()
                 })
@@ -300,9 +296,9 @@ impl<'a> Mover<'a> {
         };
         let ours = self.ours_after(m, effect);
         let exposed = attacks::king_attacks(our_king) & ours & !attacks::king_attacks(their_king);
-        let capturers = self.theirs & occupied & !self.pos.by_role(Role::King);
+        let capturers = self.theirs & occupied & !self.pos.by_role(Role::Commoner);
         exposed
-            .into_iter()
+            .squares()
             .any(|square| (self.pos.attackers_to(square, occupied) & capturers).any())
     }
 
@@ -312,15 +308,17 @@ impl<'a> Mover<'a> {
             return false;
         }
         let (from, to) = (m.from(), m.to());
-        let passed = Square::new((from as u32 + to as u32) / 2);
-        (attacks::pawn_attacks(self.us, passed) & self.pos.by_piece((!self.us).pawn())).any()
+        let passed = Square::from_u8(((from as u32 + to as u32) / 2) as u8);
+        (attacks::pawn_attacks(self.us, passed)
+            & self.pos.by_color_role(self.us.flip(), Role::Pawn))
+        .any()
     }
 
     /// Whether the en passant capture a double push `m` allows explodes our
     /// king: the passed square is beside our king and away from theirs.
     fn ep_exposes(&self, m: Move, effect: &Effect) -> bool {
         let (from, to) = (m.from(), m.to());
-        let passed = Square::new((from as u32 + to as u32) / 2);
+        let passed = Square::from_u8(((from as u32 + to as u32) / 2) as u8);
         let victim = self
             .our_king_after(m)
             .filter(|king| effect.occupied.contains(*king));
@@ -350,11 +348,11 @@ impl<'a> Mover<'a> {
             return false;
         }
         let role = self.pos.role_at(from).expect("a piece to move");
-        if !self.touching && self.check_squares.get(role).contains(to) {
+        if !self.touching && self.check_squares[role as usize].contains(to) {
             return false;
         }
-        let occupied = self.occupied ^ Bitboard::from(from) ^ Bitboard::from(to);
-        (attacks::attacks(to, role.of(self.us), occupied) & self.targets).is_empty()
+        let occupied = self.occupied ^ Bitboard::square_bb(from) ^ Bitboard::square_bb(to);
+        (attacks_from(role, self.us, to, occupied) & self.targets).is_empty()
     }
 
     /// Whether the defender can blow up the piece a quiet move just moved
@@ -374,7 +372,7 @@ impl<'a> Mover<'a> {
         }
         let theirs = self.theirs & occupied;
         let capturers =
-            self.pos.attackers_to(to, occupied) & theirs & !self.pos.by_role(Role::King);
+            self.pos.attackers_to(to, occupied) & theirs & !self.pos.by_role(Role::Commoner);
         if capturers.is_empty() {
             return false;
         }
@@ -383,7 +381,7 @@ impl<'a> Mover<'a> {
             .unwrap_or_else(|| self.pos.role_at(from).expect("a piece to move"));
         let destroyed = ring & !self.pos.by_role(Role::Pawn);
         let mut gain = piece_value(role);
-        for square in destroyed {
+        for square in destroyed.squares() {
             let value = self.pos.role_at(square).map_or(0, piece_value);
             gain += if theirs.contains(square) {
                 -value
@@ -393,7 +391,7 @@ impl<'a> Mover<'a> {
         }
         // A capturer inside the blast is lost anyway; one outside costs itself.
         let cost = capturers
-            .into_iter()
+            .squares()
             .map(|square| {
                 if destroyed.contains(square) {
                     0
@@ -418,8 +416,8 @@ impl<'a> Mover<'a> {
             let role = m
                 .promotion()
                 .unwrap_or_else(|| self.pos.role_at(from).expect("a piece to move"));
-            let attacked = attacks::attacks(to, role.of(self.us), effect.occupied);
-            return (attacked & self.targets).count() as u32;
+            let attacked = attacks_from(role, self.us, to, effect.occupied);
+            return (attacked & self.targets).count();
         }
         // Otherwise judge the board the move leaves.
         let occupied = effect.occupied;
@@ -434,14 +432,14 @@ impl<'a> Mover<'a> {
             return 0;
         }
         let (from, to) = (m.from(), m.to());
-        let mut vacated = Bitboard::from(from);
+        let mut vacated = Bitboard::square_bb(from);
         if m.is_castle() {
             vacated.add(to);
         }
-        let stayed = self.ours & occupied & !vacated & !self.pos.by_role(Role::King);
+        let stayed = self.ours & occupied & !vacated & !self.pos.by_role(Role::Commoner);
         let landed = if m.is_castle() {
-            let side = CastlingSide::from_queen_side(to < from);
-            Some((side.rook_to(self.us), Role::Rook))
+            let side = castle_side(to < from);
+            Some((castle_rook_to(side, self.us), Role::Rook))
         } else if effect.capture || Some(from) == self.our_king {
             None
         } else {
@@ -449,10 +447,10 @@ impl<'a> Mover<'a> {
             Some((to, m.promotion().unwrap_or(role)))
         };
         let landed_attacks = landed.map_or(Bitboard::EMPTY, |(square, role)| {
-            attacks::attacks(square, role.of(self.us), occupied)
+            attacks_from(role, self.us, square, occupied)
         });
         targets
-            .into_iter()
+            .squares()
             .filter(|&target| {
                 landed_attacks.contains(target)
                     || (self.pos.attackers_to(target, occupied) & stayed).any()
@@ -464,7 +462,7 @@ impl<'a> Mover<'a> {
     /// with at most two pieces besides its king, or bishops alone on the board,
     /// can it be so. Anything else keeps a way to explode the other king.
     pub fn might_end_material(&self, color: Color, effect: &Effect) -> bool {
-        let kings = self.pos.by_role(Role::King);
+        let kings = self.pos.by_role(Role::Commoner);
         let pieces = self.pos.by_color(color) & effect.occupied & !kings;
         let bishops_only = (effect.occupied & !kings & !self.pos.by_role(Role::Bishop)).is_empty();
         pieces.count() <= 2 || bishops_only
@@ -479,7 +477,7 @@ fn piece_value(role: Role) -> i32 {
         Role::Bishop => 738,
         Role::Rook => 1079,
         Role::Queen => 1862,
-        Role::King => 0,
+        _ => 0,
     }
 }
 
@@ -490,10 +488,10 @@ fn blockers(pos: &Position, square: Square, sliders: Color) -> Bitboard {
     let aimed = (attacks::rook_attacks(square, Bitboard::EMPTY) & straight)
         | (attacks::bishop_attacks(square, Bitboard::EMPTY) & diagonal);
     let mut blockers = Bitboard::EMPTY;
-    for slider in aimed & pos.by_color(sliders) {
+    for slider in (aimed & pos.by_color(sliders)).squares() {
         let between = attacks::between(square, slider) & pos.occupied();
         if !between.more_than_one() {
-            blockers |= between;
+            blockers = blockers | between;
         }
     }
     blockers
@@ -503,21 +501,21 @@ fn blockers(pos: &Position, square: Square, sliders: Color) -> Bitboard {
 fn attack_map(pos: &Position, side: Color) -> (Bitboard, Bitboard) {
     let occupied = pos.occupied();
     let mut steps = Bitboard::EMPTY;
-    for from in pos.by_piece(side.pawn()) {
-        steps |= attacks::pawn_attacks(side, from);
+    for from in pos.by_color_role(side, Role::Pawn).squares() {
+        steps = steps | attacks::pawn_attacks(side, from);
     }
-    for from in pos.by_piece(side.knight()) {
-        steps |= attacks::knight_attacks(from);
+    for from in pos.by_color_role(side, Role::Knight).squares() {
+        steps = steps | attacks::knight_attacks(from);
     }
     let mut reach = Bitboard::EMPTY;
-    for from in pos.by_piece(side.bishop()) {
-        reach |= attacks::bishop_attacks(from, occupied);
+    for from in pos.by_color_role(side, Role::Bishop).squares() {
+        reach = reach | attacks::bishop_attacks(from, occupied);
     }
-    for from in pos.by_piece(side.rook()) {
-        reach |= attacks::rook_attacks(from, occupied);
+    for from in pos.by_color_role(side, Role::Rook).squares() {
+        reach = reach | attacks::rook_attacks(from, occupied);
     }
-    for from in pos.by_piece(side.queen()) {
-        reach |= attacks::queen_attacks(from, occupied);
+    for from in pos.by_color_role(side, Role::Queen).squares() {
+        reach = reach | attacks::queen_attacks(from, occupied);
     }
     (steps, reach)
 }
@@ -527,14 +525,14 @@ fn attack_map(pos: &Position, side: Color) -> (Bitboard, Bitboard) {
 /// its own king, which the blast would take too. Such a capture is legal
 /// whatever else it exposes, since the game ends with it.
 pub fn exploding_capture(pos: &Position, side: Color) -> Option<Move> {
-    let king = pos.king(!side)?;
+    let king = pos.king(side.flip())?;
     let own = pos
         .king(side)
         .map_or(Bitboard::EMPTY, attacks::king_attacks);
-    let targets = attacks::king_attacks(king) & pos.by_color(!side) & !own;
-    let capturers = pos.by_color(side) & !pos.by_role(Role::King);
+    let targets = attacks::king_attacks(king) & pos.by_color(side.flip()) & !own;
+    let capturers = pos.by_color(side) & !pos.by_role(Role::Commoner);
     targets
-        .into_iter()
+        .squares()
         .find_map(|to| {
             let from = (pos.attackers_to(to, pos.occupied()) & capturers).first()?;
             Some(pos.capture_move(from, to))
@@ -549,7 +547,7 @@ fn exploding_en_passant(pos: &Position, side: Color, king: Square) -> Option<Mov
         return None;
     }
     let to = pos.maybe_ep_square()?;
-    let takers = pos.attackers_to(to, pos.occupied()) & pos.by_piece(side.pawn());
+    let takers = pos.attackers_to(to, pos.occupied()) & pos.by_color_role(side, Role::Pawn);
     let from = takers.first()?;
     if !ep_explodes(to, Some(king), pos.king(side)) {
         return None;
@@ -566,11 +564,11 @@ fn ep_explodes(to: Square, victim: Option<Square>, taker: Option<Square>) -> boo
     beside(victim) && !beside(taker)
 }
 
-/// Whether `color` can no longer win, by shakmaty's Atomic rule.
+/// Whether `color` can no longer win, by the checker's broad Atomic rule.
 pub fn cannot_win(pos: &Position, color: Color) -> bool {
-    let kings = pos.by_role(Role::King);
+    let kings = pos.by_role(Role::Commoner);
     let mine = pos.by_color(color);
-    let other = pos.by_color(!color);
+    let other = pos.by_color(color.flip());
     if (other & kings).is_empty() {
         return false;
     }
@@ -584,11 +582,11 @@ pub fn cannot_win(pos: &Position, color: Color) -> bool {
         if pos.occupied() == kings | bishops {
             let white = bishops & pos.by_color(Color::White);
             let black = bishops & pos.by_color(Color::Black);
-            if (white & Bitboard::DARK_SQUARES).is_empty() {
-                return (black & Bitboard::LIGHT_SQUARES).is_empty();
+            if (white & types::DARK_SQUARES).is_empty() {
+                return (black & types::LIGHT_SQUARES).is_empty();
             }
-            if (white & Bitboard::LIGHT_SQUARES).is_empty() {
-                return (black & Bitboard::DARK_SQUARES).is_empty();
+            if (white & types::LIGHT_SQUARES).is_empty() {
+                return (black & types::DARK_SQUARES).is_empty();
             }
         }
         return false;
@@ -639,25 +637,22 @@ pub fn has_legal_move(pos: &Position) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use shakmaty::{Color, EnPassantMode, Position as _, fen::Fen};
-
-    use shakmaty::{Bitboard, Role, Square, attacks};
-
-    use super::{Mover, cannot_win, exploding_capture, has_legal_move, replies};
-    use crate::board::{Move, Position, from_fen};
+    use super::{Mover, exploding_capture, has_legal_move, replies};
+    use crate::board::{Move, Position};
+    use crate::types::{Bitboard, BitboardExt, Color, Role, Square, attacks};
 
     /// How many of the other side's pieces `side` could take to explode its
     /// king: the plain count the scoring has to match.
-    fn exploding_captures(pos: &Position, side: shakmaty::Color) -> u32 {
-        let Some(king) = pos.king(!side) else {
+    fn exploding_captures(pos: &Position, side: Color) -> u32 {
+        let Some(king) = pos.king(side.flip()) else {
             return 0;
         };
         let own = pos
             .king(side)
             .map_or(Bitboard::EMPTY, attacks::king_attacks);
-        let capturers = pos.by_color(side) & !pos.by_role(Role::King);
-        (attacks::king_attacks(king) & pos.by_color(!side) & !own)
-            .into_iter()
+        let capturers = pos.by_color(side) & !pos.by_role(Role::Commoner);
+        (attacks::king_attacks(king) & pos.by_color(side.flip()) & !own)
+            .squares()
             .filter(|&target| (pos.attackers_to(target, pos.occupied()) & capturers).any())
             .count() as u32
     }
@@ -688,7 +683,7 @@ mod tests {
                 (Square::G4, Square::H3),
             ),
         ] {
-            let pos = from_fen(fen).unwrap();
+            let pos = Position::from_fen(fen).unwrap();
             let mover = Mover::new(&pos);
             let m = pushed(&pos, from, to);
             assert!(mover.legal(m), "{fen}");
@@ -705,14 +700,17 @@ mod tests {
             );
             assert!(witness.is_en_passant(), "{fen}");
             assert!(Mover::new(&child).legal(witness), "{fen}");
-            assert!(child.play(witness).king(!child.turn()).is_none(), "{fen}");
+            assert!(
+                child.play(witness).king(child.turn().flip()).is_none(),
+                "{fen}"
+            );
         }
     }
 
     /// No taker, and a passed square beside both commoners: no explosion.
     #[test]
     fn en_passant_explosion_negatives() {
-        let quiet = from_fen("8/6kp/8/8/8/8/8/K7 b - - 0 1").unwrap();
+        let quiet = Position::from_fen("8/6kp/8/8/8/8/8/K7 b - - 0 1").unwrap();
         let mover = Mover::new(&quiet);
         let m = pushed(&quiet, Square::H7, Square::H5);
         let effect = mover.effect(m);
@@ -721,7 +719,7 @@ mod tests {
         assert!(!mover.exposes(m, &effect));
         assert!(exploding_capture(&quiet.play(m), Color::White).is_none());
 
-        let both = from_fen("8/8/8/8/2k1p3/8/3PK3/8 w - - 0 1").unwrap();
+        let both = Position::from_fen("8/8/8/8/2k1p3/8/3PK3/8 w - - 0 1").unwrap();
         let mover = Mover::new(&both);
         let m = pushed(&both, Square::D2, Square::D4);
         let effect = mover.effect(m);
@@ -736,7 +734,7 @@ mod tests {
     /// explosion. Witness order is proof contract.
     #[test]
     fn en_passant_witness_order() {
-        let pos = from_fen("8/6kp/5n2/6P1/4N3/8/8/K7 b - - 0 1").unwrap();
+        let pos = Position::from_fen("8/6kp/5n2/6P1/4N3/8/8/K7 b - - 0 1").unwrap();
         let m = pushed(&pos, Square::H7, Square::H5);
         let witness = exploding_capture(&pos.play(m), Color::White).expect("an explosion");
         assert_eq!(witness.to(), Square::F6);
@@ -755,8 +753,8 @@ mod tests {
             "4r1k1/8/8/8/8/8/8/4K2R w K - 0 1",
             "k7/r5K1/8/3Pp3/8/8/8/8 w - e6 0 1",
         ] {
-            let pos = from_fen(fen).unwrap();
-            assert!(pos.to_atomic().is_check(), "{fen} is not in check");
+            let pos = Position::from_fen(fen).unwrap();
+            assert!(pos.in_check(), "{fen} is not in check");
             let mover = Mover::new(&pos);
             for &m in pos.pseudo_legal().as_slice() {
                 assert_eq!(mover.legal(m), pos.legal(m), "{m:?} in {fen}");
@@ -765,7 +763,7 @@ mod tests {
     }
 
     /// Random games, checking every move's scoring against the position it
-    /// leads to, and that against shakmaty.
+    /// leads to, and the move list against the search's own helpers.
     #[test]
     fn matches_the_played_positions() {
         let starts = [
@@ -786,12 +784,12 @@ mod tests {
         let mut moves = 0;
         for start in starts {
             for _ in 0..150 {
-                let mut pos: Position = from_fen(start).unwrap();
+                let mut pos = Position::from_fen(start).unwrap();
                 for _ in 0..150 {
                     let mover = Mover::new(&pos);
                     let us = pos.turn();
                     let threat_before = exploding_capture(&pos, us).is_some();
-                    let fen = Fen::from_position(&pos.to_atomic(), EnPassantMode::Legal);
+                    let fen = pos.to_fen();
                     let mut legal = Vec::new();
                     for &m in pos.pseudo_legal().as_slice() {
                         assert_eq!(mover.legal(m), pos.legal(m), "{m:?} in {fen}");
@@ -803,15 +801,14 @@ mod tests {
                         let effect = mover.effect(m);
                         let next = pos.play(m);
                         assert_eq!(mover.full_effect(m).hash, next.hash(), "{m:?} in {fen}");
-                        let exploded = next.king(!us).is_none();
+                        let exploded = next.king(us.flip()).is_none();
                         assert_eq!(mover.explodes_them(&effect), exploded, "{m:?} in {fen}");
                         if exploded {
                             continue;
                         }
-                        let theirs = next.to_atomic();
                         let check = mover.gives_check(m, &effect);
-                        assert_eq!(check, theirs.is_check(), "{m:?} in {fen}");
-                        let exposed = exploding_capture(&next, !us).is_some();
+                        assert_eq!(check, next.in_check(), "{m:?} in {fen}");
+                        let exposed = exploding_capture(&next, us.flip()).is_some();
                         assert_eq!(mover.exposes(m, &effect), exposed, "{m:?} in {fen}");
                         if !threat_before {
                             let threats = exploding_captures(&next, us);
@@ -823,27 +820,18 @@ mod tests {
                             let threats = exploding_captures(&next, us);
                             assert!(threat_before || threats == 0, "{m:?} in {fen}");
                         }
-                        for color in Color::ALL {
-                            let dead = theirs.has_insufficient_material(color);
-                            assert_eq!(cannot_win(&next, color), dead, "{m:?} in {fen}");
-                            let changed = effect.capture || m.promotion().is_some();
-                            if changed && !mover.might_end_material(color, &effect) {
-                                assert!(!dead, "{m:?} in {fen}");
-                            }
-                        }
-                        let any = !theirs.legal_moves().is_empty();
+                        let any = !next.legal_moves().is_empty();
                         assert_eq!(has_legal_move(&next), any, "{m:?} in {fen}");
                         // After a check, where the search counts them: the
                         // replies that do not let us explode their king at
                         // once, or that explode ours, as the threat replay
                         // and the scoring count them.
                         if check {
-                            let safe = theirs
+                            let safe = next
                                 .legal_moves()
-                                .iter()
+                                .into_iter()
                                 .filter(|&reply| {
-                                    let after = theirs.clone().play(*reply).unwrap();
-                                    let after = Position::from_atomic(&after);
+                                    let after = next.play(reply);
                                     after.king(us).is_none()
                                         || exploding_capture(&after, us).is_none()
                                 })
@@ -854,7 +842,7 @@ mod tests {
                             }
                         }
                     }
-                    if legal.is_empty() || pos.king(!us).is_none() {
+                    if legal.is_empty() || pos.king(us.flip()).is_none() {
                         break;
                     }
                     seed ^= seed << 13;

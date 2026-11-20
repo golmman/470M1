@@ -6,14 +6,13 @@
 //! material at Atomic values, then, unless the kings touch, explosion
 //! targets, pieces beside the enemy king, attacks around it, and checks.
 
-use shakmaty::{Bitboard, ByRole, Color, Piece, Role, attacks};
-
 use crate::board::Position;
 use crate::moves::Mover;
+use crate::types::{Bitboard, BitboardExt, Color, ROLES, Role, attacks, attacks_from};
 
 /// Piece values by role, between Multi-Variant Stockfish's Atomic midgame and
 /// endgame values: pawns survive blasts, so the pieces are worth fewer pawns.
-const VALUES: [i32; 7] = [0, 305, 545, 634, 930, 1670, 0];
+const VALUES: [i32; 6] = [305, 545, 634, 930, 1670, 0];
 /// One of their pieces beside their king that we attack: a threat to explode
 /// the king; two are nearly decisive.
 const TARGET: i32 = 400;
@@ -30,7 +29,7 @@ const CHECKER: i32 = 60;
 pub fn evaluate(pos: &Position, mover: &Mover) -> i32 {
     let us = pos.turn();
     let ours = terms(pos, us, Some(mover.check_squares()));
-    let theirs = terms(pos, !us, None);
+    let theirs = terms(pos, us.flip(), None);
     ours.score() - theirs.score()
 }
 
@@ -65,23 +64,22 @@ impl Terms {
 
 /// One side's material at Atomic values, without its attack terms.
 pub fn material(pos: &Position, color: Color) -> i32 {
-    (pos.by_color(color) & !pos.by_role(Role::King))
-        .into_iter()
+    (pos.by_color(color) & !pos.by_role(Role::Commoner))
+        .squares()
         .map(|square| pos.role_at(square).map_or(0, |role| VALUES[role as usize]))
         .sum()
 }
 
-fn terms(pos: &Position, color: Color, masks: Option<&ByRole<Bitboard>>) -> Terms {
+fn terms(pos: &Position, color: Color, masks: Option<&[Bitboard; Role::NB]>) -> Terms {
     let ours = pos.by_color(color);
-    let theirs = pos.by_color(!color);
+    let theirs = pos.by_color(color.flip());
     let occupied = pos.occupied();
     let mut terms = Terms::default();
     // Material by role, so the role is known for the attack terms below.
     for role in ROLES {
-        terms.material +=
-            pos.by_piece(Piece { color, role }).count() as i32 * VALUES[role as usize];
+        terms.material += pos.by_color_role(color, role).count() as i32 * VALUES[role as usize];
     }
-    let (Some(their_king), Some(our_king)) = (pos.king(!color), pos.king(color)) else {
+    let (Some(their_king), Some(our_king)) = (pos.king(color.flip()), pos.king(color)) else {
         return terms;
     };
     let ring = attacks::king_attacks(their_king);
@@ -102,14 +100,14 @@ fn terms(pos: &Position, color: Color, masks: Option<&ByRole<Bitboard>>) -> Term
     let mut pressure = 0u32;
     let mut checkers = 0u32;
     for role in ROLES {
-        let pieces = pos.by_piece(Piece { color, role });
+        let pieces = pos.by_color_role(color, role);
         if pieces.is_empty() {
             continue;
         }
-        let checks = *masks.get(role);
-        for square in pieces {
-            let reach = attacks::attacks(square, role.of(color), occupied);
-            attacked |= reach;
+        let checks = masks[role as usize];
+        for square in pieces.squares() {
+            let reach = attacks_from(role, color, square, occupied);
+            attacked = attacked | reach;
             pressure += (reach & ring).count() as u32;
             if (reach & checks & !ours).any() {
                 checkers += 1;
@@ -123,28 +121,19 @@ fn terms(pos: &Position, color: Color, masks: Option<&ByRole<Bitboard>>) -> Term
     terms
 }
 
-/// The roles whose pieces the evaluation counts, king excluded.
-const ROLES: [Role; 5] = [
-    Role::Pawn,
-    Role::Knight,
-    Role::Bishop,
-    Role::Rook,
-    Role::Queen,
-];
-
 /// The squares from which one role of `color` would check `their_king`, one
 /// mask per role present. The mover's table is already in its `Mover`; this
 /// builds the defender's.
 fn check_masks(
     pos: &Position,
     color: Color,
-    their_king: shakmaty::Square,
+    their_king: crate::types::Square,
     occupied: Bitboard,
-) -> ByRole<Bitboard> {
-    let mut masks = ByRole::new_with(|_| Bitboard::EMPTY);
+) -> [Bitboard; Role::NB] {
+    let mut masks = [Bitboard::EMPTY; Role::NB];
     for role in ROLES {
-        if (pos.by_piece(Piece { color, role })).any() {
-            *masks.get_mut(role) = attacks::attacks(their_king, role.of(!color), occupied);
+        if (pos.by_color_role(color, role)).any() {
+            masks[role as usize] = attacks_from(role, color.flip(), their_king, occupied);
         }
     }
     masks
@@ -154,14 +143,14 @@ fn check_masks(
 #[cfg(test)]
 fn terms_reference(pos: &Position, color: Color) -> Terms {
     let ours = pos.by_color(color);
-    let theirs = pos.by_color(!color);
+    let theirs = pos.by_color(color.flip());
     let occupied = pos.occupied();
-    let kings = pos.by_role(Role::King);
+    let kings = pos.by_role(Role::Commoner);
     let mut terms = Terms::default();
-    for square in ours & !kings {
+    for square in (ours & !kings).squares() {
         terms.material += pos.role_at(square).map_or(0, |role| VALUES[role as usize]);
     }
-    let (Some(their_king), Some(our_king)) = (pos.king(!color), pos.king(color)) else {
+    let (Some(their_king), Some(our_king)) = (pos.king(color.flip()), pos.king(color)) else {
         return terms;
     };
     let ring = attacks::king_attacks(their_king);
@@ -172,14 +161,14 @@ fn terms_reference(pos: &Position, color: Color) -> Terms {
     let mut attacked = Bitboard::EMPTY;
     let mut pressure = 0u32;
     let mut checkers = 0u32;
-    for square in ours & !kings {
+    for square in (ours & !kings).squares() {
         let Some(role) = pos.role_at(square) else {
             continue;
         };
-        let reach = attacks::attacks(square, role.of(color), occupied);
-        attacked |= reach;
+        let reach = attacks_from(role, color, square, occupied);
+        attacked = attacked | reach;
         pressure += (reach & ring).count() as u32;
-        let checks = attacks::attacks(their_king, role.of(!color), occupied);
+        let checks = attacks_from(role, color.flip(), their_king, occupied);
         if (reach & checks & !ours).any() {
             checkers += 1;
         }
@@ -199,7 +188,7 @@ mod tests {
     /// The pre-formulation's `evaluate`, for equality.
     fn evaluate_reference(pos: &Position) -> i32 {
         let us = pos.turn();
-        terms_reference(pos, us).score() - terms_reference(pos, !us).score()
+        terms_reference(pos, us).score() - terms_reference(pos, us.flip()).score()
     }
 
     fn check(pos: &Position) {
@@ -259,10 +248,9 @@ mod tests {
     fn terms_match_the_reference_over_the_corpus() {
         let mut positions = 0;
         for fen in corpus_fens() {
-            let Ok(atomic) = crate::position(&fen) else {
+            let Ok(pos) = Position::from_fen(&fen) else {
                 continue;
             };
-            let pos = Position::from_atomic(&atomic);
             check(&pos);
             positions += 1;
         }
@@ -283,8 +271,7 @@ mod tests {
         }
         let starts: Vec<_> = corpus_fens()
             .iter()
-            .filter_map(|fen| crate::position(fen).ok())
-            .map(|atomic| Position::from_atomic(&atomic))
+            .filter_map(|fen| Position::from_fen(fen).ok())
             .collect();
         let mut plies = 0;
         for seed in [0x9e37_79b9_7f4a_7c15, 0x2545_f491_4f6c_dd1d] {

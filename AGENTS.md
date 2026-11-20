@@ -19,24 +19,22 @@ claim.
 ## Current state
 
 `parity` closed (2026-11-17): `P5` 3/3, geomean **0.945**, 9/9 accepted.
-`movegen` is open: the prover runs move generation, legality, effects/keys and
-null moves on `atomic-movegen`'s `Board` with native `Legal` keys; shakmaty
-stays the parser, boundary and checker. Differential green (0 mismatches/keys;
-`MD3` 87/0/0). Plan 4 adopted 2.10.0; plan 5 measured
-1.094 vs old 0.997 (`MD6` missed); plan 7 adopted `M12` (`core` 7.816e9,
-1.190x; geomean 1.056); plan 8's ladder cost +0.164e9 (`MD7` miss) and plan
-9's evasion prototype fell 0.725e9, producing `W10`/`MD8`. Plan 10 adopted
-2.11.0 (`0aaf958`, `W10`): `core` **7.1476e9** (−0.6686e9), identical
-counters/`.pvr`, 9/9, differential 0/0; geomean **1.018** vs old 0.991 (`MD6`
-missed, 1.088x plan 2). Plan 11 adopted the audited `unsafe-optimizations`
-feature (`MD9`): `core` **7.0573e9** (−0.0903e9), safe masks failed; geomean
-**1.003** vs old 0.991 (`MD6` missed, 1.012x). `M14`/`M15` close; `M8`
-is open. We own
+`movegen`'s `MD1` done definition is met (2026-11-20): the prover runs parser,
+FEN display, value/attack vocabulary, movegen, legality, effects/keys, null
+moves, proof paths and line output on `atomic-movegen` with native `Legal`
+keys; `src/check.rs` stays shakmaty-only. Differential green (0 mismatches/keys;
+`MD3` 87/0/0). Plans 4-11 adopted 2.10.0, the eval geometry, 2.11.0 (`W10`) and
+the audited `unsafe-optimizations` feature (`MD9`); `core` fell 8.004e9 ->
+7.0573e9 while the `MD6` bar stayed a miss (plan 11: 1.003 vs old 0.991,
+1.012x). Plan 12 closed `M8`: shakmaty is gone from the prover (`src/types.rs`
+is the native vocabulary), `.pvr` byte-identical, differential 0/0,
+instructions parity (`core` +0.061%, other cells fall), `MD6` row 1.001 vs old
+0.988 (1.013x, still a miss). `M14`/`M15`/`M8` close. We own
 `golmman/atomic_movegen`; changes go in `wishlistN.md` and enter by an owner
 plan/report. See
 [`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
-[`wishlist3`](docs/plans/movegen/wishlist3.md), [`report9`](docs/plans/movegen/report9.md)
-and [`report10`](docs/plans/movegen/report10.md).
+[`wishlist3`](docs/plans/movegen/wishlist3.md), [`report11`](docs/plans/movegen/report11.md)
+and [`report12`](docs/plans/movegen/report12.md).
 
 ## Collaboration
 

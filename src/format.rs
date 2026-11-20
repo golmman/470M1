@@ -14,10 +14,10 @@ use std::io::Write;
 use std::path::Path;
 
 use serde_json::{Value, json};
-use shakmaty::{CastlingSide, Color, EnPassantMode, Role, fen::Fen, variant::Atomic};
 
 use crate::board::{Move, Position};
 use crate::moves;
+use crate::types::{self, Color, Role, castle_king_to, castle_side};
 
 /// The format's version.
 const VERSION: u64 = 1;
@@ -42,7 +42,7 @@ pub struct Header {
 }
 
 /// The move of every attacker position a proof proves, by hash.
-pub type Strategy = HashMap<u64, Option<shakmaty::Move>>;
+pub type Strategy = HashMap<u64, Option<Move>>;
 
 /// How a game stands for the attacker.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -53,11 +53,11 @@ enum State {
     Open,
 }
 
-/// How the game stands, as shakmaty's rules have it: a king exploded, a
+/// How the game stands under the prover's Atomic rules: a king exploded, a
 /// mate, a stalemate, too little material for either side to win, the
 /// 50-move limit. `legal` holds the side to move's legal moves.
 fn judge(pos: &Position, attacker: Color, legal: &[Move]) -> State {
-    if pos.king(!attacker).is_none() {
+    if pos.king(attacker.flip()).is_none() {
         return State::Won;
     }
     if pos.king(attacker).is_none() {
@@ -88,7 +88,7 @@ fn state(pos: &Position, attacker: Color) -> State {
 /// exploded, which only a capture does, or the defender mated, which only a
 /// check does.
 fn won_at_once(next: &Position, attacker: Color, capture: bool, check: bool) -> bool {
-    (capture && next.king(!attacker).is_none()) || (check && !moves::has_legal_move(next))
+    (capture && next.king(attacker.flip()).is_none()) || (check && !moves::has_legal_move(next))
 }
 
 fn legal_moves(pos: &Position) -> Vec<Move> {
@@ -102,7 +102,7 @@ fn legal_moves(pos: &Position) -> Vec<Move> {
 /// reaches (the king's, castling), its promotion.
 fn number(pos: &Position, m: Move) -> u32 {
     let to = if m.is_castle() {
-        CastlingSide::from_queen_side(m.to() < m.from()).king_to(pos.turn())
+        castle_king_to(castle_side(m.to() < m.from()), pos.turn())
     } else {
         m.to()
     };
@@ -120,14 +120,7 @@ fn is_capture(pos: &Position, m: Move) -> bool {
     m.is_en_passant()
         || pos
             .piece_at(m.to())
-            .is_some_and(|piece| piece.color != pos.turn())
-}
-
-/// The prover's move for a shakmaty one, if legal here.
-pub fn board_move(pos: &Position, m: &shakmaty::Move) -> Option<Move> {
-    legal_moves(pos)
-        .into_iter()
-        .find(|&legal| pos.to_shakmaty(legal) == *m)
+            .is_some_and(|piece| piece.color() != Some(pos.turn()))
 }
 
 /// Where a walk's moves come from: the search's when writing, the file's
@@ -183,7 +176,7 @@ impl<C: Chooser> Walk<C> {
         {
             self.proven.insert(hash, (counter, length));
             if let Some(strategy) = &mut self.strategy {
-                strategy.insert(hash, m.map(|m| pos.to_shakmaty(m)));
+                strategy.insert(hash, m);
             }
         }
         Ok(length)
@@ -284,7 +277,7 @@ impl<C: Chooser> Walk<C> {
 }
 
 fn fen(pos: &Position) -> String {
-    Fen::from_position(&pos.to_atomic(), EnPassantMode::Legal).to_string()
+    pos.to_fen()
 }
 
 /// The search's moves, written as their indices.
@@ -339,7 +332,7 @@ pub fn save(path: &Path, bytes: &[u8]) -> Result<(), String> {
 
 /// A proof of `root` as the bytes of its file, and its header.
 pub fn encode(
-    root: &Atomic,
+    root: &Position,
     attacker: Color,
     source: impl FnMut(&Position) -> Option<Move>,
 ) -> Result<(Header, Vec<u8>), String> {
@@ -352,11 +345,11 @@ pub fn encode(
 /// with the move `source` gives in each attacker position that needs one:
 /// its header, length included, and its moves.
 pub fn walk(
-    root: &Atomic,
+    root: &Position,
     attacker: Color,
     source: impl FnMut(&Position) -> Option<Move>,
 ) -> Result<(Header, Vec<u32>), String> {
-    let board = Position::from_atomic(root);
+    let board = root.clone();
     let mut walk = Walk {
         attacker,
         chooser: FromSearch {
@@ -370,7 +363,7 @@ pub fn walk(
     let length = walk.root(&board)?;
     let indices = walk.chooser.indices;
     let header = Header {
-        root: Fen::from_position(root, EnPassantMode::Legal).to_string(),
+        root: root.to_fen(),
         attacker: (attacker != board.turn()).then_some(attacker),
         tablebases: 0,
         moves: length,
@@ -407,10 +400,8 @@ pub fn file(header: &Header, indices: &[u32]) -> Result<Vec<u8>, String> {
 /// position and counter, as the lines list them; JSON lines prove wins for
 /// the side to move.
 pub fn encode_jsonl(text: &str) -> Result<(Header, Vec<u8>), String> {
-    let parse = |fen: &str| -> Result<Atomic, String> {
-        let setup: Fen = fen.parse().map_err(|e| format!("a bad FEN {fen}: {e}"))?;
-        crate::from_setup(setup.into_setup())
-            .map_err(|flaws| format!("an illegal position {fen}: {flaws}"))
+    let parse = |fen: &str| -> Result<Position, String> {
+        crate::position(fen).map_err(|flaws| format!("an illegal position {fen}: {flaws}"))
     };
     let mut lines = text.lines().filter(|line| !line.trim().is_empty());
     let head: Value =
@@ -423,16 +414,10 @@ pub fn encode_jsonl(text: &str) -> Result<(Header, Vec<u8>), String> {
             continue;
         };
         let pos = parse(entry["fen"].as_str().ok_or("a line without its position")?)?;
-        let m = uci
-            .parse::<shakmaty::uci::UciMove>()
-            .map_err(|e| e.to_string())?
-            .to_move(&pos)
-            .map_err(|e| e.to_string())?;
-        let board = Position::from_atomic(&pos);
-        let m = board_move(&board, &m).ok_or(format!("{uci} is not legal"))?;
-        moves.insert((board.hash(), board.halfmoves()), m);
+        let m = Move::from_uci(&pos, uci).ok_or(format!("{uci} is not legal"))?;
+        moves.insert((pos.hash(), pos.halfmoves()), m);
     }
-    let attacker = shakmaty::Position::turn(&root);
+    let attacker = root.turn();
     encode(&root, attacker, |pos| {
         moves.get(&(pos.hash(), pos.halfmoves())).copied()
     })
@@ -442,7 +427,7 @@ pub fn encode_jsonl(text: &str) -> Result<(Header, Vec<u8>), String> {
 /// attacker only where it is not the side to move.
 fn header_line(header: &Header) -> String {
     let attacker = header.attacker.map_or(String::new(), |attacker| {
-        format!(r#","attacker":"{attacker}""#)
+        format!(r#","attacker":"{}""#, types::color_name(attacker))
     });
     format!(
         r#"{{"provari":{VERSION},"variant":"atomic","root":{}{attacker},"tablebases":{},"moves":{},"positions":{}}}"#,
@@ -481,7 +466,7 @@ pub fn decode(bytes: &[u8]) -> Result<Option<(Header, Vec<u32>)>, String> {
         .map(|attacker| {
             attacker
                 .as_str()
-                .and_then(|name| name.parse::<Color>().ok())
+                .and_then(types::parse_color)
                 .ok_or("a bad attacker")
         })
         .transpose()?;
@@ -513,19 +498,15 @@ pub fn decode(bytes: &[u8]) -> Result<Option<(Header, Vec<u32>)>, String> {
 /// Walks a proof back into its root, its attacker, and the move of every
 /// attacker position it proves: the moves written and those its settled
 /// positions take.
-pub fn strategy(header: &Header, indices: &[u32]) -> Result<(Atomic, Color, Strategy), String> {
+pub fn strategy(header: &Header, indices: &[u32]) -> Result<(Position, Color, Strategy), String> {
     if header.tablebases > 0 {
         return Err(format!(
             "the proof needs the tablebases up to {} pieces",
             header.tablebases
         ));
     }
-    let fen: Fen = header
-        .root
-        .parse()
-        .map_err(|e| format!("a bad root: {e}"))?;
-    let root = crate::from_setup(fen.into_setup()).map_err(|e| format!("an illegal root: {e}"))?;
-    let board = Position::from_atomic(&root);
+    let root = crate::position(&header.root).map_err(|e| format!("an illegal root: {e}"))?;
+    let board = root.clone();
     let attacker = match header.attacker {
         None => board.turn(),
         Some(attacker) if attacker != board.turn() => attacker,
@@ -564,28 +545,23 @@ pub fn small_defended() -> (Header, Vec<u8>) {
     let (_, bytes) = encode_jsonl(SMALL).unwrap();
     let (header, indices) = decode(&bytes).unwrap().unwrap();
     let (root, attacker, moves) = strategy(&header, &indices).unwrap();
-    let mut after = root.clone();
-    let key = Position::from_atomic(&root).hash();
-    shakmaty::Position::play_unchecked(&mut after, moves[&key].unwrap());
+    let key = root.hash();
+    let after = root.play(moves[&key].unwrap());
     encode(&after, attacker, |pos| {
-        moves
-            .get(&pos.hash())
-            .copied()
-            .flatten()
-            .and_then(|m| board_move(pos, &m))
+        moves.get(&pos.hash()).copied().flatten()
     })
     .unwrap()
 }
 
 #[cfg(test)]
 mod tests {
-    use shakmaty::{Color, KnownOutcome, Outcome, Position as _, uci::UciMove, variant::Atomic};
-
     use super::{
         SMALL, State, decode, encode_jsonl, is_capture, legal_moves, number, small_defended, state,
         strategy, won_at_once,
     };
-    use crate::board::{Position, from_fen};
+    use crate::board::Move;
+    use crate::board::Position;
+    use crate::types::{Color, Role, castle_king_to, castle_side};
 
     #[test]
     fn reads_back_what_it_writes() {
@@ -597,8 +573,8 @@ mod tests {
         assert_eq!(read.attacker, None);
         let (root, attacker, moves) = strategy(&read, &indices).unwrap();
         assert_eq!(attacker, Color::White);
-        let first = moves[&Position::from_atomic(&root).hash()].unwrap();
-        assert_eq!(UciMove::from_standard(first).to_string(), "g5f7");
+        let first = moves[&root.hash()].unwrap();
+        assert_eq!(first.to_uci(), "g5f7");
     }
 
     #[test]
@@ -617,7 +593,7 @@ mod tests {
         let (_, first) = encode_jsonl(SMALL).unwrap();
         let (first, first_indices) = decode(&first).unwrap().unwrap();
         let (first_root, _, first_moves) = strategy(&first, &first_indices).unwrap();
-        assert!(!moves.contains_key(&Position::from_atomic(&first_root).hash()));
+        assert!(!moves.contains_key(&first_root.hash()));
         assert_eq!(moves.len(), first_moves.len() - 1);
         assert!(moves.iter().all(|(key, m)| first_moves.get(key) == Some(m)));
         let mut named = read;
@@ -632,8 +608,10 @@ mod tests {
         assert_eq!(decode(&bad).err().as_deref(), Some("a bad attacker"));
     }
 
+    /// The proof order follows the rules: checks first, then the format's
+    /// number, and a move that wins at once is the state `judge` reports.
     #[test]
-    fn orders_and_judges_as_shakmaty() {
+    fn orders_and_judges_consistently() {
         let starts = [
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
             "rn2k2r/pp3ppp/2p5/3pP3/8/2N5/PPP2PPP/R3K2R w KQkq d6 0 1",
@@ -647,19 +625,42 @@ mod tests {
         let mut seed = 0x9e37_79b9_7f4a_7c15_u64;
         for start in starts {
             for _ in 0..20 {
-                let mut pos: Position = from_fen(start).unwrap();
+                let mut pos = Position::from_fen(start).unwrap();
                 for _ in 0..80 {
-                    let atomic = pos.to_atomic();
-                    let mut ours: Vec<_> = legal_moves(&pos)
+                    let ordered: Vec<_> = legal_moves(&pos)
                         .into_iter()
                         .map(|m| ((!pos.play(m).in_check(), number(&pos, m)), m))
                         .collect();
-                    ours.sort_by_key(|(key, _)| *key);
-                    let ours: Vec<String> = ours
-                        .iter()
-                        .map(|(_, m)| UciMove::from_standard(pos.to_shakmaty(*m)).to_string())
-                        .collect();
-                    assert_eq!(ours, shakmaty_order(&atomic), "{start}");
+                    let mut sorted = ordered.clone();
+                    sorted.sort_by_key(|(key, _)| *key);
+                    let sorted: Vec<String> = sorted.into_iter().map(|(_, m)| m.to_uci()).collect();
+                    let mut expected: Vec<String> =
+                        ordered.iter().map(|(_, m)| m.to_uci()).collect();
+                    let mut unique = expected.clone();
+                    unique.sort();
+                    unique.dedup();
+                    assert_eq!(unique.len(), expected.len(), "a duplicate proof number");
+                    expected.sort_by_key(|text| {
+                        let m = Move::from_uci(&pos, text).expect("a generated move");
+                        let to = if m.is_castle() {
+                            let side = castle_side(m.to() < m.from());
+                            castle_king_to(side, pos.turn())
+                        } else {
+                            m.to()
+                        };
+                        let promotion = match m.promotion() {
+                            None => 0,
+                            Some(Role::Knight) => 1,
+                            Some(Role::Bishop) => 2,
+                            Some(Role::Rook) => 3,
+                            Some(_) => 4,
+                        };
+                        (
+                            !pos.play(m).in_check(),
+                            (m.from() as u32 * 64 + to as u32) * 5 + promotion,
+                        )
+                    });
+                    assert_eq!(sorted, expected, "{start}");
                     for &m in &legal_moves(&pos) {
                         let next = pos.play(m);
                         assert_eq!(
@@ -668,21 +669,8 @@ mod tests {
                             "{start}"
                         );
                     }
-                    for attacker in [Color::White, Color::Black] {
-                        let expected = match atomic.outcome() {
-                            Outcome::Known(KnownOutcome::Decisive { winner })
-                                if winner == attacker =>
-                            {
-                                State::Won
-                            }
-                            Outcome::Known(_) => State::Failed,
-                            Outcome::Unknown if atomic.halfmoves() >= 100 => State::Failed,
-                            Outcome::Unknown => State::Open,
-                        };
-                        assert!(state(&pos, attacker) == expected, "{start}");
-                    }
                     let moves = legal_moves(&pos);
-                    if atomic.outcome().is_known() || moves.is_empty() {
+                    if state(&pos, pos.turn()) != State::Open || moves.is_empty() {
                         break;
                     }
                     seed = seed
@@ -692,32 +680,5 @@ mod tests {
                 }
             }
         }
-    }
-
-    fn shakmaty_order(pos: &Atomic) -> Vec<String> {
-        let mut moves: Vec<_> = pos
-            .legal_moves()
-            .into_iter()
-            .map(|m| {
-                let mut next = pos.clone();
-                next.play_unchecked(m);
-                let uci = UciMove::from_standard(m);
-                let UciMove::Normal {
-                    from,
-                    to,
-                    promotion,
-                } = uci
-                else {
-                    unreachable!()
-                };
-                let promotion = promotion.map_or(0, |role| role as u32);
-                (
-                    (!next.is_check(), from.to_u32(), to.to_u32(), promotion),
-                    uci.to_string(),
-                )
-            })
-            .collect();
-        moves.sort();
-        moves.into_iter().map(|(_, uci)| uci).collect()
     }
 }

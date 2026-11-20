@@ -8,12 +8,9 @@
 //! (`src/lines.rs`): tablebase branches removed.
 
 use serde_json::{Value, json};
-use shakmaty::san::{San, SanPlus};
-use shakmaty::{
-    Color, EnPassantMode, Move, Position as _, fen::Fen, uci::UciMove, variant::Atomic,
-};
 
-use crate::board::Position;
+use crate::board::{Move, Position};
+use crate::types::Color;
 use crate::{Status, status, walk};
 
 /// A proof's lines from the position after `played` (SAN or UCI, move
@@ -23,7 +20,7 @@ use crate::{Status, status, walk};
 /// longest line. With `pgn`, the proof's tree from there too, as PGN, ending
 /// its lines where the proof wins within `until` attacker moves.
 pub fn show(
-    root: Atomic,
+    root: Position,
     attacker: Color,
     moves: walk::Moves,
     played: &str,
@@ -51,36 +48,36 @@ pub fn show(
         if !lines.open(&pos) {
             return Err("the game is over here".into());
         }
-        let m = text
-            .parse::<San>()
-            .ok()
-            .and_then(|san| san.to_move(&pos).ok())
-            .or_else(|| text.parse::<UciMove>().ok()?.to_move(&pos).ok())
+        let m = pos
+            .board()
+            .move_from_san(text)
+            .map(Move::from_native)
+            .or_else(|| Move::from_uci(&pos, text))
             .ok_or(format!("{token} is not a legal move here"))?;
         if pos.turn() == attacker {
             match lines.proof_move(&pos) {
                 Ok(proved) if proved != m => {
                     return Err(format!(
                         "the proof plays {} here, not {token}",
-                        SanPlus::from_move(pos.clone(), proved)
+                        pos.board().san(proved.native()).unwrap_or_default()
                     ));
                 }
                 Ok(_) => {}
                 Err(error) => return Err(error),
             }
         }
-        pos.play_unchecked(m);
+        pos = pos.play(m);
     }
     if !lines.open(&pos) {
         return Err("the game is over here".into());
     }
-    let fen = Fen::from_position(&pos, EnPassantMode::Legal).to_string();
+    let fen = pos.to_fen();
     let mut result = json!({ "fen": fen });
     let mut after = pos.clone();
     if pos.turn() == attacker {
         let m = lines.proof_move(&pos)?;
-        result["move"] = json!(SanPlus::from_move(pos.clone(), m).to_string());
-        after.play_unchecked(m);
+        result["move"] = json!(pos.board().san(m.native()).unwrap_or_default());
+        after = pos.play(m);
     }
     let defences = lines.replies(&after)?;
     let longest = defences.first().map_or(0, |d| d.0);
@@ -89,7 +86,7 @@ pub fn show(
         defences
             .iter()
             .map(|&(length, reply)| json!([
-                SanPlus::from_move(after.clone(), reply).to_string(),
+                after.board().san(reply.native()).unwrap_or_default(),
                 length
             ]))
             .collect::<Vec<_>>()
@@ -135,39 +132,33 @@ impl Proof {
         &self.moves
     }
 
-    fn open(&self, pos: &Atomic) -> bool {
+    fn open(&self, pos: &Position) -> bool {
         matches!(status(pos, self.attacker), Status::Open)
     }
 
     /// The attacker's move as the proof's length counts it: a capture that
     /// wins at once where there is one, and the proof's move otherwise.
-    pub fn proof_move(&self, pos: &Atomic) -> Result<Move, String> {
+    pub fn proof_move(&self, pos: &Position) -> Result<Move, String> {
         if let Some(m) = walk::winning_capture(pos, self.attacker) {
             return Ok(m);
         }
         self.moves
-            .get(&Position::from_atomic(pos).hash())
+            .get(&pos.hash())
             .copied()
             .flatten()
-            .ok_or_else(|| {
-                format!(
-                    "the proof has no move for {}",
-                    Fen::from_position(pos, EnPassantMode::Legal)
-                )
-            })
+            .ok_or_else(|| format!("the proof has no move for {}", pos.to_fen()))
     }
 
     /// The defender's replies with the attacker moves each lasts, longest
     /// first and the larger subproof first among equals; none once the game
     /// has decided.
-    fn replies(&mut self, after: &Atomic) -> Result<Vec<(u32, Move)>, String> {
+    fn replies(&mut self, after: &Position) -> Result<Vec<(u32, Move)>, String> {
         if !self.open(after) {
             return Ok(Vec::new());
         }
         let mut replies = Vec::new();
         for reply in after.legal_moves() {
-            let mut next = after.clone();
-            next.play_unchecked(reply);
+            let next = after.play(reply);
             let lasts = if self.open(&next) {
                 let measure = walk::measure(&next, self.attacker, &self.moves, &mut self.walk)?;
                 (measure.length, measure.tree)
@@ -185,7 +176,7 @@ impl Proof {
 
     /// A longest line from `pos`: the proof's moves against the replies that
     /// last longest.
-    pub fn longest_line(&mut self, pos: &Atomic) -> Result<Vec<Move>, String> {
+    pub fn longest_line(&mut self, pos: &Position) -> Result<Vec<Move>, String> {
         let mut line = Vec::new();
         let mut here = pos.clone();
         while self.open(&here) {
@@ -197,24 +188,22 @@ impl Proof {
                     .map(|&(_, reply)| reply)
                     .ok_or("the proof ends without a win")?
             };
-            here.play_unchecked(m);
+            here = here.play(m);
             line.push(m);
         }
         Ok(line)
     }
 
     /// Whether the attacker's move here ends the game.
-    fn wins_at_once(&self, pos: &Atomic) -> Result<bool, String> {
+    fn wins_at_once(&self, pos: &Position) -> Result<bool, String> {
         let m = self.proof_move(pos)?;
-        let mut next = pos.clone();
-        next.play_unchecked(m);
-        Ok(matches!(status(&next, self.attacker), Status::Won))
+        Ok(matches!(status(&pos.play(m), self.attacker), Status::Won))
     }
 
     /// How many attacker moves the proof takes to win from `pos`, whoever
     /// is to move: none where it does not cover `pos`, and 0 where the
     /// attacker has won.
-    pub fn value(&mut self, pos: &Atomic) -> Option<u32> {
+    pub fn value(&mut self, pos: &Position) -> Option<u32> {
         match status(pos, self.attacker) {
             Status::Won => return Some(0),
             Status::Over => return None,
@@ -242,27 +231,27 @@ struct Lines<'a> {
 }
 
 impl Lines<'_> {
-    fn open(&self, pos: &Atomic) -> bool {
+    fn open(&self, pos: &Position) -> bool {
         self.proof.open(pos)
     }
 
-    fn proof_move(&self, pos: &Atomic) -> Result<Move, String> {
+    fn proof_move(&self, pos: &Position) -> Result<Move, String> {
         self.proof.proof_move(pos)
     }
 
-    fn replies(&mut self, after: &Atomic) -> Result<Vec<(u32, Move)>, String> {
+    fn replies(&mut self, after: &Position) -> Result<Vec<(u32, Move)>, String> {
         self.proof.replies(after)
     }
 
-    fn wins_at_once(&self, pos: &Atomic) -> Result<bool, String> {
+    fn wins_at_once(&self, pos: &Position) -> Result<bool, String> {
         self.proof.wins_at_once(pos)
     }
 
     /// The proof's tree from `pos`, whose FEN is `fen`, as a PGN game, and
     /// the moves it writes.
-    fn tree(&mut self, pos: Atomic, fen: &str) -> Result<(String, usize), String> {
+    fn tree(&mut self, pos: Position, fen: &str) -> Result<(String, usize), String> {
         let attacker = self.proof.attacker;
-        let (us, them) = if attacker.is_white() {
+        let (us, them) = if attacker == Color::White {
             ("White", "Black")
         } else {
             ("Black", "White")
@@ -277,7 +266,11 @@ impl Lines<'_> {
              from there.{cut}}}"
         )];
         self.pgn(pos, &mut tokens, true)?;
-        let outcome = if attacker.is_white() { "1-0" } else { "0-1" };
+        let outcome = if attacker == Color::White {
+            "1-0"
+        } else {
+            "0-1"
+        };
         let moves = tokens
             .iter()
             .filter(|token| !token.starts_with(['{', '(', ')']))
@@ -309,7 +302,7 @@ impl Lines<'_> {
     /// defence that lasts no longer ends its line there.
     fn pgn(
         &mut self,
-        mut pos: Atomic,
+        mut pos: Position,
         tokens: &mut Vec<String>,
         mut numbered: bool,
     ) -> Result<(), String> {
@@ -326,8 +319,7 @@ impl Lines<'_> {
             };
             let mut others = Vec::new();
             for &(length, reply) in &replies[1..] {
-                let mut next = pos.clone();
-                next.play_unchecked(reply);
+                let next = pos.play(reply);
                 if !self.wins_at_once(&next)? {
                     others.push((length, reply));
                 }
@@ -361,15 +353,17 @@ impl Lines<'_> {
 
 /// Plays a move and writes it in SAN, numbered as PGN numbers it: always for
 /// White, for Black where `numbered`.
-pub fn play(pos: &mut Atomic, m: Move, numbered: bool) -> String {
-    let number = pos.fullmoves().get();
-    let white = pos.turn().is_white();
-    let san = SanPlus::from_move_and_play_unchecked(pos, m);
-    match (white, numbered) {
+pub fn play(pos: &mut Position, m: Move, numbered: bool) -> String {
+    let number = pos.fullmoves();
+    let white = pos.turn() == Color::White;
+    let san = pos.board().san(m.native()).unwrap_or_default();
+    let text = match (white, numbered) {
         (true, _) => format!("{number}. {san}"),
         (false, true) => format!("{number}... {san}"),
-        (false, false) => san.to_string(),
-    }
+        (false, false) => san,
+    };
+    *pos = pos.play(m);
+    text
 }
 
 /// PGN movetext from its tokens, in lines of at most 79 characters where
@@ -397,16 +391,13 @@ fn movetext(tokens: &[String]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use shakmaty::{Position as _, uci::UciMove, variant::Atomic};
-
     use super::Proof;
+    use crate::board::{Move, Position};
     use crate::format::{SMALL, decode, encode_jsonl, small_defended, strategy};
 
-    fn play(pos: &Atomic, uci: &str) -> Atomic {
-        let m = uci.parse::<UciMove>().unwrap().to_move(pos).unwrap();
-        let mut next = pos.clone();
-        next.play_unchecked(m);
-        next
+    fn play(pos: &Position, uci: &str) -> Position {
+        let m = Move::from_uci(pos, uci).unwrap();
+        pos.play(m)
     }
 
     #[test]

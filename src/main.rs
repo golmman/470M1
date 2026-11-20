@@ -15,8 +15,8 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
-use shakmaty::{Color, Position as _};
 
+use atomic470mi::board::{Color, Position};
 use atomic470mi::{check, dfpn, format, lines, position};
 
 /// The most memory one search or reference run may be asked for, in MB.
@@ -214,9 +214,7 @@ fn prove(args: &[String]) -> Result<(), String> {
     if let (Some(_), Some(path)) = (moves, &proofs) {
         let (header, bytes) = format::encode(&root, root.turn(), |pos| {
             let key = (pos.hash(), pos.halfmoves());
-            search
-                .winning_move(&pos.to_atomic(), &key)
-                .and_then(|m| format::board_move(pos, &m))
+            search.winning_move(pos, &key)
         })?;
         format::save(std::path::Path::new(path), &bytes)?;
         written = Some(header);
@@ -312,9 +310,7 @@ fn line(args: &[String]) -> Result<(), String> {
 }
 
 /// Reads a compact or JSON-lines proof into its root, attacker and moves.
-fn read_moves(
-    bytes: &[u8],
-) -> Result<(shakmaty::variant::Atomic, Color, atomic470mi::walk::Moves), String> {
+fn read_moves(bytes: &[u8]) -> Result<(Position, Color, atomic470mi::walk::Moves), String> {
     if let Some((header, indices)) = format::decode(bytes)? {
         return format::strategy(&header, &indices);
     }
