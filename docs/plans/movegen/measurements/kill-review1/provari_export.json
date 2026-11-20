@@ -1,0 +1,70 @@
+{
+  "cells": {
+    "core": {
+      "bare_median_s": 0.5152,
+      "proof_median_s": 0.5199,
+      "export_ms": 4.7,
+      "runs_bare": [
+        0.5289,
+        0.525,
+        0.5143,
+        0.5133,
+        0.5152
+      ],
+      "runs_proof": [
+        0.519,
+        0.5222,
+        0.5388,
+        0.5199,
+        0.5195
+      ],
+      "mate": 17
+    },
+    "easy-win": {
+      "bare_median_s": 0.1377,
+      "proof_median_s": 0.1331,
+      "export_ms": -4.6,
+      "runs_bare": [
+        0.14,
+        0.1354,
+        0.1359,
+        0.1377,
+        0.1381
+      ],
+      "runs_proof": [
+        0.1331,
+        0.1333,
+        0.1331,
+        0.1331,
+        0.1359
+      ],
+      "mate": 15
+    },
+    "deep-win": {
+      "bare_median_s": 6.6303,
+      "proof_median_s": 6.6074,
+      "export_ms": -22.9,
+      "runs_bare": [
+        6.61,
+        6.6791,
+        6.6303,
+        6.6604,
+        6.5833
+      ],
+      "runs_proof": [
+        6.5889,
+        6.6074,
+        6.6733,
+        6.6429,
+        6.5874
+      ],
+      "mate": 22
+    }
+  },
+  "env": {
+    "date": "2026-11-20",
+    "oracle": "/tmp/470M1-oracle/provari/target/release/provari",
+    "source": "provari v0.4.0 bceb1ee",
+    "rounds": 5
+  }
+}

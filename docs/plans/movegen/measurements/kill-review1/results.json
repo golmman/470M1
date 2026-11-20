@@ -1,0 +1,352 @@
+{
+  "walls_s": {
+    "core/cand/proof": {
+      "median": 0.5787,
+      "runs": [
+        0.5792,
+        0.5819,
+        0.5767,
+        0.5763,
+        0.5787
+      ]
+    },
+    "core/cand/search": {
+      "median": 0.5275,
+      "runs": [
+        0.5275,
+        0.527,
+        0.5311,
+        0.5314,
+        0.527
+      ]
+    },
+    "core/old/proof": {
+      "median": 0.5211,
+      "runs": [
+        0.5174,
+        0.517,
+        0.5227,
+        0.5211,
+        0.5214
+      ]
+    },
+    "core/old/search": {
+      "median": 0.4868,
+      "runs": [
+        0.4865,
+        0.4861,
+        0.4868,
+        0.4889,
+        0.4902
+      ]
+    },
+    "easy-win/cand/proof": {
+      "median": 0.1441,
+      "runs": [
+        0.1451,
+        0.1441,
+        0.1415,
+        0.1441,
+        0.1434
+      ]
+    },
+    "easy-win/cand/search": {
+      "median": 0.1356,
+      "runs": [
+        0.1352,
+        0.137,
+        0.1343,
+        0.1356,
+        0.1356
+      ]
+    },
+    "easy-win/old/proof": {
+      "median": 0.1341,
+      "runs": [
+        0.1331,
+        0.1341,
+        0.1342,
+        0.1323,
+        0.1386
+      ]
+    },
+    "easy-win/old/search": {
+      "median": 0.129,
+      "runs": [
+        0.1325,
+        0.1287,
+        0.129,
+        0.1273,
+        0.129
+      ]
+    },
+    "deep-win/cand/proof": {
+      "median": 5.61,
+      "runs": [
+        5.6464,
+        5.61,
+        5.6378,
+        5.5354,
+        5.5492
+      ]
+    },
+    "deep-win/cand/search": {
+      "median": 5.4237,
+      "runs": [
+        5.4141,
+        5.4364,
+        5.4633,
+        5.4037,
+        5.4237
+      ]
+    },
+    "deep-win/old/proof": {
+      "median": 6.2423,
+      "runs": [
+        6.2423,
+        6.2655,
+        6.2633,
+        6.2168,
+        6.1783
+      ]
+    },
+    "deep-win/old/search": {
+      "median": 6.1856,
+      "runs": [
+        6.1856,
+        6.21,
+        6.1962,
+        6.0502,
+        6.0886
+      ]
+    }
+  },
+  "instructions": {
+    "core/cand/proof": {
+      "median": 7831655395,
+      "runs": [
+        7831645611,
+        7831655395,
+        7831663920
+      ],
+      "child_evals": 3896430,
+      "mate": 14
+    },
+    "core/cand/search": {
+      "median": 7061619655,
+      "runs": [
+        7061619655,
+        7061619420,
+        7061619989
+      ],
+      "child_evals": 3896430,
+      "mate": 14
+    },
+    "core/old/proof": {
+      "median": 7055754544,
+      "runs": [
+        7055754008,
+        7055757675,
+        7055754544
+      ],
+      "child_evals": 3823720,
+      "mate": 17
+    },
+    "core/old/search": {
+      "median": 6569377490,
+      "runs": [
+        6569377490,
+        6569377682,
+        6569376965
+      ],
+      "child_evals": 3823720,
+      "mate": 17
+    },
+    "easy-win/cand/proof": {
+      "median": 1653123631,
+      "runs": [
+        1653124746,
+        1653123631,
+        1653121706
+      ],
+      "child_evals": 904368,
+      "mate": 18
+    },
+    "easy-win/cand/search": {
+      "median": 1536250423,
+      "runs": [
+        1536250104,
+        1536250791,
+        1536250423
+      ],
+      "child_evals": 904368,
+      "mate": 18
+    },
+    "easy-win/old/proof": {
+      "median": 1497698828,
+      "runs": [
+        1497706342,
+        1497698828,
+        1497697979
+      ],
+      "child_evals": 897937,
+      "mate": 15
+    },
+    "easy-win/old/search": {
+      "median": 1429370939,
+      "runs": [
+        1429370952,
+        1429370939,
+        1429370741
+      ],
+      "child_evals": 897937,
+      "mate": 15
+    },
+    "deep-win/cand/proof": {
+      "median": 79174141699,
+      "runs": [
+        79174153529,
+        79174127172,
+        79174141699
+      ],
+      "child_evals": 44828946,
+      "mate": 20
+    },
+    "deep-win/cand/search": {
+      "median": 76684453802,
+      "runs": [
+        76684453902,
+        76684453729,
+        76684453802
+      ],
+      "child_evals": 44828946,
+      "mate": 20
+    },
+    "deep-win/old/proof": {
+      "median": 87058177155,
+      "runs": [
+        87058179144,
+        87058177155,
+        87058165904
+      ],
+      "child_evals": 54633842,
+      "mate": 19
+    },
+    "deep-win/old/search": {
+      "median": 85492728712,
+      "runs": [
+        85492728260,
+        85492728712,
+        85492729172
+      ],
+      "child_evals": 54633842,
+      "mate": 19
+    }
+  },
+  "search_ms": {
+    "core/cand/1": 526,
+    "core/cand/0": 524,
+    "core/old/1": 486,
+    "core/old/0": 487,
+    "easy-win/cand/1": 133,
+    "easy-win/cand/0": 133,
+    "easy-win/old/1": 131,
+    "easy-win/old/0": 126,
+    "deep-win/cand/1": 5389,
+    "deep-win/cand/0": 5421,
+    "deep-win/old/1": 6069,
+    "deep-win/old/0": 6085
+  },
+  "ratios_wall": {
+    "core/with": 1.1104,
+    "core/without": 1.0836,
+    "easy-win/with": 1.0747,
+    "easy-win/without": 1.0514,
+    "deep-win/with": 0.8987,
+    "deep-win/without": 0.8768
+  },
+  "symbol_delta_core": [
+    {
+      "delta_instructions": 203403015,
+      "symbol": "atomic_movegen::position::legal_in::<atomic_movegen::position::LegalNode>"
+    },
+    {
+      "delta_instructions": 91513975,
+      "symbol": "<atomic_movegen::board::Board>::is_pseudo_legal"
+    },
+    {
+      "delta_instructions": 67324201,
+      "symbol": "<atomic_movegen::position::PositionView>::checkers"
+    },
+    {
+      "delta_instructions": 64174859,
+      "symbol": "<atomic470mi::board::Position>::play"
+    },
+    {
+      "delta_instructions": 63206804,
+      "symbol": "<atomic470mi::board::Position>::pseudo_legal"
+    },
+    {
+      "delta_instructions": 53710177,
+      "symbol": "__memmove_avx_unaligned_erms"
+    },
+    {
+      "delta_instructions": 30543456,
+      "symbol": "atomic470mi::format::legal_moves"
+    },
+    {
+      "delta_instructions": 25061297,
+      "symbol": "<atomic470mi::format::Walk<atomic470mi::format::FromSearch<470MI::prove::{closure#4}>>>::attacker_to_move"
+    },
+    {
+      "delta_instructions": 16523479,
+      "symbol": "<atomic_movegen::board::Board>::is_pseudo_legal_pawn"
+    },
+    {
+      "delta_instructions": 14431956,
+      "symbol": "atomic470mi::eval::terms"
+    },
+    {
+      "delta_instructions": 12236467,
+      "symbol": "<atomic470mi::moves::Mover>::new"
+    },
+    {
+      "delta_instructions": 12165492,
+      "symbol": "<atomic470mi::moves::Mover>::plain"
+    },
+    {
+      "delta_instructions": 10895118,
+      "symbol": "atomic_movegen::board::castling_rights_after"
+    },
+    {
+      "delta_instructions": 10609812,
+      "symbol": "<atomic470mi::board::Position>::attackers_to"
+    }
+  ],
+  "env": {
+    "date": "2026-11-20",
+    "host": "36f35886a6b3",
+    "platform": "Linux-7.2.13-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "candidate": "/workspace/470M1/target/release/470MI",
+    "candidate_sha256": "8d807f21cda7b6561e719e66e20c578da89b37664c737f9a5e1763938fb663ba",
+    "reference": "/tmp/plan12/plan2/target/release/470m1",
+    "reference_sha256": "71fff64626a2c777ea756da250e28eb6f1e518381b61558c2eaa7d2a96ab9454",
+    "reference_source": "470m1@2f629fd (plan 2 tree, rebuilt in /tmp/plan12)",
+    "candidate_source": "470MI@e3c237e working tree (plan 12 product)",
+    "flags": [
+      "--seconds",
+      "10",
+      "--memory",
+      "192",
+      "--seed",
+      "0",
+      "--json"
+    ],
+    "rounds": 5,
+    "perf_rounds": 3,
+    "perf_counter": "instructions:u",
+    "interleaved": true,
+    "note": "wall includes process start; the row's driver measures the same way"
+  }
+}
