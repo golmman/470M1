@@ -1,0 +1,60 @@
+diff --git a/src/moves.rs b/src/moves.rs
+index 345253e..796f930 100644
+--- a/src/moves.rs
++++ b/src/moves.rs
+@@ -31,6 +31,9 @@ pub struct Mover<'a> {
+     tested: Bitboard,
+     /// The kings touch, so no move but a king's checks the other one.
+     touching: bool,
++    /// Diagnostic: in check (kings apart), and where a quiet move must land.
++    evading: bool,
++    block: Bitboard,
+     /// For each role, the squares from which it checks the other king.
+     check_squares: ByRole<Bitboard>,
+     /// Our pieces alone between one of our sliders and the other king.
+@@ -68,6 +71,16 @@ impl<'a> Mover<'a> {
+         pos.board().populate_state(&mut state);
+         let counts = Counts::from(&state);
+         let context = pos.board().legality_context(counts);
++        let evading = !touching && !state.checkers.is_empty();
++        let checkers = Bitboard(state.checkers.0);
++        let block = match (our_king, checkers.single_square()) {
++            (Some(k), Some(c)) if evading
++                && matches!(pos.role_at(c), Some(Role::Bishop | Role::Rook | Role::Queen)) =>
++            {
++                attacks::between(k, c)
++            }
++            _ => Bitboard::EMPTY,
++        };
+         let tested = match our_king {
+             _ if touching => Bitboard::EMPTY,
+             _ if !state.checkers.is_empty() => ours,
+@@ -113,6 +126,8 @@ impl<'a> Mover<'a> {
+             their_king,
+             tested,
+             touching,
++            evading,
++            block,
+             check_squares,
+             uncovering,
+             ours,
+@@ -162,10 +177,15 @@ impl<'a> Mover<'a> {
+     /// neither the king nor tested always is.
+     #[inline]
+     pub fn legal(&self, m: Move) -> bool {
+-        if let Some((from, _)) = self.quiet(m)
+-            && !self.tested.contains(from)
+-        {
+-            return true;
++        if let Some((from, to)) = self.quiet(m) {
++            if !self.tested.contains(from) {
++                return true;
++            }
++            if self.evading && !self.block.contains(to) {
++                return false;
++            }
++        } else if self.evading && m.is_castle() {
++            return false;
+         }
+         self.context.legal(m.native())
+     }

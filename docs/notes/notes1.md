@@ -89,3 +89,17 @@ Decision B: B
 Decision C: B
 
 Let's do the "Patch atomic-movegen locally in /tmp" first though
+
+---
+
+Please analyze: why is it so hard to replace `shakmaty` with `atomic-movegen` without losing performance?
+What can we do to succeed with both goals?
+
+---
+
+Read docs/plans/movegen/report8.md , decisions.md ( MD7 ) and hot-path-audit.md . Plan 9: measure the evasion-mask prototype ( /tmp/mg-ev shape: per-node block mask between the king and a single sliding checker, castling rejected in check) and atomic-movegen/unsafe-optimizations on core , easy-win and deep-win with three interleaved perf sta t -e instructions:u pairs each on the bench host. If the mask clears 0.31e9 on core with identical counters and .p vr , write wishlist3.md W10 (evasion-aware LegalityContext ) and a dated MD8 reopening MD7 ; record the unsafe-feature result for an owner decision.
+
+---
+
+Read  docs/plans/movegen/plan9.md  and  measurements/plan9/README.md . On  c90face26537 , run  python3 docs/plans/move gen/measurements/plan9/run_plan9.py  (with  /tmp/470M1-oracle  built). Apply plan 9's Phase B rule to the result: on release, write  wishlist3.md   W10  and a dated  MD8 ; otherwise record the  MD7  note. Record the  uo  result for an owner decision and write  report9.md ; run  make test  before and after.
+
