@@ -111,3 +111,8 @@ Please add a short note in the AGENTS.md: after writing a report, the session su
 
 The asks of `docs/plans/movegen/wishlist3.md` were released in `atomic-movegen` version 2.11.0.
 Check the changelog and draft a plan for adoption.
+
+---
+
+Last session we finished with `docs/plans/movegen/report10.md`.
+Let's draft a plan to check `unsafe-optimizations`.
