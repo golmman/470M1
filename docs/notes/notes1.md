@@ -103,3 +103,11 @@ Read docs/plans/movegen/report8.md , decisions.md ( MD7 ) and hot-path-audit.md 
 
 Read  docs/plans/movegen/plan9.md  and  measurements/plan9/README.md . On  c90face26537 , run  python3 docs/plans/move gen/measurements/plan9/run_plan9.py  (with  /tmp/470M1-oracle  built). Apply plan 9's Phase B rule to the result: on release, write  wishlist3.md   W10  and a dated  MD8 ; otherwise record the  MD7  note. Record the  uo  result for an owner decision and write  report9.md ; run  make test  before and after.
 
+---
+
+Please add a short note in the AGENTS.md: after writing a report, the session summary should repeat the plans goal and use 
+
+---
+
+The asks of `docs/plans/movegen/wishlist3.md` were released in `atomic-movegen` version 2.11.0.
+Check the changelog and draft a plan for adoption.
