@@ -1,0 +1,27 @@
+diff -ruN base/src/format.rs tree-reuse/src/format.rs
+--- base/src/format.rs	2026-11-20 21:13:57.480293059 +0000
++++ tree-reuse/src/format.rs	2026-11-20 22:19:57.723233581 +0000
+@@ -179,17 +179,22 @@
+         // apart. The positions after the moves are made again where needed,
+         // which costs less than keeping them all.
+         let mut moves: Vec<(bool, u32, Move)> = Vec::with_capacity(legal.len());
++        let mut checks: HashMap<u16, Position> = HashMap::new();
+         for &m in &legal {
+             let next = pos.play(m);
+             let check = next.in_check();
+             if won_at_once(&next, self.attacker, is_capture(pos, m), check) {
+                 return Ok((1, Some(m)));
+             }
++            if check {
++                checks.insert(m.bits(), next);
++            }
+             moves.push((!check, number(pos, m), m));
+         }
+         moves.sort_unstable_by_key(|&(quiet, number, _)| (quiet, number));
+         for &(_, _, m) in moves.iter().take_while(|&&(quiet, ..)| !quiet) {
+-            if let Some(length) = self.wins_in_two(&pos.play(m)) {
++            let next = checks.remove(&m.bits()).unwrap_or_else(|| pos.play(m));
++            if let Some(length) = self.wins_in_two(&next) {
+                 return Ok((length, Some(m)));
+             }
+         }

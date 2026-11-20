@@ -101,11 +101,11 @@ Read docs/plans/movegen/report8.md , decisions.md ( MD7 ) and hot-path-audit.md 
 
 ---
 
-Read  docs/plans/movegen/plan9.md  and  measurements/plan9/README.md . On  c90face26537 , run  python3 docs/plans/move gen/measurements/plan9/run_plan9.py  (with  /tmp/470M1-oracle  built). Apply plan 9's Phase B rule to the result: on release, write  wishlist3.md   W10  and a dated  MD8 ; otherwise record the  MD7  note. Record the  uo  result for an owner decision and write  report9.md ; run  make test  before and after.
+Read docs/plans/movegen/plan9.md and measurements/plan9/README.md . On c90face26537 , run python3 docs/plans/move gen/measurements/plan9/run_plan9.py (with /tmp/470M1-oracle built). Apply plan 9's Phase B rule to the result: on release, write wishlist3.md W10 and a dated MD8 ; otherwise record the MD7 note. Record the uo result for an owner decision and write report9.md ; run make test before and after.
 
 ---
 
-Please add a short note in the AGENTS.md: after writing a report, the session summary should repeat the plans goal and use 
+Please add a short note in the AGENTS.md: after writing a report, the session summary should repeat the plans goal and use
 
 ---
 
@@ -120,3 +120,7 @@ Let's draft a plan to check `unsafe-optimizations`.
 ---
 
 Perform a thorough code clean up.
+
+---
+
+Run one counted split of the proof-export walk in 470MI: using a scratch tree (no src/ edit), instrument format::prove's candidate loop, wins_in_two, judge, and the movegen calls they pay, then measure core with prove --seconds 10 --memory 192 --seed 0 --proofs. Pre-register the rule: if ≥0.31e9 of the 0.770e9 export delta is re-derivable work (proof-table answers or positions already proven in the walk), propose one encoder plan with byte-identical .pvr, identical counters and 9/9 accepted; otherwise report that the cost is the MD7 residual and recommend closing movegen with the dated miss. Read docs/plans/movegen/kill-review1.md, report12.md and measurements/kill-review1/ first; do not change the atomic-movegen pin.

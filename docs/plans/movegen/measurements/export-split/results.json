@@ -1,0 +1,362 @@
+{
+  "experiment": "one counted split of the proof-export walk (kill-review1 \u00a75)",
+  "decision_rule": "re-derivable >= 0.31e9 of the 0.770e9 export delta -> propose an encoder plan; else the cost is the MD7 residual -> close movegen with the dated miss",
+  "cell": "core",
+  "fen": "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1",
+  "clean_instructions": {
+    "candidate": {
+      "without": [
+        {
+          "instructions": 7061619649,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": null,
+          "sha256": null
+        },
+        {
+          "instructions": 7061620264,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": null,
+          "sha256": null
+        },
+        {
+          "instructions": 7061619917,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": null,
+          "sha256": null
+        }
+      ],
+      "with": [
+        {
+          "instructions": 7831654923,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": 1009,
+          "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3"
+        },
+        {
+          "instructions": 7831663170,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": 1009,
+          "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3"
+        },
+        {
+          "instructions": 7831655667,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": 1009,
+          "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3"
+        }
+      ],
+      "median_without": 7061619917,
+      "median_with": 7831655667,
+      "delta": 770035750,
+      "proof_sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3",
+      "proof_positions": 1009,
+      "mate": 14,
+      "child_evals": 3896430
+    },
+    "plan2": {
+      "without": [
+        {
+          "instructions": 6569377383,
+          "mate": 17,
+          "nodes": 342263,
+          "child_evals": 3823720,
+          "proof_moves": null,
+          "sha256": null
+        },
+        {
+          "instructions": 6569376712,
+          "mate": 17,
+          "nodes": 342263,
+          "child_evals": 3823720,
+          "proof_moves": null,
+          "sha256": null
+        },
+        {
+          "instructions": 6569377084,
+          "mate": 17,
+          "nodes": 342263,
+          "child_evals": 3823720,
+          "proof_moves": null,
+          "sha256": null
+        }
+      ],
+      "with": [
+        {
+          "instructions": 7055771259,
+          "mate": 17,
+          "nodes": 342263,
+          "child_evals": 3823720,
+          "proof_moves": 1021,
+          "sha256": "2d33c6268132a1596e8cdf75824c5948b39cda88883c0d13462918e97d0dd8cd"
+        },
+        {
+          "instructions": 7055759475,
+          "mate": 17,
+          "nodes": 342263,
+          "child_evals": 3823720,
+          "proof_moves": 1021,
+          "sha256": "2d33c6268132a1596e8cdf75824c5948b39cda88883c0d13462918e97d0dd8cd"
+        },
+        {
+          "instructions": 7055752515,
+          "mate": 17,
+          "nodes": 342263,
+          "child_evals": 3823720,
+          "proof_moves": 1021,
+          "sha256": "2d33c6268132a1596e8cdf75824c5948b39cda88883c0d13462918e97d0dd8cd"
+        }
+      ],
+      "delta_single_round": 486382391,
+      "median_without": 6569377084,
+      "median_with": 7055759475,
+      "delta": 486382391,
+      "proof_sha256": "2d33c6268132a1596e8cdf75824c5948b39cda88883c0d13462918e97d0dd8cd",
+      "proof_positions": 1021,
+      "mate": 17,
+      "child_evals": 3823720
+    },
+    "provari_walk": {
+      "without": [
+        7014722480,
+        7014727973,
+        7014716422
+      ],
+      "with": [
+        7016068764,
+        7016065395,
+        7016069588
+      ],
+      "median_without": 7014722480,
+      "median_with": 7016068764,
+      "delta": 1346284,
+      "note": "provari runs the walk in both arms; this delta is the file write only"
+    },
+    "provari_isolated_walk": {
+      "full": [
+        7016075480,
+        7016093565,
+        7016075742
+      ],
+      "skip": [
+        6524566041,
+        6524566025,
+        6524566101
+      ],
+      "median_full": 7016075742,
+      "median_skip": 6524566041,
+      "walk": 491509701,
+      "note": "SKIP_WALK short-circuits format::walk; the same binary, clean build"
+    },
+    "reuse_child_variant": {
+      "without": [
+        {
+          "instructions": 7072053987,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": null,
+          "sha256": null
+        },
+        {
+          "instructions": 7072053851,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": null,
+          "sha256": null
+        },
+        {
+          "instructions": 7072053621,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": null,
+          "sha256": null
+        }
+      ],
+      "with": [
+        {
+          "instructions": 7898093010,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": 1009,
+          "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3"
+        },
+        {
+          "instructions": 7897991378,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": 1009,
+          "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3"
+        },
+        {
+          "instructions": 7897124744,
+          "mate": 14,
+          "nodes": 350430,
+          "child_evals": 3896430,
+          "proof_moves": 1009,
+          "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3"
+        }
+      ],
+      "delta_single_round": 825937527,
+      "median_without": 7072053851,
+      "median_with": 7897991378,
+      "delta": 825937527,
+      "proof_sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3",
+      "proof_positions": 1009,
+      "mate": 14,
+      "child_evals": 3896430,
+      "note": "byte-identical .pvr and counters, but +55.9e6 instructions: the cache bookkeeping costs more than the 30,003 replayed positions"
+    }
+  },
+  "ratios": {
+    "candidate_over_plan2_walk": 1.583,
+    "candidate_over_provari_walk": 1.567
+  },
+  "counters": {
+    "JUDGE": 42844,
+    "JUDGE_WON": 0,
+    "JUDGE_FAILED": 346,
+    "JUDGE_OPEN": 42498,
+    "WIT": 13485,
+    "WIT_SOME": 2502,
+    "WIT_NONE": 10983,
+    "WIT_REPLIES": 56498,
+    "WIT_IN_PROVEN": 0,
+    "WIT_REPEAT": 515,
+    "WIT_NONOPEN": 0,
+    "PROVE": 9617,
+    "PROVE_CANDS": 359688,
+    "PROVE_CHECKS": 29937,
+    "PROVE_MATE1": 6106,
+    "PROVE_WIT": 2502,
+    "PROVE_DEEP": 1009,
+    "PLAY": 452726,
+    "LEGAL": 42844,
+    "LEGAL_MOVES": 1210034,
+    "PSEUDO": 73163,
+    "INCHECK": 409883,
+    "ISLEGAL": 1594553,
+    "REPLAY_CHECK": 13485,
+    "HASLEGAL": 30319,
+    "CANNOTWIN": 42498,
+    "CAPTURE_WINS": 17168,
+    "CAPTURE_CANDS": 616388,
+    "CAPTURE_PLAYS": 50195,
+    "ATTACKER": 10836,
+    "ATTACKER_HIT": 1219,
+    "ATTACKER_REPROVE": 185,
+    "DEFENDER": 1009,
+    "TABLE_HIT": 6688,
+    "TABLE_MISS": 2929,
+    "TABLE_LEN_EQ": 5804,
+    "TABLE_LEN_NE": 884,
+    "TABLE_LEN_DIFF": 887,
+    "FAST_SKIP": 0,
+    "FAST_FALLBACK": 0,
+    "CHECK_T1": 184,
+    "CHECK_T2": 311,
+    "CHECK_T3": 199,
+    "CHECK_TNONE": 12791,
+    "CHECK_AGREE2": 0,
+    "CHECK_MISS_WIT": 2502,
+    "CHECK_FALSE2": 311,
+    "CHECK_TRUE2": 2502,
+    "WIT_LEGAL_POS": 13485,
+    "WIT_LEGAL_REPLY": 17514,
+    "DEF_LEGAL": 10835,
+    "PROVE_LEGAL": 1009,
+    "ROOT_LEGAL": 1,
+    "PROVE_PLAY_CAND": 359688,
+    "PROVE_PLAY_DEEP": 1009,
+    "WIT_PLAY_REPLY": 17514,
+    "DEF_PLAY": 10835,
+    "WIT_UNIQUE": 12970,
+    "JUDGE_UNIQUE": 39311,
+    "PROVE_UNIQUE": 9432,
+    "PLAY_UNIQUE": 422723,
+    "LEGAL_UNIQUE": 37958
+  },
+  "table_vs_walk": {
+    "prove_calls": 9617,
+    "table_hits": 6688,
+    "table_misses": 2929,
+    "length_equal": 5804,
+    "length_different": 884,
+    "length_difference_sum": 887,
+    "wit_checks": 13485,
+    "wit_table_none": 12791,
+    "wit_table_len2": 311,
+    "wit_table_len2_actual_none": 311,
+    "wit_actual_some": 2502,
+    "wit_table_agrees": 0,
+    "note": "the proof table is not a canonical oracle: 0 of 2502 wins_in_two successes are labelled length 2 by the table, and all 311 table-length-2 cases are false positives"
+  },
+  "intra_walk_repeats": {
+    "prove": 9617,
+    "prove_unique": 9432,
+    "prove_repeat": 185,
+    "wit": 13485,
+    "wit_unique": 12970,
+    "wit_repeat": 515,
+    "legal": 42844,
+    "legal_unique": 37958,
+    "legal_repeat": 4886,
+    "judge": 42844,
+    "judge_unique": 39311,
+    "judge_repeat": 3533,
+    "play": 452726,
+    "play_unique": 422723,
+    "play_repeat": 30003,
+    "checking_replays": 13485
+  },
+  "callers": {
+    "legal_pos": 13485,
+    "legal_wit_reply": 17514,
+    "legal_defender": 10835,
+    "legal_deep": 1009,
+    "legal_root": 1,
+    "play_candidate": 359688,
+    "play_wit_reply": 17514,
+    "play_defender": 10835,
+    "play_capture": 50195,
+    "play_deep": 1009,
+    "note": "wins_in_two owns 30,999 of 42,844 legal_moves calls (72.4%); the candidate loop owns 359,688 of 452,726 plays (79.5%)"
+  },
+  "attribution_estimate": {
+    "note": "derived: kill-review1 symbol deltas / these call counts; it is a model, the measured delta is 0.770e9",
+    "per_call": {
+      "legal_check": 184.9,
+      "pseudo_legal": 863.9,
+      "play": 284.5,
+      "in_check": 164.3,
+      "legal_moves_wrapper": 712.9
+    },
+    "phase_millions": {
+      "wins_in_two": 289.8,
+      "prove_candidate_scan": 215.8,
+      "strategy_tree_write": 94.7,
+      "deep_prove": 33.9,
+      "judge_and_unattributed": 135.8
+    },
+    "re_derivable_upper_bound_millions": 79,
+    "re_derivable_upper_bound_note": "all intra-walk repeats returned for free: 30,003 plays + 4,886 legal_moves + 3,533 judges + 515 wins_in_two + 185 proves; the measured reuse variant of the play class alone was +55.9e6"
+  },
+  "conclusion": "re-derivable <= 0.08e9 < 0.31e9: no encoder plan; the 0.770e9 is the per-candidate rules work (MD7 residual)",
+  "checker_won_positions": 9617,
+  "checker_note": "both `470MI check` and `provari check` read the baseline proof as won_positions=9617, exactly the walk's PROVE calls; the 1,009 proof entries are the move-bearing nodes of a 9,617-node won-attacker tree"
+}

@@ -1,0 +1,613 @@
+diff -ruN base/src/board.rs tree/src/board.rs
+--- base/src/board.rs	2026-11-20 21:08:24.056361677 +0000
++++ tree/src/board.rs	2026-11-20 22:10:15.793114421 +0000
+@@ -276,6 +276,7 @@
+     /// it. This query reads only the two counts; `Mover`'s cached context is
+     /// check-aware because it is built from a populated `StateInfo`.
+     pub fn legal(&self, m: Move) -> bool {
++        crate::count::islegal();
+         let native = m.native();
+         let context = self.board.legality_context(self.board.counts());
+         self.board.is_pseudo_legal(native) && context.legal(native)
+@@ -294,6 +295,7 @@
+ 
+     /// Every move that is legal but for where it leaves the mover's king.
+     pub fn pseudo_legal(&self) -> Moves {
++        crate::count::pseudo();
+         let mut moves = Moves::new();
+         let _ = movegen::for_each_pseudo_legal(&self.board, &mut |m| {
+             moves.push(Move::from_native(m));
+@@ -343,6 +345,8 @@
+ 
+     /// The position after a legal move, with its key.
+     pub fn play(&self, m: Move) -> Position {
++        crate::count::play();
++        crate::count::play_seen(self.hash(), m.bits());
+         let mut board = self.board.clone();
+         let mut state = atomic_movegen::StateInfo::new();
+         board.do_move(m.native(), &mut state);
+@@ -352,6 +356,7 @@
+ 
+     /// Whether the side to move is in check.
+     pub fn in_check(&self) -> bool {
++        crate::count::incheck();
+         !self.board.checkers().is_empty()
+     }
+ 
+@@ -367,12 +372,16 @@
+ 
+     /// Every legal move, in the order the generator lists them.
+     pub fn legal_moves(&self) -> Vec<Move> {
+-        self.pseudo_legal()
++        crate::count::legal();
++        crate::count::legal_seen(self.hash());
++        let out: Vec<Move> = self.pseudo_legal()
+             .as_slice()
+             .iter()
+             .copied()
+             .filter(|&m| self.legal(m))
+-            .collect()
++            .collect();
++        crate::count::add_legal_moves(out.len() as u64);
++        out
+     }
+ }
+ 
+diff -ruN base/src/count.rs tree/src/count.rs
+--- base/src/count.rs	1970-01-01 00:00:00.000000000 +0000
++++ tree/src/count.rs	2026-11-20 22:10:56.295514425 +0000
+@@ -0,0 +1,182 @@
++//! Scratch export instrumentation. NOT part of the product; lives only in the
++//! probe tree. Every counter is reset immediately before `format::encode`
++//! and dumped immediately after, so the numbers describe the export walk.
++
++use std::cell::{Cell, RefCell};
++use std::collections::HashSet;
++
++macro_rules! decl {
++    ($($n:ident),* $(,)?) => {
++        thread_local! { $(pub static $n: Cell<u64> = const { Cell::new(0) };)* }
++    };
++}
++
++decl! {
++    JUDGE, JUDGE_WON, JUDGE_FAILED, JUDGE_OPEN,
++    WIT, WIT_SOME, WIT_NONE, WIT_REPLIES, WIT_IN_PROVEN, WIT_REPEAT, WIT_NONOPEN,
++    PROVE, PROVE_CANDS, PROVE_CHECKS, PROVE_MATE1, PROVE_WIT, PROVE_DEEP,
++    PLAY, LEGAL, LEGAL_MOVES, PSEUDO, INCHECK, ISLEGAL, REPLAY_CHECK,
++    HASLEGAL, CANNOTWIN,
++    CAPTURE_WINS, CAPTURE_CANDS, CAPTURE_PLAYS,
++    ATTACKER, ATTACKER_HIT, ATTACKER_REPROVE, DEFENDER,
++    TABLE_HIT, TABLE_MISS, TABLE_LEN_EQ, TABLE_LEN_NE, TABLE_LEN_DIFF, FAST_SKIP, FAST_FALLBACK,
++    CHECK_T1, CHECK_T2, CHECK_T3, CHECK_TNONE, CHECK_AGREE2, CHECK_MISS_WIT, CHECK_FALSE2, CHECK_TRUE2,
++    WIT_LEGAL_POS, WIT_LEGAL_REPLY, DEF_LEGAL, PROVE_LEGAL, ROOT_LEGAL,
++    PROVE_PLAY_CAND, PROVE_PLAY_DEEP, WIT_PLAY_REPLY, DEF_PLAY,
++}
++
++thread_local! {
++    static WIT_SEEN: RefCell<HashSet<u64>> = RefCell::new(HashSet::new());
++    static JUDGE_SEEN: RefCell<HashSet<(u64, u32)>> = RefCell::new(HashSet::new());
++    static PROVE_SEEN: RefCell<HashSet<u64>> = RefCell::new(HashSet::new());
++    static PLAY_SEEN: RefCell<HashSet<(u64, u16)>> = RefCell::new(HashSet::new());
++    static LEGAL_SEEN: RefCell<HashSet<u64>> = RefCell::new(HashSet::new());
++}
++
++macro_rules! bumpers {
++    ($($f:ident => $c:ident),* $(,)?) => {
++        $(
++            #[inline]
++            pub fn $f() { $c.with(|x| x.set(x.get() + 1)); }
++        )*
++    };
++}
++
++bumpers! {
++    judge => JUDGE,
++    judge_won => JUDGE_WON,
++    judge_failed => JUDGE_FAILED,
++    judge_open => JUDGE_OPEN,
++    wit => WIT,
++    wit_some => WIT_SOME,
++    wit_none => WIT_NONE,
++    wit_in_proven => WIT_IN_PROVEN,
++    wit_repeat => WIT_REPEAT,
++    wit_nonopen => WIT_NONOPEN,
++    prove => PROVE,
++    prove_cands => PROVE_CANDS,
++    prove_checks => PROVE_CHECKS,
++    prove_mate1 => PROVE_MATE1,
++    prove_wit => PROVE_WIT,
++    prove_deep => PROVE_DEEP,
++    play => PLAY,
++    legal => LEGAL,
++    pseudo => PSEUDO,
++    incheck => INCHECK,
++    islegal => ISLEGAL,
++    replay_check => REPLAY_CHECK,
++    haslegal => HASLEGAL,
++    cannotwin => CANNOTWIN,
++    capture_wins => CAPTURE_WINS,
++    capture_cands => CAPTURE_CANDS,
++    capture_plays => CAPTURE_PLAYS,
++    attacker => ATTACKER,
++    attacker_hit => ATTACKER_HIT,
++    attacker_reprove => ATTACKER_REPROVE,
++    defender => DEFENDER,
++    table_hit => TABLE_HIT,
++    table_miss => TABLE_MISS,
++    table_len_eq => TABLE_LEN_EQ,
++    table_len_ne => TABLE_LEN_NE,
++    fast_skip => FAST_SKIP,
++    fast_fallback => FAST_FALLBACK,
++    check_t1 => CHECK_T1,
++    check_t2 => CHECK_T2,
++    check_t3 => CHECK_T3,
++    check_tnone => CHECK_TNONE,
++    check_agree2 => CHECK_AGREE2,
++    check_miss_wit => CHECK_MISS_WIT,
++    check_false2 => CHECK_FALSE2,
++    check_true2 => CHECK_TRUE2,
++    wit_legal_pos => WIT_LEGAL_POS,
++    wit_legal_reply => WIT_LEGAL_REPLY,
++    def_legal => DEF_LEGAL,
++    prove_legal => PROVE_LEGAL,
++    root_legal => ROOT_LEGAL,
++    prove_play_cand => PROVE_PLAY_CAND,
++    prove_play_deep => PROVE_PLAY_DEEP,
++    wit_play_reply => WIT_PLAY_REPLY,
++    def_play => DEF_PLAY,
++}
++
++#[inline]
++pub fn add_legal_moves(n: u64) {
++    LEGAL_MOVES.with(|x| x.set(x.get() + n));
++}
++#[inline]
++pub fn add_table_len_diff(n: u64) {
++    TABLE_LEN_DIFF.with(|x| x.set(x.get() + n));
++}
++#[inline]
++pub fn add_wit_replies(n: u64) {
++    WIT_REPLIES.with(|x| x.set(x.get() + n));
++}
++
++/// True when this wins_in_two position was already asked in this walk.
++pub fn wit_seen(h: u64) -> bool {
++    WIT_SEEN.with(|s| !s.borrow_mut().insert(h))
++}
++/// True when this (hash, counter) was already judged in this walk.
++pub fn judge_seen(h: u64, c: u32) -> bool {
++    JUDGE_SEEN.with(|s| !s.borrow_mut().insert((h, c)))
++}
++/// True when this hash was already proven in this walk.
++pub fn prove_seen(h: u64) -> bool {
++    PROVE_SEEN.with(|s| !s.borrow_mut().insert(h))
++}
++/// True when this (parent hash, move bits) was already played in this walk.
++pub fn play_seen(h: u64, m: u16) -> bool {
++    PLAY_SEEN.with(|s| !s.borrow_mut().insert((h, m)))
++}
++/// True when this hash's legal move list was already built in this walk.
++pub fn legal_seen(h: u64) -> bool {
++    LEGAL_SEEN.with(|s| !s.borrow_mut().insert(h))
++}
++
++macro_rules! all_counters {
++    ($m:ident $(, $arg:expr)*) => {
++        $m!($($arg,)* JUDGE, JUDGE_WON, JUDGE_FAILED, JUDGE_OPEN, WIT, WIT_SOME, WIT_NONE,
++            WIT_REPLIES, WIT_IN_PROVEN, WIT_REPEAT, WIT_NONOPEN, PROVE, PROVE_CANDS,
++            PROVE_CHECKS, PROVE_MATE1, PROVE_WIT, PROVE_DEEP, PLAY, LEGAL, LEGAL_MOVES,
++            PSEUDO, INCHECK, ISLEGAL, REPLAY_CHECK, HASLEGAL, CANNOTWIN, CAPTURE_WINS,
++            CAPTURE_CANDS, CAPTURE_PLAYS, ATTACKER, ATTACKER_HIT, ATTACKER_REPROVE,
++            DEFENDER, TABLE_HIT, TABLE_MISS, TABLE_LEN_EQ, TABLE_LEN_NE, TABLE_LEN_DIFF,
++            FAST_SKIP, FAST_FALLBACK, CHECK_T1, CHECK_T2, CHECK_T3, CHECK_TNONE,
++            CHECK_AGREE2, CHECK_MISS_WIT, CHECK_FALSE2, CHECK_TRUE2, WIT_LEGAL_POS,
++            WIT_LEGAL_REPLY, DEF_LEGAL, PROVE_LEGAL, ROOT_LEGAL, PROVE_PLAY_CAND,
++            PROVE_PLAY_DEEP, WIT_PLAY_REPLY, DEF_PLAY);
++    };
++}
++
++macro_rules! zero {
++    ($($c:ident),*) => { $( $c.with(|x| x.set(0)); )* };
++}
++macro_rules! emit {
++    ($out:expr, $($c:ident),*) => {
++        $( $out.push_str(&format!("\"{}\":{},", stringify!($c), $c.with(|x| x.get()))); )*
++    };
++}
++
++pub fn reset() {
++    all_counters!(zero);
++    WIT_SEEN.with(|s| s.borrow_mut().clear());
++    JUDGE_SEEN.with(|s| s.borrow_mut().clear());
++    PROVE_SEEN.with(|s| s.borrow_mut().clear());
++    PLAY_SEEN.with(|s| s.borrow_mut().clear());
++    LEGAL_SEEN.with(|s| s.borrow_mut().clear());
++}
++
++pub fn dump() {
++    let mut out = String::from("{\"export_counters\":{");
++    all_counters!(emit, out);
++    let wit_unique = WIT_SEEN.with(|s| s.borrow().len());
++    let judge_unique = JUDGE_SEEN.with(|s| s.borrow().len());
++    let prove_unique = PROVE_SEEN.with(|s| s.borrow().len());
++    let play_unique = PLAY_SEEN.with(|s| s.borrow().len());
++    let legal_unique = LEGAL_SEEN.with(|s| s.borrow().len());
++    out.push_str(&format!(
++        "\"WIT_UNIQUE\":{wit_unique},\"JUDGE_UNIQUE\":{judge_unique},\"PROVE_UNIQUE\":{prove_unique},\"PLAY_UNIQUE\":{play_unique},\"LEGAL_UNIQUE\":{legal_unique}"
++    ));
++    out.push_str("}}");
++    eprintln!("{out}");
++}
+diff -ruN base/src/dfpn.rs tree/src/dfpn.rs
+--- base/src/dfpn.rs	2026-11-20 21:10:53.602433868 +0000
++++ tree/src/dfpn.rs	2026-11-20 22:08:47.151036911 +0000
+@@ -373,6 +373,13 @@
+         }
+     }
+ 
++    /// Scratch probe: the proof table's shortest length for this position.
++    pub fn proof_length(&self, pos: &Position) -> Option<u32> {
++        self.proofs
++            .get(pos.hash(), pos.halfmoves())
++            .map(|proof| proof.length)
++    }
++
+     /// The winning move for an attacker position, for reading the proof back:
+     /// once the proofs have dropped their mates in one, a mate in one found
+     /// again.
+diff -ruN base/src/format.rs tree/src/format.rs
+--- base/src/format.rs	2026-11-20 21:13:57.480293059 +0000
++++ tree/src/format.rs	2026-11-20 22:10:56.295914933 +0000
+@@ -55,25 +55,34 @@
+ /// mate, a stalemate, too little material for either side to win, the
+ /// 50-move limit. `legal` holds the side to move's legal moves.
+ fn judge(pos: &Position, attacker: Color, legal: &[Move]) -> State {
++    crate::count::judge();
++    crate::count::judge_seen(pos.hash(), pos.halfmoves());
+     if pos.king(attacker.flip()).is_none() {
++        crate::count::judge_won();
+         return State::Won;
+     }
+     if pos.king(attacker).is_none() {
++        crate::count::judge_failed();
+         return State::Failed;
+     }
+     if legal.is_empty() {
+-        return if pos.in_check() && pos.turn() != attacker {
+-            State::Won
++        if pos.in_check() && pos.turn() != attacker {
++            crate::count::judge_won();
++            return State::Won;
+         } else {
+-            State::Failed
+-        };
++            crate::count::judge_failed();
++            return State::Failed;
++        }
+     }
+     if moves::cannot_win(pos, Color::White) && moves::cannot_win(pos, Color::Black) {
++        crate::count::judge_failed();
+         return State::Failed;
+     }
+     if pos.halfmoves() >= 100 {
++        crate::count::judge_failed();
+         return State::Failed;
+     }
++    crate::count::judge_open();
+     State::Open
+ }
+ 
+@@ -121,9 +130,11 @@
+     fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, String>;
+ }
+ 
+-struct Walk<C> {
++struct Walk<'a, C> {
+     attacker: Color,
+     chooser: C,
++    probe: Option<&'a dyn Fn(&Position) -> Option<u32>>,
++    fast: bool,
+     /// Each position proven, by hash, at the highest counter yet, with its
+     /// length then.
+     proven: HashMap<u64, (u32, u32)>,
+@@ -134,8 +145,9 @@
+     line: HashSet<u64>,
+ }
+ 
+-impl<C: Chooser> Walk<C> {
++impl<C: Chooser> Walk<'_, C> {
+     fn root(&mut self, root: &Position) -> Result<u32, String> {
++        crate::count::root_legal();
+         let legal = root.legal_moves();
+         match judge(root, self.attacker, &legal) {
+             State::Won => Ok(0),
+@@ -149,16 +161,35 @@
+     }
+ 
+     fn attacker_to_move(&mut self, pos: &Position, legal: Vec<Move>) -> Result<u32, String> {
++        crate::count::attacker();
+         let (hash, counter) = (pos.hash(), pos.halfmoves());
+         if let Some(&(highest, length)) = self.proven.get(&hash)
+             && counter <= highest
+         {
++            crate::count::attacker_hit();
+             return Ok(length);
+         }
++        if self.proven.contains_key(&hash) {
++            crate::count::attacker_reprove();
++        }
+         if !self.line.insert(hash) {
+             return Err(format!("a line repeats {}", pos.to_fen()));
+         }
+         let (length, m) = self.prove(pos, legal)?;
++        if let Some(probe) = self.probe {
++            match probe(pos) {
++                Some(table) => {
++                    crate::count::table_hit();
++                    if table == length {
++                        crate::count::table_len_eq();
++                    } else {
++                        crate::count::table_len_ne();
++                        crate::count::add_table_len_diff(table.abs_diff(length) as u64);
++                    }
++                }
++                None => crate::count::table_miss(),
++            }
++        }
+         self.line.remove(&hash);
+         if self
+             .proven
+@@ -175,21 +206,49 @@
+ 
+     /// Proves an attacker position: its length, and its move.
+     fn prove(&mut self, pos: &Position, legal: Vec<Move>) -> Result<(u32, Option<Move>), String> {
++        crate::count::prove();
++        crate::count::prove_seen(pos.hash());
+         // Checks first, then the format's order, which tells every move
+         // apart. The positions after the moves are made again where needed,
+         // which costs less than keeping them all.
+         let mut moves: Vec<(bool, u32, Move)> = Vec::with_capacity(legal.len());
+         for &m in &legal {
++            crate::count::prove_cands();
++            crate::count::prove_play_cand();
+             let next = pos.play(m);
+             let check = next.in_check();
++            if check {
++                crate::count::prove_checks();
++            }
+             if won_at_once(&next, self.attacker, is_capture(pos, m), check) {
++                crate::count::prove_mate1();
+                 return Ok((1, Some(m)));
+             }
+             moves.push((!check, number(pos, m), m));
+         }
+         moves.sort_unstable_by_key(|&(quiet, number, _)| (quiet, number));
+         for &(_, _, m) in moves.iter().take_while(|&&(quiet, ..)| !quiet) {
+-            if let Some(length) = self.wins_in_two(&pos.play(m)) {
++            crate::count::replay_check();
++            let next = pos.play(m);
++            let table = self.probe.and_then(|probe| probe(&next));
++            let actual = self.wins_in_two(&next);
++            match table {
++                None => crate::count::check_tnone(),
++                Some(1) => crate::count::check_t1(),
++                Some(2) => crate::count::check_t2(),
++                Some(_) => crate::count::check_t3(),
++            }
++            match (table, actual) {
++                (Some(2), Some(_)) => crate::count::check_agree2(),
++                (Some(2), None) => crate::count::check_false2(),
++                (_, Some(_)) => crate::count::check_miss_wit(),
++                _ => {}
++            }
++            if actual.is_some() {
++                crate::count::check_true2();
++            }
++            if let Some(length) = actual {
++                crate::count::prove_wit();
+                 return Ok((length, Some(m)));
+             }
+         }
+@@ -197,7 +256,10 @@
+         ordered.clear();
+         ordered.extend(moves.iter().map(|&(.., m)| m));
+         let m = ordered[self.chooser.choose(pos, &ordered)?];
++        crate::count::prove_deep();
++        crate::count::prove_play_deep();
+         let next = pos.play(m);
++        crate::count::prove_legal();
+         let replies = next.legal_moves();
+         Ok((1 + self.defender_to_move(&next, replies)?, Some(m)))
+     }
+@@ -205,28 +267,47 @@
+     /// Whether a check leaves the defender lost at once whatever it does,
+     /// and the length then.
+     fn wins_in_two(&self, pos: &Position) -> Option<u32> {
++        crate::count::wit();
++        if self.proven.contains_key(&pos.hash()) {
++            crate::count::wit_in_proven();
++        }
++        if crate::count::wit_seen(pos.hash()) {
++            crate::count::wit_repeat();
++        }
++        crate::count::wit_legal_pos();
+         let replies = pos.legal_moves();
++        crate::count::add_wit_replies(replies.len() as u64);
+         if judge(pos, self.attacker, &replies) != State::Open {
++            crate::count::wit_none();
++            crate::count::wit_nonopen();
+             return None;
+         }
+         let mut longest = 0;
+         for reply in replies {
++            crate::count::wit_play_reply();
+             let next = pos.play(reply);
++            crate::count::wit_legal_reply();
+             let legal = next.legal_moves();
+             if judge(&next, self.attacker, &legal) != State::Open {
++                crate::count::wit_none();
+                 return None;
+             }
+             if !self.capture_wins(&next, &legal) {
++                crate::count::wit_none();
+                 return None;
+             }
+             longest = 1;
+         }
++        crate::count::wit_some();
+         Some(1 + longest)
+     }
+ 
+     fn capture_wins(&self, pos: &Position, legal: &[Move]) -> bool {
++        crate::count::capture_wins();
+         legal.iter().any(|&m| {
++            crate::count::capture_cands();
+             is_capture(pos, m) && {
++                crate::count::capture_plays();
+                 let next = pos.play(m);
+                 won_at_once(&next, self.attacker, true, next.in_check())
+             }
+@@ -234,6 +315,7 @@
+     }
+ 
+     fn defender_to_move(&mut self, pos: &Position, mut replies: Vec<Move>) -> Result<u32, String> {
++        crate::count::defender();
+         match judge(pos, self.attacker, &replies) {
+             State::Won => return Ok(0),
+             State::Failed => {
+@@ -251,7 +333,20 @@
+         replies.sort_unstable_by_key(|&m| number(pos, m));
+         let mut longest = 0;
+         for reply in replies {
++            crate::count::def_play();
+             let next = pos.play(reply);
++            if self.fast
++                && let Some(probe) = self.probe
++                && let Some(table) = probe(&next)
++            {
++                crate::count::fast_skip();
++                longest = longest.max(table);
++                continue;
++            }
++            if self.fast {
++                crate::count::fast_fallback();
++            }
++            crate::count::def_legal();
+             let legal = next.legal_moves();
+             if judge(&next, self.attacker, &legal) != State::Open {
+                 return Err(format!(
+@@ -331,6 +426,19 @@
+     Ok((header, bytes))
+ }
+ 
++/// Scratch: `encode` with a proof-table probe and a fast length path.
++pub fn encode_with(
++    root: &Position,
++    attacker: Color,
++    source: impl FnMut(&Position) -> Option<Move>,
++    probe: &dyn Fn(&Position) -> Option<u32>,
++    fast: bool,
++) -> Result<(Header, Vec<u8>), String> {
++    let (header, indices) = walk_with(root, attacker, source, probe, fast)?;
++    let bytes = file(&header, &indices)?;
++    Ok((header, bytes))
++}
++
+ /// Walks a proof of `attacker`'s win from `root`, whoever is to move there,
+ /// with the move `source` gives in each attacker position that needs one:
+ /// its header, length included, and its moves.
+@@ -339,6 +447,17 @@
+     attacker: Color,
+     source: impl FnMut(&Position) -> Option<Move>,
+ ) -> Result<(Header, Vec<u32>), String> {
++    walk_with(root, attacker, source, &|_| None, false)
++}
++
++/// Scratch: `walk` with a proof-table probe.
++pub fn walk_with(
++    root: &Position,
++    attacker: Color,
++    source: impl FnMut(&Position) -> Option<Move>,
++    probe: &dyn Fn(&Position) -> Option<u32>,
++    fast: bool,
++) -> Result<(Header, Vec<u32>), String> {
+     let board = root.clone();
+     let mut walk = Walk {
+         attacker,
+@@ -346,6 +465,8 @@
+             source,
+             indices: Vec::new(),
+         },
++        probe: Some(probe),
++        fast,
+         proven: HashMap::new(),
+         strategy: None,
+         line: HashSet::new(),
+@@ -505,6 +626,8 @@
+     let mut walk = Walk {
+         attacker,
+         chooser: FromFile { indices, next: 0 },
++        probe: None,
++        fast: false,
+         proven: HashMap::new(),
+         strategy: Some(Strategy::new()),
+         line: HashSet::new(),
+diff -ruN base/src/lib.rs tree/src/lib.rs
+--- base/src/lib.rs	2026-11-20 21:10:37.983530770 +0000
++++ tree/src/lib.rs	2026-11-20 22:05:52.413235151 +0000
+@@ -13,6 +13,7 @@
+ pub mod board;
+ pub mod check;
+ pub mod clock;
++pub mod count;
+ pub mod dfpn;
+ pub mod eval;
+ pub mod format;
+diff -ruN base/src/main.rs tree/src/main.rs
+--- base/src/main.rs	2026-11-20 20:35:34.406548463 +0000
++++ tree/src/main.rs	2026-11-20 22:08:47.151644918 +0000
+@@ -212,10 +212,20 @@
+     let elapsed = started.elapsed().as_millis() as u64;
+     let mut written = None;
+     if let (Some(_), Some(path)) = (moves, &proofs) {
+-        let (header, bytes) = format::encode(&root, root.turn(), |pos| {
+-            let key = (pos.hash(), pos.halfmoves());
+-            search.winning_move(pos, &key)
+-        })?;
++        atomic470mi::count::reset();
++        let fast = std::env::var_os("EXP_FAST").is_some();
++        let probe = |pos: &Position| search.proof_length(pos);
++        let (header, bytes) = format::encode_with(
++            &root,
++            root.turn(),
++            |pos| {
++                let key = (pos.hash(), pos.halfmoves());
++                search.winning_move(pos, &key)
++            },
++            &probe,
++            fast,
++        )?;
++        atomic470mi::count::dump();
+         format::save(std::path::Path::new(path), &bytes)?;
+         written = Some(header);
+     }
+diff -ruN base/src/moves.rs tree/src/moves.rs
+--- base/src/moves.rs	2026-11-20 21:07:32.692092226 +0000
++++ tree/src/moves.rs	2026-11-20 22:05:52.413828858 +0000
+@@ -560,6 +560,7 @@
+ 
+ /// Whether `color` can no longer win, by the checker's broad Atomic rule.
+ pub fn cannot_win(pos: &Position, color: Color) -> bool {
++    crate::count::cannotwin();
+     let kings = pos.by_role(Role::Commoner);
+     let mine = pos.by_color(color);
+     let other = pos.by_color(color.flip());
+@@ -621,6 +622,7 @@
+ 
+ /// Whether the side to move has a legal move, trying king moves first.
+ pub fn has_legal_move(pos: &Position) -> bool {
++    crate::count::haslegal();
+     let mover = Mover::new(pos);
+     pos.pseudo_legal()
+         .as_slice()
