@@ -124,3 +124,15 @@ Perform a thorough code clean up.
 ---
 
 Run one counted split of the proof-export walk in 470MI: using a scratch tree (no src/ edit), instrument format::prove's candidate loop, wins_in_two, judge, and the movegen calls they pay, then measure core with prove --seconds 10 --memory 192 --seed 0 --proofs. Pre-register the rule: if ≥0.31e9 of the 0.770e9 export delta is re-derivable work (proof-table answers or positions already proven in the walk), propose one encoder plan with byte-identical .pvr, identical counters and 9/9 accepted; otherwise report that the cost is the MD7 residual and recommend closing movegen with the dated miss. Read docs/plans/movegen/kill-review1.md, report12.md and measurements/kill-review1/ first; do not change the atomic-movegen pin.
+
+---
+
+Propose future initiative we can work on to improve this project.
+
+Here are some ideas
+* parallel - node throughput by parallelity
+* nnue - tree size reduction via neural net evaluations
+* tb - tree size reduction via table bases
+* proofdb - proof export inspired by `atomic_solver`
+* tt - transposition table improvements like bucketing, salts, etc.
+* perf - raw performance profiling and optimizations
