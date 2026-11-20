@@ -2,9 +2,9 @@
 //! provenance line. See `PROVENANCE.md`.
 //! Size note: this is a copied/adapted upstream module, kept whole by plan2.
 //! A hand-crafted Atomic evaluation after Multi-Variant Stockfish's Atomic
-//! terms, to guide the search as the network does at a fraction of its cost:
-//! material at Atomic values, then, unless the kings touch, explosion
-//! targets, pieces beside the enemy king, attacks around it, and checks.
+//! terms, to guide the search cheaply: material at Atomic values, then, unless
+//! the kings touch, explosion targets, pieces beside the enemy king, attacks
+//! around it, and checks.
 
 use crate::board::Position;
 use crate::moves::Mover;
@@ -60,14 +60,6 @@ impl Terms {
             + PRESSURE * self.pressure as i32
             + CHECKER * self.checkers as i32
     }
-}
-
-/// One side's material at Atomic values, without its attack terms.
-pub fn material(pos: &Position, color: Color) -> i32 {
-    (pos.by_color(color) & !pos.by_role(Role::Commoner))
-        .squares()
-        .map(|square| pos.role_at(square).map_or(0, |role| VALUES[role as usize]))
-        .sum()
 }
 
 fn terms(pos: &Position, color: Color, masks: Option<&[Bitboard; Role::NB]>) -> Terms {

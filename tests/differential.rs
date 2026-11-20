@@ -1,5 +1,5 @@
 //! Differential harness between the prover's rules layer and `atomic-movegen`
-//! 2.9.0 (`af3faf0`, plan 1).
+//! 2.11.0 (`0aaf958`, movegen plan 10).
 //!
 //! Two entry points: the fast smoke set for `cargo test`, and the full sweep
 //! over fixtures, corpus, generated mutations and seeded play-outs as
@@ -15,8 +15,8 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 use atomic_movegen::{
-    Board, Color as TheirColor, EnPassantMode as TheirEp, FenPolicy, Move as TheirMove, NO_PIECE,
-    Outcome, PieceType as TheirPiece, StateInfo, TerminalReason, movegen,
+    Board, EnPassantMode as TheirEp, FenPolicy, Move as TheirMove, NO_PIECE, Outcome, StateInfo,
+    TerminalReason, movegen,
 };
 use atomic470mi::board::{Color, Move as OurMove, Position as OurPosition, Role, Square};
 use atomic470mi::moves::{self, Mover};
@@ -258,18 +258,6 @@ fn without_piece(fen: &str, square: &str) -> String {
     fields.join(" ")
 }
 
-fn their_color(color: Color) -> TheirColor {
-    color
-}
-
-fn their_role(role: Role) -> TheirPiece {
-    role
-}
-
-fn their_square(square: Square) -> atomic_movegen::Square {
-    square
-}
-
 /// The independent shakmaty position for a FEN, under the old Lichess policy.
 fn shak_position(fen: &str) -> Result<Atomic, String> {
     let parsed: Fen = fen.parse().map_err(|e| format!("bad FEN: {e}"))?;
@@ -283,14 +271,13 @@ fn shak_position(fen: &str) -> Result<Atomic, String> {
 }
 
 fn to_their_move(m: OurMove) -> TheirMove {
-    let from = their_square(m.from());
-    let to = their_square(m.to());
+    let (from, to) = (m.from(), m.to());
     if m.is_castle() {
         TheirMove::make_castling(from, to)
     } else if m.is_en_passant() {
         TheirMove::make_enpassant(from, to)
     } else if let Some(role) = m.promotion() {
-        TheirMove::make_promotion(from, to, their_role(role))
+        TheirMove::make_promotion(from, to, role)
     } else {
         TheirMove::make_move(from, to)
     }
@@ -317,10 +304,6 @@ fn our_legal(pos: &OurPosition) -> Vec<OurMove> {
         .copied()
         .filter(|&m| mover.legal(m))
         .collect()
-}
-
-fn our_uci(_pos: &OurPosition, m: OurMove) -> String {
-    m.to_uci()
 }
 
 fn their_legal(board: &Board) -> Vec<TheirMove> {
@@ -426,7 +409,7 @@ fn compare_terminal(label: &str, our: &OurPosition, board: &Board, stats: &mut S
             TerminalReason::Stalemate => "stalemate",
             TerminalReason::FiftyMoveRule => "fifty_moves",
             TerminalReason::MaterialDraw => unreachable!("handled above"),
-            _ => unreachable!("the 2.9.0 reason set"),
+            _ => unreachable!("the movegen reason set"),
         };
         (winner, reason)
     });
@@ -452,7 +435,7 @@ fn compare_explosion_witness(
         child.is_legal(their_witness),
         "{context}: witness {their_witness} is not legal"
     );
-    let target = their_color(our_child.turn().flip());
+    let target = our_child.turn().flip();
     let mut after = child.clone();
     let mut state = StateInfo::new();
     after.do_move(their_witness, &mut state);
@@ -497,7 +480,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
     );
     let threats_before = moves::exploding_capture(our, our.turn()).is_some();
     let ours = our_legal(our);
-    let our_uci_set: BTreeSet<String> = ours.iter().map(|&m| our_uci(our, m)).collect();
+    let our_uci_set: BTreeSet<String> = ours.iter().map(|&m| m.to_uci()).collect();
     assert_eq!(
         our_uci_set.len(),
         ours.len(),
@@ -531,7 +514,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
     for &m in our.pseudo_legal().as_slice() {
         assert_eq!(
             mover.legal(m),
-            shak_uci.contains(&our_uci(our, m)),
+            shak_uci.contains(&m.to_uci()),
             "{}: our legality differs for {m:?}",
             context()
         );
@@ -550,7 +533,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
     for &m in &ours {
         let am = to_their_move(m);
         let child = our.play(m);
-        let effect = mover.full_effect(m);
+        let effect = mover.effect(m);
         let threats = mover.threats(m, &effect);
         let ep_explosion =
             moves::exploding_capture(&child, child.turn()).is_some_and(OurMove::is_en_passant);
@@ -670,7 +653,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
                 eprintln!(
                     "EXPLOSION {} after {am}: ours {:?}, theirs {:?}",
                     context(),
-                    our_witness.map(|m| our_uci(&child, m)),
+                    our_witness.map(OurMove::to_uci),
                     their_witness.map(|m| m.to_uci()),
                 );
             }
@@ -746,7 +729,7 @@ fn compare_node(label: &str, our: &OurPosition, shak: &Atomic, board: &Board, st
             eprintln!(
                 "NODE EXPLOSION {}: ours {:?}, theirs {their_node} (en passant {their_ep})",
                 context(),
-                our_node.map(|m| our_uci(our, m)),
+                our_node.map(OurMove::to_uci),
             );
         }
     }
@@ -821,7 +804,7 @@ fn run_playouts(
             for _ in 0..max_plies {
                 let mut legal: Vec<(String, OurMove)> = our_legal(&our)
                     .into_iter()
-                    .map(|m| (our_uci(&our, m), m))
+                    .map(|m| (m.to_uci(), m))
                     .collect();
                 legal.sort_by(|a, b| a.0.cmp(&b.0));
                 if legal.is_empty() {
@@ -886,7 +869,7 @@ fn en_passant_explosion_regression() {
                 continue;
             }
             let child = our.play(m);
-            let effect = mover.full_effect(m);
+            let effect = mover.effect(m);
             let our_witness = moves::exploding_capture(&child, child.turn());
             let their_witness = ctx.exploding_capture_after(&board, am);
             assert_eq!(

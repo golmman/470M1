@@ -15,24 +15,25 @@
 //! borrow its parts. Keep it that way: a helper both sides need is written
 //! twice.
 //!
-//! Proofs come in the compact format of `FORMAT.md`, walked as it describes
-//! (`Walker`), or in JSON lines, with a position and its move a line
+//! Proofs come in the compact format of `docs/proof-format.md`, walked as it
+//! describes (`Walker`), or in JSON lines, with a position and its move a line
 //! (`Checker`). Either way, from the root the attacker, the side to move
 //! unless a compact header names the other side, plays the proof's move in
 //! each of its positions and every legal defence is followed. Every line must
-//! end in a win: the defender's king exploded or mated. The 50-move limit, a draw, or any other
-//! position the proof has no move for makes the proof invalid, and so does any
-//! line that can repeat a position: the positions the proof reaches, without
-//! their 50-move counters, must never lead back to one another. JSON lines
-//! leave out the positions where a capture wins at once; the compact format
-//! also those it settles by a mate or a check that wins in two.
+//! end in a win: the defender's king exploded or mated. The 50-move limit, a
+//! draw, or any other position the proof has no move for makes the proof
+//! invalid, and so does any line that can repeat a position: the positions the
+//! proof reaches, without their 50-move counters, must never lead back to one
+//! another. JSON lines leave out the positions where a capture wins at once;
+//! the compact format also those it settles by a mate or a check that wins in
+//! two.
 //!
 //! `470MI check PROOF... [--workers N] [--seconds S] [--compact-only]`
 //! prints a JSON line for each proof, in order, and exits
 //! with 1 if any is not shown valid. A valid proof's line gives the attacker
 //! positions it proves, its length and the 50-move counter up to which its
-//! root may go, worked out as `FORMAT.md` describes (for JSON lines, the
-//! root's own). `valid` is false for a proof found wrong, and null for one it
+//! root may go, worked out as `docs/proof-format.md` describes (for JSON lines,
+//! the root's own). `valid` is false for a proof found wrong, and null for one
 //! cannot check: a proof that needs tablebases, or one beyond its limits
 //! (`MOST_BYTES` a file, `MOST_POSITIONS` moves written, `MOST_PLACES`
 //! positions walked, `MOST_DEPTH` attacker moves deep, S seconds a proof).
@@ -658,7 +659,7 @@ enum State {
     Open,
 }
 
-/// The walk of a compact proof (`FORMAT.md`): moves read where it
+/// The walk of a compact proof (`docs/proof-format.md`): moves read where it
 /// needs one, the defences generated, positions it can settle itself
 /// settled, and each position's length worked out, with the counter up to
 /// which its proof holds.
@@ -803,7 +804,7 @@ impl Walker<'_> {
             if !check {
                 break;
             }
-            if let Some((length, holds)) = self.wins_in_two(next)? {
+            if let Some((length, holds)) = self.wins_in_two(next) {
                 return Ok((length, through(next, holds)));
             }
         }
@@ -823,14 +824,13 @@ impl Walker<'_> {
     }
 
     /// Whether a check leaves the defender lost at once whatever it does:
-    /// lost by the tablebases, or every defence letting a capture win at
-    /// once or reaching a tablebase win; and the length then, with the
+    /// every defence lets a capture win at once; and the length then, with the
     /// counter up to which that holds.
     #[inline(never)]
-    fn wins_in_two(&self, pos: &Atomic) -> Result<Option<(u32, u32)>, String> {
+    fn wins_in_two(&self, pos: &Atomic) -> Option<(u32, u32)> {
         let replies = pos.legal_moves();
         if self.judge(pos, &replies) != State::Open {
-            return Ok(None);
+            return None;
         }
         let (mut longest, mut holds) = (0, LAST);
         for reply in replies {
@@ -838,15 +838,15 @@ impl Walker<'_> {
             next.play_unchecked(reply);
             let legal = next.legal_moves();
             if self.judge(&next, &legal) != State::Open {
-                return Ok(None);
+                return None;
             }
             if !Self::capture_wins(&next, &legal) {
-                return Ok(None);
+                return None;
             }
             longest = 1;
             holds = holds.min(through(&next, LAST));
         }
-        Ok(Some((1 + longest, holds)))
+        Some((1 + longest, holds))
     }
 
     fn capture_wins(pos: &Atomic, legal: &[Move]) -> bool {
@@ -863,7 +863,7 @@ impl Walker<'_> {
     /// Follows every defence, in square order, and returns the longest,
     /// with the counter up to which every defence still loses.
     fn defender_to_move(&mut self, pos: &Atomic, id: u32) -> Result<(u32, u32), String> {
-        let replies = legal(pos);
+        let mut replies = legal(pos);
         match self.judge(pos, &replies) {
             State::Won => return Ok((0, LAST)),
             State::Failed => {
@@ -877,7 +877,6 @@ impl Walker<'_> {
         if !self.line.insert(id) {
             return Err(format!("a line repeats {}", fen(pos)));
         }
-        let mut replies = replies;
         replies.sort_by_key(|&m| number(m));
         let (mut longest, mut holds) = (0, LAST);
         for reply in replies {

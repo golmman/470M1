@@ -2,7 +2,8 @@
 //! See `PROVENANCE.md`.
 //! Size note: this is a copied/adapted upstream module, kept whole by plan2.
 //! Exhaustive search for a win in N attacker moves, deepened one move at a
-//! time: the win-in-N baseline (`--search exhaustive`).
+//! time: the win-in-N reference baseline, kept for comparison rather than used
+//! by the CLI.
 //!
 //! A position is won when the attacker has a move after which every defence
 //! loses in fewer moves. Repeating a position on the current line counts as a
@@ -46,12 +47,8 @@ impl Hasher for KeyHasher {
 
 pub type Table<V> = HashMap<Key, V, BuildHasherDefault<KeyHasher>>;
 
-pub fn hash(pos: &Position) -> u64 {
-    pos.hash()
-}
-
 pub fn key(pos: &Position) -> Key {
-    (hash(pos), pos.halfmoves())
+    (pos.hash(), pos.halfmoves())
 }
 
 #[derive(Clone, Copy)]
@@ -215,10 +212,10 @@ impl Search {
 }
 
 /// Reads a proof back from the root, handing `emit` every attacker position
-/// the win reaches with the move a search recorded for it, or none for a
-/// tablebase win, in the order a checker meets them; except where a capture
-/// wins at once (an explosion of the king, as a rule), which the checkers find
-/// for themselves. Returns how many positions it handed over.
+/// the win reaches with the move a search recorded for it, in the order a
+/// checker meets them; positions where a capture wins at once (an explosion of
+/// the king, as a rule) are skipped, as the checkers find those for themselves.
+/// Returns how many positions it handed over.
 pub fn read_proof(
     root: &Position,
     mut winning_move: impl FnMut(&Position, &Key) -> Option<Move>,
@@ -238,7 +235,7 @@ pub fn read_proof(
         if !seen.insert(key) {
             continue;
         }
-        if wins_by_capture(&pos, attacker) {
+        if crate::walk::winning_capture(&pos, attacker).is_some() {
             continue;
         }
         let m = winning_move(&pos, &key)
@@ -257,14 +254,6 @@ pub fn read_proof(
         }
     }
     Ok(count)
-}
-
-/// Whether a capture wins at once, as the checkers look for one: an explosion
-/// of the king, en passant included, or a mate.
-fn wins_by_capture(pos: &Position, attacker: Color) -> bool {
-    pos.legal_moves()
-        .into_iter()
-        .any(|m| pos.effect(m).capture && matches!(status(&pos.play(m), attacker), Status::Won))
 }
 
 /// Captures first: in Atomic every capture explodes.

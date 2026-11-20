@@ -139,12 +139,6 @@ impl<'a> Mover<'a> {
             .effect_with_occupancy(m, self.occupied, self.counts)
     }
 
-    /// A legal move's effect; the child's key already counts the en passant
-    /// file only where taking there is legal.
-    pub fn full_effect(&self, m: Move) -> Effect {
-        self.effect(m)
-    }
-
     /// The squares of a quiet move by a piece other than the king.
     fn quiet(&self, m: Move) -> Option<(Square, Square)> {
         let (from, to) = (m.from(), m.to());
@@ -800,7 +794,7 @@ mod tests {
                         moves += 1;
                         let effect = mover.effect(m);
                         let next = pos.play(m);
-                        assert_eq!(mover.full_effect(m).hash, next.hash(), "{m:?} in {fen}");
+                        assert_eq!(mover.effect(m).hash, next.hash(), "{m:?} in {fen}");
                         let exploded = next.king(us.flip()).is_none();
                         assert_eq!(mover.explodes_them(&effect), exploded, "{m:?} in {fen}");
                         if exploded {

@@ -3,8 +3,8 @@
 //! measures each attacker position's subproof, its tree and its length.
 //!
 //! Adapted from provari `bceb1ee1faf7d9cf2422eb89c931be69ae30619d`
-//! (`src/walk.rs`): tablebase verdicts removed; status and hash come from
-//! this crate's rules helpers.
+//! (`src/walk.rs`): tablebase verdicts removed; status and hashes come from
+//! this crate's rules layer.
 
 use std::collections::{HashMap, HashSet};
 
@@ -28,10 +28,6 @@ pub fn winning_capture(pos: &Position, attacker: Color) -> Option<Move> {
     pos.legal_moves()
         .into_iter()
         .find(|&m| pos.effect(m).capture && matches!(status(&pos.play(m), attacker), Status::Won))
-}
-
-fn wins_by_capture(pos: &Position, attacker: Color) -> bool {
-    winning_capture(pos, attacker).is_some()
 }
 
 /// What a walk of a proof learns: each attacker position's subproof and the
@@ -70,7 +66,7 @@ pub fn measure(
     if let Some(measure) = walk.measures.get(&here) {
         return Ok(*measure);
     }
-    let measure = if wins_by_capture(pos, attacker) {
+    let measure = if winning_capture(pos, attacker).is_some() {
         Measure { tree: 0, length: 1 }
     } else {
         let m = moves

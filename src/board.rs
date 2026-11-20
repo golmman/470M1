@@ -19,7 +19,7 @@ use atomic_movegen::{
     movegen,
 };
 
-use crate::types::{self, BitboardExt, attacks, role_of};
+use crate::types::{self, BitboardExt, role_of};
 pub use crate::types::{Bitboard, CastlingSide, Color, Piece, PieceType as Role, Square};
 
 /// A move in `atomic-movegen`'s stable 16-bit wire encoding. The native value
@@ -56,11 +56,11 @@ impl Move {
     }
 
     pub fn from(self) -> Square {
-        square(self.0.from_sq())
+        self.0.from_sq()
     }
 
     pub fn to(self) -> Square {
-        square(self.0.to_sq())
+        self.0.to_sq()
     }
 
     pub fn promotion(self) -> Option<Role> {
@@ -162,14 +162,6 @@ impl Moves {
     }
 }
 
-fn native_square(square: Square) -> NativeSquare {
-    square
-}
-
-fn square(square: NativeSquare) -> Square {
-    square
-}
-
 fn piece(piece: atomic_movegen::Piece) -> Option<Piece> {
     piece.color().map(|_| piece)
 }
@@ -217,15 +209,12 @@ impl Position {
     /// The square a pawn just passed over moving two squares, if any. Only
     /// meaningful for the side to move.
     pub fn maybe_ep_square(&self) -> Option<Square> {
-        self.board.ep_square().map(square)
+        self.board.ep_square()
     }
 
     /// An en passant capture from the capturing pawn to the passed square.
     pub fn en_passant_move(&self, from: Square, to: Square) -> Move {
-        Move::from_native(NativeMove::make_enpassant(
-            native_square(from),
-            native_square(to),
-        ))
+        Move::from_native(NativeMove::make_enpassant(from, to))
     }
 
     pub fn halfmoves(&self) -> u32 {
@@ -270,7 +259,7 @@ impl Position {
 
     pub fn king(&self, color: Color) -> Option<Square> {
         let sq = self.board.commoners(color).lsb();
-        (sq != NativeSquare::NONE).then(|| square(sq))
+        (sq != NativeSquare::NONE).then_some(sq)
     }
 
     /// The pieces of every color attacking a square, with sliders seeing
@@ -278,20 +267,9 @@ impl Position {
     pub fn attackers_to(&self, square: Square, occupied: Bitboard) -> Bitboard {
         Bitboard(
             self.board
-                .attackers_to(native_square(square), atomic_movegen::Bitboard(occupied.0))
+                .attackers_to(square, atomic_movegen::Bitboard(occupied.0))
                 .0,
         )
-    }
-
-    /// Whether `attacker` checks the king on `king`, given what is left on the
-    /// board after a move: `occupied`, with every piece outside it gone.
-    /// Touching kings are never in check.
-    pub fn checked_after(&self, king: Square, attacker: Color, occupied: Bitboard) -> bool {
-        let theirs = self.by_color(attacker) & occupied;
-        let their_commoners = theirs & self.by_role(Role::Commoner);
-        their_commoners.any()
-            && (attacks::king_attacks(king) & their_commoners).is_empty()
-            && (self.attackers_to(king, occupied) & theirs & !self.by_role(Role::Commoner)).any()
     }
 
     /// Whether a move is pseudo-legal and legal, as `atomic-movegen` judges
@@ -372,11 +350,6 @@ impl Position {
         Position { board, hash }
     }
 
-    /// Whether either side may still castle.
-    pub fn has_castling_rights(&self) -> bool {
-        self.board.castling_rights() != 0
-    }
-
     /// Whether the side to move is in check.
     pub fn in_check(&self) -> bool {
         !self.board.checkers().is_empty()
@@ -386,16 +359,9 @@ impl Position {
     /// promoting to a queen.
     pub fn capture_move(&self, from: Square, to: Square) -> Move {
         if self.role_at(from) == Some(Role::Pawn) && types::BACKRANKS.contains(to) {
-            Move::from_native(NativeMove::make_promotion(
-                native_square(from),
-                native_square(to),
-                Role::Queen,
-            ))
+            Move::from_native(NativeMove::make_promotion(from, to, Role::Queen))
         } else {
-            Move::from_native(NativeMove::make_move(
-                native_square(from),
-                native_square(to),
-            ))
+            Move::from_native(NativeMove::make_move(from, to))
         }
     }
 

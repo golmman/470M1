@@ -11,11 +11,12 @@ independent checker stays on `shakmaty`. The final product name is `470MI`
 
 **Status:** `parity` is closed. Plan 5 recorded the `P5` closure row on the
 product default (seed 0) at 10 s: 3/3 coverage, geomean 0.945, 9/9 proofs
-accepted by both checkers, `D14` counters identical. `movegen` is open; plan 2
-made the differential sweep green, and the owner's 2026-11-19 decisions
-([`decisions.md`](docs/plans/movegen/decisions.md)) set complete prover
-replacement, native keys measured first, an EP `threats` census and the final
-name `470MI`. The next plan is the rules adapter.
+accepted by both checkers, `D14` counters identical. `movegen` is open: `MD1`
+is met, the differential is green, and plan 12 closed `M8` by removing
+shakmaty from the prover (the checker stays shakmaty-only). The `MD6` row is
+still a miss at 1.013x the old binary; see
+[`AGENTS.md`](AGENTS.md#current-state) for the current figures and the next
+plan.
 
 ## Documents
 

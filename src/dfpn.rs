@@ -30,14 +30,14 @@
 //! moves, quiet ones that neither check nor threaten, wait together as one
 //! child, scored only when the search first wants one of them (as
 //! KomoringHeights delays expansions): most positions never want one. When
-//! they are scored, the network evaluates the position after each, and those
-//! it likes less than its best few start dearer.
+//! they are scored, the guide's evaluation of the position scales their
+//! starting numbers together.
 //!
-//! Each expanded position is evaluated once, by a hand-crafted evaluation,
-//! Atomic-Stockfish's network, or a provability model, and its prospects for
-//! the attacker, as a step from behind to ahead, scale its new children's
-//! starting numbers (EF-PN, Winands and Schadd): lines that look winnable
-//! start cheaper to prove and harder to refute.
+//! Each expanded position is evaluated once, by a hand-crafted evaluation, or
+//! not at all when no guide is asked for, and its prospects for the attacker,
+//! as a step from behind to ahead, scale its new children's starting numbers
+//! (EF-PN, Winands and Schadd): lines that look winnable start cheaper to
+//! prove and harder to refute.
 //!
 //! Positions are keyed without the 50-move counter, so that move orders share
 //! their work. A proof records its length in attacker moves and the highest
@@ -53,12 +53,10 @@
 //! A search may be limited to wins in at most so many attacker moves. Proofs
 //! know their lengths, so one counts wherever it fits the moves left; the
 //! table keeps what it learns apart for each number of moves left, since a
-//! position refuted for lack of moves may be won with more. A tablebase win
-//! says nothing of its length, so a limited search plays it out.
+//! position refuted for lack of moves may be won with more.
 
 use std::cmp::Reverse;
 use std::collections::TryReserveError;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::clock::Instant;
 
@@ -180,7 +178,7 @@ pub struct Shortening {
     pub shortest: bool,
 }
 
-pub struct Dfpn<'a> {
+pub struct Dfpn {
     attacker: Color,
     guide: Guide,
     table: Table,
@@ -211,8 +209,6 @@ pub struct Dfpn<'a> {
     /// `repeated` its walk back along the line.
     repetitions: [u64; 16],
     deadline: Instant,
-    /// Set from outside to stop the search, as its deadline does.
-    stop: Option<&'a AtomicBool>,
     /// The node budget, checked at every node so that it repeats exactly.
     limit: u64,
     /// The child-evaluation budget, checked at every node.
@@ -222,11 +218,6 @@ pub struct Dfpn<'a> {
     /// Whether the proofs keep mates in one: until they first fill, when they
     /// drop them so that the search goes on (`drop_mates`).
     mates_kept: bool,
-    /// The proofs taken at which they drop their mates in one, if before they
-    /// fill: for tests of the search after.
-    drop_mates_at: usize,
-    /// The root's proof and disproof numbers as the search last combined them.
-    root: (u32, u32),
     /// The tie-break seed, spread over all bits; 0 for none.
     seed: u64,
     /// The most attacker moves a win may take, if limited.
@@ -240,20 +231,13 @@ pub struct Dfpn<'a> {
     /// Expanded positions.
     pub expansions: u64,
     pub stopped: bool,
-    /// The nodes searched when the proofs dropped their mates in one.
-    pub mates_dropped: Option<u64>,
     /// The root's proof and disproof numbers when the search last stopped.
     pub root_numbers: Option<(u32, u32)>,
 }
 
-impl<'a> Dfpn<'a> {
+impl Dfpn {
     /// A search of `root` with a table and proofs of these megabytes.
-    pub fn new(
-        root: &Position,
-        guide: Guide,
-        deadline: Instant,
-        memory: (usize, usize),
-    ) -> Dfpn<'a> {
+    pub fn new(root: &Position, guide: Guide, deadline: Instant, memory: (usize, usize)) -> Dfpn {
         Dfpn::try_new(root, guide, deadline, memory)
             .unwrap_or_else(|error| panic!("the search's memory: {error}"))
     }
@@ -264,7 +248,7 @@ impl<'a> Dfpn<'a> {
         guide: Guide,
         deadline: Instant,
         (table_mb, proofs_mb): (usize, usize),
-    ) -> Result<Dfpn<'a>, TryReserveError> {
+    ) -> Result<Dfpn, TryReserveError> {
         Ok(Dfpn {
             attacker: root.turn(),
             guide,
@@ -279,13 +263,10 @@ impl<'a> Dfpn<'a> {
             line: Vec::new(),
             repetitions: [0; 16],
             deadline,
-            stop: None,
             limit: u64::MAX,
             eval_limit: u64::MAX,
             full: false,
             mates_kept: true,
-            drop_mates_at: usize::MAX,
-            root: (1, 1),
             seed: 0,
             most: None,
             root_attacking: true,
@@ -293,14 +274,8 @@ impl<'a> Dfpn<'a> {
             evals: 0,
             expansions: 0,
             stopped: false,
-            mates_dropped: None,
             root_numbers: None,
         })
-    }
-
-    /// Searches for a win of `attacker`, who need not be the side to move.
-    pub fn set_attacker(&mut self, attacker: Color) {
-        self.attacker = attacker;
     }
 
     /// Perturbs the search's tie-breaks: among children with equal deciding
@@ -319,17 +294,6 @@ impl<'a> Dfpn<'a> {
     /// Stops the search after `evals` child evaluations.
     pub fn set_eval_limit(&mut self, evals: u64) {
         self.eval_limit = evals;
-    }
-
-    /// Stops the search at `deadline` instead of the one it was made with.
-    pub fn set_deadline(&mut self, deadline: Instant) {
-        self.deadline = deadline;
-    }
-
-    /// Stops the search once `stop` is set, as at the deadline: for a search
-    /// that another thread ends.
-    pub fn set_stop(&mut self, stop: &'a AtomicBool) {
-        self.stop = Some(stop);
     }
 
     /// Accepts only wins in at most `moves` attacker moves.
@@ -419,15 +383,6 @@ impl<'a> Dfpn<'a> {
         }
     }
 
-    /// Has the proofs drop their mates in one once they hold this share of
-    /// their room, rather than when they fill: for tests of the search after.
-    pub fn set_drop_mates_at(&mut self, share: f64) {
-        self.drop_mates_at = (self.proofs.room() as f64 * share) as usize;
-        if self.drop_mates_at == 0 {
-            self.drop_mates();
-        }
-    }
-
     /// Whether the search stopped because its proofs filled their memory.
     pub fn proofs_full(&self) -> bool {
         self.full
@@ -489,9 +444,6 @@ impl<'a> Dfpn<'a> {
         let (value, best) = loop {
             let (value, best, second) = combine(&children, attacking, self.seed);
             let numbers = value.numbers;
-            if depth == 0 {
-                self.root = (numbers.proof, numbers.disproof);
-            }
             if numbers.proof == 0
                 || numbers.disproof == 0
                 || numbers.proof >= proof_limit
@@ -638,7 +590,7 @@ impl<'a> Dfpn<'a> {
                 continue;
             }
             if mover.legal(m) {
-                let effect = mover.full_effect(m);
+                let effect = mover.effect(m);
                 self.prefetch_child(effect.hash, left, filtering);
                 legal.push((m, effect, !filtering));
             }
@@ -695,7 +647,7 @@ impl<'a> Dfpn<'a> {
             if mover.plain(m) || !mover.legal(m) {
                 continue;
             }
-            let effect = mover.full_effect(m);
+            let effect = mover.effect(m);
             self.prefetch_child(effect.hash, 0, filtering);
             legal.push((m, effect, !filtering));
         }
@@ -757,7 +709,7 @@ impl<'a> Dfpn<'a> {
         let filtering = self.table.filtering();
         for &m in pos.pseudo_legal().as_slice() {
             if mover.plain(m) && mover.legal(m) {
-                let effect = mover.full_effect(m);
+                let effect = mover.effect(m);
                 self.prefetch_child(effect.hash, left, filtering);
                 plain.push((m, effect, !filtering));
             }
@@ -775,7 +727,7 @@ impl<'a> Dfpn<'a> {
 
     /// What is known about a child before searching it, from its move's
     /// effect, with `remaining` attacker moves left there; the child position
-    /// is built only for a check, a tablebase probe, or en passant.
+    /// is built only for a check, a table lookup, or en passant.
     #[allow(clippy::too_many_arguments)]
     fn evaluate(
         &mut self,
@@ -1238,7 +1190,7 @@ impl<'a> Dfpn<'a> {
                 return;
             }
             self.table.note(hash);
-            if self.proofs.add_mate(hash, proof) && self.proofs.taken() < self.drop_mates_at {
+            if self.proofs.add_mate(hash, proof) {
                 return;
             }
             // Dropped with the others.
@@ -1289,7 +1241,7 @@ impl<'a> Dfpn<'a> {
                 if mover.plain(m) || !mover.legal(m) {
                     continue;
                 }
-                let effect = mover.full_effect(m);
+                let effect = mover.effect(m);
                 self.prefetch_child(effect.hash, left, filtering);
                 moves.push((m, effect, !filtering));
             }
@@ -1606,9 +1558,6 @@ impl<'a> Dfpn<'a> {
     fn add_proof(&mut self, hash: u64, proof: Proof) {
         self.table.note(hash);
         if self.proofs.add(hash, proof) {
-            if self.mates_kept && self.proofs.taken() >= self.drop_mates_at {
-                self.drop_mates();
-            }
             return;
         }
         if self.mates_kept {
@@ -1627,18 +1576,15 @@ impl<'a> Dfpn<'a> {
     fn drop_mates(&mut self) {
         self.mates_kept = false;
         self.proofs.drop_mates();
-        self.mates_dropped = Some(self.nodes);
     }
 
     fn tick(&mut self) {
         self.nodes += 1;
-        if self.nodes >= self.limit || self.evals >= self.eval_limit {
+        if self.nodes >= self.limit
+            || self.evals >= self.eval_limit
+            || (self.nodes.is_multiple_of(1024) && Instant::now() >= self.deadline)
+        {
             self.stopped = true;
-        } else if self.nodes.is_multiple_of(1024) {
-            let now = Instant::now();
-            if now >= self.deadline || self.stop.is_some_and(|stop| stop.load(Ordering::Relaxed)) {
-                self.stopped = true;
-            }
         }
     }
 }

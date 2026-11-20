@@ -24,8 +24,6 @@ const VERSION: u64 = 1;
 /// The zstd level proofs are written at: smaller than the fast levels, and
 /// still quick.
 const LEVEL: i32 = 19;
-/// The file extension of a proof in this format.
-pub const EXTENSION: &str = "pvr";
 
 /// A compact proof's header.
 pub struct Header {
@@ -81,7 +79,7 @@ fn judge(pos: &Position, attacker: Color, legal: &[Move]) -> State {
 
 #[cfg(test)]
 fn state(pos: &Position, attacker: Color) -> State {
-    judge(pos, attacker, &legal_moves(pos))
+    judge(pos, attacker, &pos.legal_moves())
 }
 
 /// Whether the attacker's move just played won at once: the defender's king
@@ -89,13 +87,6 @@ fn state(pos: &Position, attacker: Color) -> State {
 /// check does.
 fn won_at_once(next: &Position, attacker: Color, capture: bool, check: bool) -> bool {
     (capture && next.king(attacker.flip()).is_none()) || (check && !moves::has_legal_move(next))
-}
-
-fn legal_moves(pos: &Position) -> Vec<Move> {
-    let pseudo = pos.pseudo_legal();
-    let mut legal = Vec::with_capacity(pseudo.as_slice().len());
-    legal.extend(pseudo.as_slice().iter().copied().filter(|&m| pos.legal(m)));
-    legal
 }
 
 /// A move's number in the format's order: the square it leaves, the square it
@@ -145,12 +136,12 @@ struct Walk<C> {
 
 impl<C: Chooser> Walk<C> {
     fn root(&mut self, root: &Position) -> Result<u32, String> {
-        let legal = legal_moves(root);
+        let legal = root.legal_moves();
         match judge(root, self.attacker, &legal) {
             State::Won => Ok(0),
             State::Failed => Err(format!(
                 "the root is over or at the 50-move limit: {}",
-                fen(root)
+                root.to_fen()
             )),
             State::Open if root.turn() == self.attacker => self.attacker_to_move(root, legal),
             State::Open => self.defender_to_move(root, legal),
@@ -165,7 +156,7 @@ impl<C: Chooser> Walk<C> {
             return Ok(length);
         }
         if !self.line.insert(hash) {
-            return Err(format!("a line repeats {}", fen(pos)));
+            return Err(format!("a line repeats {}", pos.to_fen()));
         }
         let (length, m) = self.prove(pos, legal)?;
         self.line.remove(&hash);
@@ -198,7 +189,7 @@ impl<C: Chooser> Walk<C> {
         }
         moves.sort_unstable_by_key(|&(quiet, number, _)| (quiet, number));
         for &(_, _, m) in moves.iter().take_while(|&&(quiet, ..)| !quiet) {
-            if let Some(length) = self.wins_in_two(&pos.play(m))? {
+            if let Some(length) = self.wins_in_two(&pos.play(m)) {
                 return Ok((length, Some(m)));
             }
         }
@@ -207,30 +198,30 @@ impl<C: Chooser> Walk<C> {
         ordered.extend(moves.iter().map(|&(.., m)| m));
         let m = ordered[self.chooser.choose(pos, &ordered)?];
         let next = pos.play(m);
-        let replies = legal_moves(&next);
+        let replies = next.legal_moves();
         Ok((1 + self.defender_to_move(&next, replies)?, Some(m)))
     }
 
     /// Whether a check leaves the defender lost at once whatever it does,
     /// and the length then.
-    fn wins_in_two(&self, pos: &Position) -> Result<Option<u32>, String> {
-        let replies = legal_moves(pos);
+    fn wins_in_two(&self, pos: &Position) -> Option<u32> {
+        let replies = pos.legal_moves();
         if judge(pos, self.attacker, &replies) != State::Open {
-            return Ok(None);
+            return None;
         }
         let mut longest = 0;
         for reply in replies {
             let next = pos.play(reply);
-            let legal = legal_moves(&next);
+            let legal = next.legal_moves();
             if judge(&next, self.attacker, &legal) != State::Open {
-                return Ok(None);
+                return None;
             }
             if !self.capture_wins(&next, &legal) {
-                return Ok(None);
+                return None;
             }
             longest = 1;
         }
-        Ok(Some(1 + longest))
+        Some(1 + longest)
     }
 
     fn capture_wins(&self, pos: &Position, legal: &[Move]) -> bool {
@@ -242,31 +233,30 @@ impl<C: Chooser> Walk<C> {
         })
     }
 
-    fn defender_to_move(&mut self, pos: &Position, replies: Vec<Move>) -> Result<u32, String> {
+    fn defender_to_move(&mut self, pos: &Position, mut replies: Vec<Move>) -> Result<u32, String> {
         match judge(pos, self.attacker, &replies) {
             State::Won => return Ok(0),
             State::Failed => {
                 return Err(format!(
                     "the line ends without the attacker winning: {}",
-                    fen(pos)
+                    pos.to_fen()
                 ));
             }
             State::Open => {}
         }
         if !self.line.insert(pos.hash()) {
-            return Err(format!("a line repeats {}", fen(pos)));
+            return Err(format!("a line repeats {}", pos.to_fen()));
         }
-        let mut replies = replies;
         // No two moves share a number.
         replies.sort_unstable_by_key(|&m| number(pos, m));
         let mut longest = 0;
         for reply in replies {
             let next = pos.play(reply);
-            let legal = legal_moves(&next);
+            let legal = next.legal_moves();
             if judge(&next, self.attacker, &legal) != State::Open {
                 return Err(format!(
                     "a defence ends the line without the attacker winning: {}",
-                    fen(pos)
+                    pos.to_fen()
                 ));
             }
             longest = longest.max(self.attacker_to_move(&next, legal)?);
@@ -274,10 +264,6 @@ impl<C: Chooser> Walk<C> {
         self.line.remove(&pos.hash());
         Ok(longest)
     }
-}
-
-fn fen(pos: &Position) -> String {
-    pos.to_fen()
 }
 
 /// The search's moves, written as their indices.
@@ -289,11 +275,11 @@ struct FromSearch<F> {
 impl<F: FnMut(&Position) -> Option<Move>> Chooser for FromSearch<F> {
     fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, String> {
         let m = (self.source)(pos)
-            .ok_or_else(|| format!("no winning move recorded for {}", fen(pos)))?;
+            .ok_or_else(|| format!("no winning move recorded for {}", pos.to_fen()))?;
         let index = moves
             .iter()
             .position(|legal| *legal == m)
-            .ok_or_else(|| format!("the recorded move is not legal in {}", fen(pos)))?;
+            .ok_or_else(|| format!("the recorded move is not legal in {}", pos.to_fen()))?;
         self.indices.push(index as u32);
         Ok(index)
     }
@@ -313,7 +299,11 @@ impl Chooser for FromFile<'_> {
             .ok_or("the proof's moves run out")? as usize;
         self.next += 1;
         if index >= moves.len() {
-            return Err(format!("move {index} of {} in {}", moves.len(), fen(pos)));
+            return Err(format!(
+                "move {index} of {} in {}",
+                moves.len(),
+                pos.to_fen()
+            ));
         }
         Ok(index)
     }
@@ -556,8 +546,8 @@ pub fn small_defended() -> (Header, Vec<u8>) {
 #[cfg(test)]
 mod tests {
     use super::{
-        SMALL, State, decode, encode_jsonl, is_capture, legal_moves, number, small_defended, state,
-        strategy, won_at_once,
+        SMALL, State, decode, encode_jsonl, is_capture, number, small_defended, state, strategy,
+        won_at_once,
     };
     use crate::board::Move;
     use crate::board::Position;
@@ -627,7 +617,8 @@ mod tests {
             for _ in 0..20 {
                 let mut pos = Position::from_fen(start).unwrap();
                 for _ in 0..80 {
-                    let ordered: Vec<_> = legal_moves(&pos)
+                    let ordered: Vec<_> = pos
+                        .legal_moves()
                         .into_iter()
                         .map(|m| ((!pos.play(m).in_check(), number(&pos, m)), m))
                         .collect();
@@ -661,7 +652,7 @@ mod tests {
                         )
                     });
                     assert_eq!(sorted, expected, "{start}");
-                    for &m in &legal_moves(&pos) {
+                    for &m in &pos.legal_moves() {
                         let next = pos.play(m);
                         assert_eq!(
                             won_at_once(&next, pos.turn(), is_capture(&pos, m), next.in_check()),
@@ -669,7 +660,7 @@ mod tests {
                             "{start}"
                         );
                     }
-                    let moves = legal_moves(&pos);
+                    let moves = pos.legal_moves();
                     if state(&pos, pos.turn()) != State::Open || moves.is_empty() {
                         break;
                     }

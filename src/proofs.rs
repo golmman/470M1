@@ -264,16 +264,6 @@ impl Proofs {
         self.used
     }
 
-    /// How full the table is, as a share of the most it takes.
-    pub fn fill(&self) -> f64 {
-        self.used as f64 / self.most as f64
-    }
-
-    /// The most slots it takes.
-    pub fn room(&self) -> usize {
-        self.most
-    }
-
     /// The keys of every position held, for rebuilding a filter.
     pub fn keys(&self) -> impl Iterator<Item = u64> + '_ {
         self.entries

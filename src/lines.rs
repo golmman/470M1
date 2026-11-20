@@ -124,14 +124,6 @@ impl Proof {
         }
     }
 
-    pub fn attacker(&self) -> Color {
-        self.attacker
-    }
-
-    pub fn moves(&self) -> &walk::Moves {
-        &self.moves
-    }
-
     fn open(&self, pos: &Position) -> bool {
         matches!(status(pos, self.attacker), Status::Open)
     }

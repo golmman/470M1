@@ -50,12 +50,6 @@ pub fn is_white(color: Color) -> bool {
     color == Color::White
 }
 
-/// The other color.
-#[inline]
-pub fn other(color: Color) -> Color {
-    color.flip()
-}
-
 /// A `CastlingSide` from the side's queen-side flag.
 #[inline]
 pub fn castle_side(queen_side: bool) -> CastlingSide {
@@ -106,13 +100,6 @@ pub fn parse_color(name: &str) -> Option<Color> {
         "black" => Some(Color::Black),
         _ => None,
     }
-}
-
-/// The ray from `a` towards `b`, `b` included and `a` excluded; empty when the
-/// two squares are neither on a rank, a file nor a diagonal.
-#[inline]
-pub fn ray(a: Square, b: Square) -> Bitboard {
-    Bitboard(RAYS[a as usize][b as usize])
 }
 
 /// Whether the three squares lie on one rank, file or diagonal.
@@ -170,8 +157,6 @@ const fn compute_rays() -> [[u64; 64]; 64] {
     }
     table
 }
-
-static RAYS: [[u64; 64]; 64] = compute_rays();
 
 /// The full rank, file or diagonal through the two squares, both included.
 const fn compute_lines() -> [[u64; 64]; 64] {
@@ -286,10 +271,4 @@ pub fn piece_of(color: Color, role: Role) -> Piece {
 #[inline]
 pub fn role_of(piece: Piece) -> Option<Role> {
     piece.type_of()
-}
-
-/// The color a piece has, when it has one.
-#[inline]
-pub fn color_of(piece: Piece) -> Option<Color> {
-    piece.color()
 }

@@ -7,7 +7,8 @@
 //!
 //! Adapted from provari `bceb1ee1faf7d9cf2422eb89c931be69ae30619d`
 //! (`src/lib.rs`, `src/search.rs`): tablebase, NNUE, model, web and UCI code
-//! removed; `status` and `hash` kept for the walk.
+//! removed; `ending` and `status` are kept for the walk and the rules
+//! differential.
 
 pub mod board;
 pub mod check;
@@ -113,12 +114,6 @@ pub fn ending(pos: &Position) -> Option<(Option<board::Color>, &'static str)> {
         return Some((None, "fifty_moves"));
     }
     None
-}
-
-/// A position's Zobrist hash, including the en passant file only where taking
-/// there is legal.
-pub fn hash(pos: &Position) -> u64 {
-    pos.hash()
 }
 
 /// How a game stands after a move, for the attacker.
