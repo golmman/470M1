@@ -353,7 +353,8 @@ impl Position {
     }
 
     /// Whether a move is pseudo-legal and legal, as `atomic-movegen` judges
-    /// it. The candidate loop reads only the two counts, never checkers.
+    /// it. This query reads only the two counts; `Mover`'s cached context is
+    /// check-aware because it is built from a populated `StateInfo`.
     pub fn legal(&self, m: Move) -> bool {
         let native = m.native();
         let context = self.board.legality_context(self.board.counts());

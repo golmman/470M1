@@ -12,11 +12,14 @@ owner-triggered `planN.md`/`reportN.md`, a pin and `PROVENANCE.md` update, the
 differential, the gates and a same-session `MD6` row. No fork, path dependency
 or implicit sync.
 
+**Status:** `W10` is released in 2.11.0 (`0aaf958`) and adopted by
+[`plan10.md`](plan10.md); the pin and provenance row are updated.
+
 ## Priority
 
-| # | Ask | Expected saving | Priority | 2.10.0 |
+| # | Ask | Expected saving | Priority | 2.11.0 |
 | --- | --- | ---: | --- | --- |
-| `W10` | evasion-aware `LegalityContext` | 0.72e9 (measured prototype) | P1 | `legality_context` |
+| `W10` | evasion-aware `LegalityContext` | 0.72e9 (measured prototype) | P1 | `legality_context_with_state` |
 
 ## W10 — evasion-aware `LegalityContext`
 

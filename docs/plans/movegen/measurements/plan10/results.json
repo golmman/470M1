@@ -1,0 +1,359 @@
+{
+ "summary": {
+  "core": {
+   "base": {
+    "counters_identical": true,
+    "pvr_identical": true,
+    "median_ms": 559,
+    "median": 7816219420,
+    "spread": 571
+   },
+   "w10": {
+    "counters_identical": true,
+    "pvr_identical": true,
+    "median_ms": 529,
+    "median": 7147608959,
+    "spread": 230,
+    "fall": 668610461,
+    "pair_falls": [
+     668610558,
+     668610461,
+     668610217
+    ],
+    "fall_pct": 8.554
+   }
+  },
+  "easy-win": {
+   "base": {
+    "counters_identical": true,
+    "pvr_identical": true,
+    "median_ms": 136,
+    "median": 1640875516,
+    "spread": 320
+   },
+   "w10": {
+    "counters_identical": true,
+    "pvr_identical": true,
+    "median_ms": 132,
+    "median": 1560746666,
+    "spread": 356,
+    "fall": 80128850,
+    "pair_falls": [
+     80128550,
+     80128668,
+     80129044
+    ],
+    "fall_pct": 4.883
+   }
+  },
+  "deep-win": {
+   "base": {
+    "counters_identical": true,
+    "pvr_identical": true,
+    "median_ms": 5690,
+    "median": 82738904016,
+    "spread": 731
+   },
+   "w10": {
+    "counters_identical": true,
+    "pvr_identical": true,
+    "median_ms": 5482,
+    "median": 77783667935,
+    "spread": 567,
+    "fall": 4955236081,
+    "pair_falls": [
+     4955236036,
+     4955236315,
+     4955236106
+    ],
+    "fall_pct": 5.989
+   }
+  }
+ },
+ "runs": {
+  "core": {
+   "base": [
+    {
+     "instructions": 7816219663,
+     "ms": 557,
+     "counters": [
+      3896430,
+      191557,
+      350430,
+      14,
+      true
+     ]
+    },
+    {
+     "instructions": 7816219420,
+     "ms": 559,
+     "counters": [
+      3896430,
+      191557,
+      350430,
+      14,
+      true
+     ]
+    },
+    {
+     "instructions": 7816219092,
+     "ms": 562,
+     "counters": [
+      3896430,
+      191557,
+      350430,
+      14,
+      true
+     ]
+    }
+   ],
+   "w10": [
+    {
+     "instructions": 7147609105,
+     "ms": 529,
+     "counters": [
+      3896430,
+      191557,
+      350430,
+      14,
+      true
+     ]
+    },
+    {
+     "instructions": 7147608959,
+     "ms": 527,
+     "counters": [
+      3896430,
+      191557,
+      350430,
+      14,
+      true
+     ]
+    },
+    {
+     "instructions": 7147608875,
+     "ms": 529,
+     "counters": [
+      3896430,
+      191557,
+      350430,
+      14,
+      true
+     ]
+    }
+   ]
+  },
+  "easy-win": {
+   "base": [
+    {
+     "instructions": 1640875516,
+     "ms": 138,
+     "counters": [
+      904368,
+      53237,
+      68692,
+      18,
+      true
+     ]
+    },
+    {
+     "instructions": 1640875334,
+     "ms": 134,
+     "counters": [
+      904368,
+      53237,
+      68692,
+      18,
+      true
+     ]
+    },
+    {
+     "instructions": 1640875654,
+     "ms": 136,
+     "counters": [
+      904368,
+      53237,
+      68692,
+      18,
+      true
+     ]
+    }
+   ],
+   "w10": [
+    {
+     "instructions": 1560746966,
+     "ms": 131,
+     "counters": [
+      904368,
+      53237,
+      68692,
+      18,
+      true
+     ]
+    },
+    {
+     "instructions": 1560746666,
+     "ms": 132,
+     "counters": [
+      904368,
+      53237,
+      68692,
+      18,
+      true
+     ]
+    },
+    {
+     "instructions": 1560746610,
+     "ms": 132,
+     "counters": [
+      904368,
+      53237,
+      68692,
+      18,
+      true
+     ]
+    }
+   ]
+  },
+  "deep-win": {
+   "base": [
+    {
+     "instructions": 82738904016,
+     "ms": 5728,
+     "counters": [
+      44828946,
+      2487550,
+      3553009,
+      20,
+      true
+     ]
+    },
+    {
+     "instructions": 82738904250,
+     "ms": 5690,
+     "counters": [
+      44828946,
+      2487550,
+      3553009,
+      20,
+      true
+     ]
+    },
+    {
+     "instructions": 82738903519,
+     "ms": 5670,
+     "counters": [
+      44828946,
+      2487550,
+      3553009,
+      20,
+      true
+     ]
+    }
+   ],
+   "w10": [
+    {
+     "instructions": 77783667980,
+     "ms": 5482,
+     "counters": [
+      44828946,
+      2487550,
+      3553009,
+      20,
+      true
+     ]
+    },
+    {
+     "instructions": 77783667935,
+     "ms": 5488,
+     "counters": [
+      44828946,
+      2487550,
+      3553009,
+      20,
+      true
+     ]
+    },
+    {
+     "instructions": 77783667413,
+     "ms": 5451,
+     "counters": [
+      44828946,
+      2487550,
+      3553009,
+      20,
+      true
+     ]
+    }
+   ]
+  }
+ },
+ "proofs": {
+  "core": {
+   "base": {
+    "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3",
+    "ours": true,
+    "provari": true
+   },
+   "w10": {
+    "sha256": "714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3",
+    "ours": true,
+    "provari": true
+   }
+  },
+  "easy-win": {
+   "base": {
+    "sha256": "32ffb30d96ccb172d406faeee0c8f1c33c31b4bb2944bb463ca9ba89b9918684",
+    "ours": true,
+    "provari": true
+   },
+   "w10": {
+    "sha256": "32ffb30d96ccb172d406faeee0c8f1c33c31b4bb2944bb463ca9ba89b9918684",
+    "ours": true,
+    "provari": true
+   }
+  },
+  "deep-win": {
+   "base": {
+    "sha256": "50f062de2a67b1dd1191a1a12d4064ee9d143441f17ee94819ee34138aafd5d0",
+    "ours": true,
+    "provari": true
+   },
+   "w10": {
+    "sha256": "50f062de2a67b1dd1191a1a12d4064ee9d143441f17ee94819ee34138aafd5d0",
+    "ours": true,
+    "provari": true
+   }
+  }
+ },
+ "differential": {
+  "w10": {
+   "label": "full",
+   "fen_accepted": 84,
+   "fen_rejected": 11,
+   "positions": 27088,
+   "legal_moves": 540383,
+   "child_keys": 540383,
+   "explosions": 72131,
+   "explosion_skipped_decided": 6684,
+   "explosion_mismatches": 0,
+   "explosion_ep_mismatches": 0,
+   "explosion_other_mismatches": 0,
+   "exposes_mismatches": 0,
+   "exposes_ep_mismatches": 0,
+   "exposes_other_mismatches": 0,
+   "node_explosion_mismatches": 0,
+   "node_explosion_ep_mismatches": 0,
+   "node_explosion_other_mismatches": 0,
+   "material_exempt": 642,
+   "ep_child": 87,
+   "ep_threats_verdicts": 0,
+   "ep_threats_difference": 0,
+   "key_mismatches": 0,
+   "games": 392,
+   "plies": 26612,
+   "playout_nodes": 26612,
+   "mismatches": 0
+  }
+ }
+}

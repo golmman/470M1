@@ -1,0 +1,28 @@
+# Plan 10 — core, perf stat -e instructions:u
+
+`core` = `r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1`,
+`prove FEN --seconds 10 --memory 192 --seed 0 --json`, no proof export, one
+process at a time. Host `36f35886a6b3` (platform identifies plan 7/9 host).
+
+## candidate (2.11.0, W10) vs plan 2 reference
+
+```
+# run 1 old
+  {"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":476,"nodes":342263,"seed":0}
+  6569376954,,instructions:u,479020204,100.00,,
+# run 1 new
+  {"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":516,"nodes":350430,"seed":0}
+  7147608796,,instructions:u,518702162,100.00,,
+# run 2 old
+  {"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":479,"nodes":342263,"seed":0}
+  6569377149,,instructions:u,481304528,100.00,,
+# run 2 new
+  {"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":516,"nodes":350430,"seed":0}
+  7147608629,,instructions:u,518737873,100.00,,
+# run 3 old
+  {"child_evals":3823720,"expansions":189604,"found":true,"guide":"hand","mate":17,"ms":477,"nodes":342263,"seed":0}
+  6569377230,,instructions:u,479811376,100.00,,
+# run 3 new
+  {"child_evals":3896430,"expansions":191557,"found":true,"guide":"hand","mate":14,"ms":517,"nodes":350430,"seed":0}
+  7147608393,,instructions:u,518943113,100.00,,
+```

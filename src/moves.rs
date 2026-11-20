@@ -67,7 +67,7 @@ impl<'a> Mover<'a> {
         let mut state = atomic_movegen::StateInfo::new();
         pos.board().populate_state(&mut state);
         let counts = Counts::from(&state);
-        let context = pos.board().legality_context(counts);
+        let context = pos.board().legality_context_with_state(counts, &state);
         let tested = match our_king {
             _ if touching => Bitboard::EMPTY,
             _ if !state.checkers.is_empty() => ours,
@@ -741,6 +741,27 @@ mod tests {
         let witness = exploding_capture(&pos.play(m), Color::White).expect("an explosion");
         assert_eq!(witness.to(), Square::F6);
         assert!(!witness.is_en_passant());
+    }
+
+    /// The check-aware cached context agrees with the check-blind position
+    /// query on in-check nodes: a slider's block ray, a knight and a double
+    /// check, castling in check, and en passant left to the oracle.
+    #[test]
+    fn evasion_context_matches_position_legal() {
+        for fen in [
+            "4k3/8/8/8/4r3/8/8/R2BK3 w - - 0 1",
+            "4k3/8/8/8/8/5n2/8/R3K3 w - - 0 1",
+            "4k3/8/8/8/4r3/5n2/8/R3K2R w KQ - 0 1",
+            "4r1k1/8/8/8/8/8/8/4K2R w K - 0 1",
+            "k7/r5K1/8/3Pp3/8/8/8/8 w - e6 0 1",
+        ] {
+            let pos = from_fen(fen).unwrap();
+            assert!(pos.to_atomic().is_check(), "{fen} is not in check");
+            let mover = Mover::new(&pos);
+            for &m in pos.pseudo_legal().as_slice() {
+                assert_eq!(mover.legal(m), pos.legal(m), "{m:?} in {fen}");
+            }
+        }
     }
 
     /// Random games, checking every move's scoring against the position it

@@ -32,12 +32,20 @@ accepted, against a 0.31e9 rule. That reopens one lever: `MD8` and
 [`wishlist3.md`](wishlist3.md) **`W10`**; it is crate-side legality, so `MD5`
 forbids adopting the prototype in `src/`. Plan 9 also measured
 `unsafe-optimizations` at **−1.28% to −1.32%** on all three cells (material by
-the 3×spread and ≥0.5% reading), recorded for an owner decision. Nothing is
-adopted from plan 9; the tree is unchanged. `M12` is the last adopted
-prover-side gain, `M1`'s performance part and `M6` remain documented misses,
-and `M8` and `M14` are open. See [`report5.md`](report5.md),
-[`report6.md`](report6.md), [`report7.md`](report7.md),
-[`hot-path-audit.md`](hot-path-audit.md), [`report9.md`](report9.md) and
+the 3×spread and ≥0.5% reading), recorded for an owner decision. Plan 10
+pinned and adopted `atomic-movegen` **2.11.0** (`0aaf958`), the `W10` release:
+`Mover::new` now builds `legality_context_with_state` from the `StateInfo` it
+already populates. The measured fall is **0.6686e9** on `core` (7.8162e9 ->
+7.1476e9, **8.554%**) against the 0.31e9 rule, with identical counters/mate,
+byte-identical `.pvr`, 9/9 accepted and differential 0/0 (EP 87/0/0). The
+same-session 10 s row is 3/3 and 9/9 with `D14` identical, geomean **1.018**
+against a plan 2 binary at **0.991** (candidate/old **1.028**): `MD6` is still
+not held, but `core` is now **1.088×** plan 2, down from 1.190×. `M14` closes;
+`M12`'s row stays historical. The `uo` owner decision remains open. `M1`'s
+performance part and `M6` remain documented misses, and `M8` is the open work
+item. See [`report5.md`](report5.md), [`report6.md`](report6.md),
+[`report7.md`](report7.md), [`hot-path-audit.md`](hot-path-audit.md),
+[`report9.md`](report9.md), [`report10.md`](report10.md) and
 [`wishlist3.md`](wishlist3.md).
 
 ## Goal
@@ -60,7 +68,7 @@ movegen bug cannot hide in both the prover and the checker.
   moves, terminal outcomes, hashes, en passant, castling, promotions and
   insufficient material. **Met:** [`rules-surface.md`](rules-surface.md).
 - A pinned `atomic-movegen` version is chosen and recorded in
-  `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.10.0 (`5083647`), default features.
+  `PROVENANCE.md`/`Cargo.toml`. **Met:** 2.11.0 (`0aaf958`), default features.
 - A differential harness exists that compares the two rules implementations
   on the fixtures, the bench corpus and random play-out positions. **Met:**
   [`tests/differential.rs`](../../../tests/differential.rs) is green after
@@ -127,7 +135,7 @@ These are placeholders; the next plan turns them into concrete items.
 | M11 | **Non-rules residual** | The gap left after the rules layer: node geometry, generation adapter, tree, `null`; **closed negative** (plan 6: split resolved, `NodeFacts` falsified at +0.038e9) |
 | M12 | **Eval geometry** | One per-node pass over roles reuses the `Mover`'s check masks; **adopted** (plan 7: −0.1879e9 on `core`, identical tree/`.pvr`; geomean 1.056, `MD6` still missed) |
 | M13 | **Rules endgame decision** | Expose `FastLegality` and measure the ladder on `core`; **closed negative** (plan 8: best +0.1641e9, projection ≤0.125e9; dated `MD7`, no release) |
-| M14 | **Evasion-aware legality** | Reject quiet non-king moves that cannot answer a single-slider check, and castling in check; the plan 9 prototype clears the rule at **−0.7246e9** on `core`, so the lever is the upstream ask `W10` (`MD8`), not a prover patch under `MD5` |
+| M14 | **Evasion-aware legality** | **Closed, adopted** (plan 10): `atomic-movegen` 2.11.0 `W10`, one `legality_context_with_state` call in `Mover::new`; **−0.6686e9** on `core` (8.554%), identical counters/mate/`.pvr`, 9/9 accepted; `MD6` still missed at 1.088× plan 2 |
 
 ## Gates
 
@@ -156,6 +164,18 @@ These are placeholders; the next plan turns them into concrete items.
 
 ## History
 
+- **2026-11-20** — plan 10 pinned and adopted `atomic-movegen` 2.11.0
+  (`0aaf958`, `W10`) with one call: `Mover::new` builds the cached legality
+  context from the `StateInfo` it already populates. The interleaved fall is
+  **0.6686e9** on `core` (7.8162194e9 -> 7.1476089e9, **8.554%**), 0.0801e9 on
+  `easy-win` and 4.9552e9 on `deep-win`, against the 0.31e9 rule; counters and
+  mate are identical in every round, the `.pvr` is byte-identical on all three
+  cells, both checkers accept 9/9 and the full differential is 0/0 (EP 87/0/0).
+  The 10 s row is 3/3, 9/9 and `D14` identical, geomean **1.018** against a
+  same-session plan 2 binary at **0.991** (candidate/old **1.028**), so `MD6`
+  is still not held; `core` is 1.088× plan 2, from 1.190×. Gates, veto and the
+  release differential are green; `M14` closes. The `uo` decision stays open.
+  [`report10.md`](report10.md), [`measurements/plan10/`](measurements/plan10/README.md).
 - **2026-11-20** — plan 9 measured two levers on the bench host. An
   evasion-aware legality screen (reject quiet non-king moves outside
   `between(king, checker)` under a single-slider check, plus castling in

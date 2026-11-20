@@ -1,0 +1,38 @@
+{
+  "rule": "release (W10 + MD8) iff core w10 fall >= 0.31e9 instructions:u with identical counters/mate and byte-identical .pvr on all three cells and differential 0",
+  "bench_host": false,
+  "provisional": true,
+  "w10": {
+    "core_fall": 668610461,
+    "correct": true,
+    "branch": "release",
+    "differential": {
+      "label": "full",
+      "fen_accepted": 84,
+      "fen_rejected": 11,
+      "positions": 27088,
+      "legal_moves": 540383,
+      "child_keys": 540383,
+      "explosions": 72131,
+      "explosion_skipped_decided": 6684,
+      "explosion_mismatches": 0,
+      "explosion_ep_mismatches": 0,
+      "explosion_other_mismatches": 0,
+      "exposes_mismatches": 0,
+      "exposes_ep_mismatches": 0,
+      "exposes_other_mismatches": 0,
+      "node_explosion_mismatches": 0,
+      "node_explosion_ep_mismatches": 0,
+      "node_explosion_other_mismatches": 0,
+      "material_exempt": 642,
+      "ep_child": 87,
+      "ep_threats_verdicts": 0,
+      "ep_threats_difference": 0,
+      "key_mismatches": 0,
+      "games": 392,
+      "plies": 26612,
+      "playout_nodes": 26612,
+      "mismatches": 0
+    }
+  }
+}

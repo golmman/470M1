@@ -22,18 +22,19 @@ claim.
 `movegen` is open: the prover runs move generation, legality, effects/keys and
 null moves on `atomic-movegen`'s `Board` with native `Legal` keys; shakmaty
 stays the parser, boundary and checker. Differential green (`mismatches: 0`,
-`key_mismatches: 0`; `MD3` 87/0/0). Plan 3 regressed to 1.206; plan 4 adopted
-2.10.0; plan 5 measured 1.094 vs old 0.997 (`MD6` missed); plan 6 split the
-`core` gap (rules +0.62e9); plan 7 adopted `M12` (`core` 7.816e9 vs 6.569e9,
-1.190x; geomean 1.056 vs 0.987). Plan 8 measured the `FastLegality` ladder at
-**+0.164e9** (`MD7` miss); plan 9 measured an evasion mask at **−0.725e9** on
-`core` with identical counters/`.pvr` and 9/9 accepted, so `W10` and `MD8`
-reopen that one rules lever, and `unsafe-optimizations` at **−1.28–1.32%** on
-all three cells awaits the owner. Nothing is adopted; `M8`/`M14` stay open.
-We own `golmman/atomic_movegen`; changes go in `wishlistN.md` and enter by an
-owner plan/report. See [`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
-[`wishlist3`](docs/plans/movegen/wishlist3.md) and
-[`report9`](docs/plans/movegen/report9.md).
+`key_mismatches: 0`; `MD3` 87/0/0). Plan 4 adopted 2.10.0; plan 5 measured
+1.094 vs old 0.997 (`MD6` missed); plan 7 adopted `M12` (`core` 7.816e9,
+1.190x; geomean 1.056); plan 8's ladder cost +0.164e9 (`MD7` miss) and plan
+9's evasion prototype fell 0.725e9, producing `W10`/`MD8`;
+`unsafe-optimizations` (~−1.3%) still awaits the owner. Plan 10 adopted 2.11.0
+(`0aaf958`, `W10`): `core` **7.1476e9** (−0.6686e9), identical counters/`.pvr`,
+9/9, differential 0/0; geomean **1.018** vs old 0.991 (`MD6` still missed,
+1.088x plan 2). `M14` closes; `M8` is open. We own
+`golmman/atomic_movegen`; changes go in `wishlistN.md` and enter by an owner
+plan/report. See
+[`hot-path-audit`](docs/plans/movegen/hot-path-audit.md),
+[`wishlist3`](docs/plans/movegen/wishlist3.md), [`report9`](docs/plans/movegen/report9.md)
+and [`report10`](docs/plans/movegen/report10.md).
 
 ## Collaboration
 

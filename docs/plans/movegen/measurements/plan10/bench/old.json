@@ -1,0 +1,543 @@
+{
+  "side": "candidate-hand vs provari-hand",
+  "corpus_sha256": "9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e",
+  "seconds": 10.0,
+  "reference_seconds": 10.0,
+  "memory_mb": 192,
+  "repeats": 3,
+  "seeds": [
+    0
+  ],
+  "protocols": [
+    "a"
+  ],
+  "candidate_flags": "",
+  "rows": [
+    {
+      "side": "provari-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 1,
+      "wall_s": 0.519,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 1,
+      "wall_s": 0.525,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342263,
+      "child_evals": 3823720,
+      "expansions": 189604,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 2,
+      "wall_s": 0.518,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342263,
+      "child_evals": 3823720,
+      "expansions": 189604,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 2,
+      "wall_s": 0.524,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 3,
+      "wall_s": 0.511,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342289,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "core",
+      "id": "core",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 3,
+      "wall_s": 0.515,
+      "returncode": 0,
+      "win": true,
+      "mate": 17,
+      "nodes": 342263,
+      "child_evals": 3823720,
+      "expansions": 189604,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 1,
+      "wall_s": 0.133,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 1,
+      "wall_s": 0.135,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 2,
+      "wall_s": 0.132,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 2,
+      "wall_s": 0.132,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 3,
+      "wall_s": 0.133,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "easy-win",
+      "id": "1eb80b92f92c",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 3,
+      "wall_s": 0.137,
+      "returncode": 0,
+      "win": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 1,
+      "wall_s": 6.554,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 1,
+      "wall_s": 6.225,
+      "returncode": 0,
+      "win": true,
+      "mate": 19,
+      "nodes": 4292634,
+      "child_evals": 54633842,
+      "expansions": 3004450,
+      "verdict": "accepted"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 2,
+      "wall_s": 6.255,
+      "returncode": 0,
+      "win": true,
+      "mate": 19,
+      "nodes": 4292634,
+      "child_evals": 54633842,
+      "expansions": 3004450,
+      "verdict": "accepted"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 2,
+      "wall_s": 6.461,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "provari-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "a/c",
+      "proofs": false,
+      "seed": null,
+      "run": 3,
+      "wall_s": 6.517,
+      "returncode": 0,
+      "win": true,
+      "mate": 22,
+      "nodes": 4574912,
+      "child_evals": null,
+      "expansions": null,
+      "verdict": "found"
+    },
+    {
+      "side": "candidate-hand",
+      "cell": "deep-win",
+      "id": "db6a741c723f",
+      "protocol": "b",
+      "proofs": true,
+      "seed": 0,
+      "run": 3,
+      "wall_s": 6.288,
+      "returncode": 0,
+      "win": true,
+      "mate": 19,
+      "nodes": 4292634,
+      "child_evals": 54633842,
+      "expansions": 3004450,
+      "verdict": "accepted"
+    }
+  ],
+  "summary": {
+    "a": {
+      "cells": {
+        "core": {
+          "id": "core",
+          "reference_wall_s": 0.519,
+          "reference_wall_spread_s": [
+            0.511,
+            0.524
+          ],
+          "candidate_wall_s": 0.518,
+          "factor": 0.998,
+          "reference_mate": 17,
+          "candidate_mate": 17,
+          "candidate_at_median": {
+            "seed": 0,
+            "mate": 17,
+            "nodes": 342263,
+            "child_evals": 3823720,
+            "expansions": 189604
+          },
+          "per_seed": {
+            "0": {
+              "wall_s": 0.518,
+              "factor": 0.998,
+              "mate": 17,
+              "nodes": 342263,
+              "child_evals": 3823720,
+              "expansions": 189604,
+              "accepted": 3,
+              "runs": 3
+            }
+          },
+          "accepted": 3,
+          "runs": 3,
+          "verdicts": [
+            "accepted"
+          ]
+        },
+        "easy-win": {
+          "id": "1eb80b92f92c",
+          "reference_wall_s": 0.133,
+          "reference_wall_spread_s": [
+            0.132,
+            0.133
+          ],
+          "candidate_wall_s": 0.135,
+          "factor": 1.015,
+          "reference_mate": 15,
+          "candidate_mate": 15,
+          "candidate_at_median": {
+            "seed": 0,
+            "mate": 15,
+            "nodes": 72523,
+            "child_evals": 897937,
+            "expansions": 52251
+          },
+          "per_seed": {
+            "0": {
+              "wall_s": 0.135,
+              "factor": 1.015,
+              "mate": 15,
+              "nodes": 72523,
+              "child_evals": 897937,
+              "expansions": 52251,
+              "accepted": 3,
+              "runs": 3
+            }
+          },
+          "accepted": 3,
+          "runs": 3,
+          "verdicts": [
+            "accepted"
+          ]
+        },
+        "deep-win": {
+          "id": "db6a741c723f",
+          "reference_wall_s": 6.517,
+          "reference_wall_spread_s": [
+            6.461,
+            6.554
+          ],
+          "candidate_wall_s": 6.255,
+          "factor": 0.96,
+          "reference_mate": 22,
+          "candidate_mate": 19,
+          "candidate_at_median": {
+            "seed": 0,
+            "mate": 19,
+            "nodes": 4292634,
+            "child_evals": 54633842,
+            "expansions": 3004450
+          },
+          "per_seed": {
+            "0": {
+              "wall_s": 6.255,
+              "factor": 0.96,
+              "mate": 19,
+              "nodes": 4292634,
+              "child_evals": 54633842,
+              "expansions": 3004450,
+              "accepted": 3,
+              "runs": 3
+            }
+          },
+          "accepted": 3,
+          "runs": 3,
+          "verdicts": [
+            "accepted"
+          ]
+        }
+      },
+      "geomean": 0.991,
+      "coverage": "3/3"
+    }
+  },
+  "d14": [
+    {
+      "cell": "core",
+      "seed": 0,
+      "wall_s": 0.521,
+      "returncode": 0,
+      "found": true,
+      "mate": 17,
+      "nodes": 342263,
+      "child_evals": 3823720,
+      "expansions": 189604,
+      "timed_counters": [
+        [
+          17,
+          342263,
+          3823720,
+          189604
+        ],
+        [
+          17,
+          342263,
+          3823720,
+          189604
+        ],
+        [
+          17,
+          342263,
+          3823720,
+          189604
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "easy-win",
+      "seed": 0,
+      "wall_s": 0.135,
+      "returncode": 0,
+      "found": true,
+      "mate": 15,
+      "nodes": 72523,
+      "child_evals": 897937,
+      "expansions": 52251,
+      "timed_counters": [
+        [
+          15,
+          72523,
+          897937,
+          52251
+        ],
+        [
+          15,
+          72523,
+          897937,
+          52251
+        ],
+        [
+          15,
+          72523,
+          897937,
+          52251
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    },
+    {
+      "cell": "deep-win",
+      "seed": 0,
+      "wall_s": 6.318,
+      "returncode": 0,
+      "found": true,
+      "mate": 19,
+      "nodes": 4292634,
+      "child_evals": 54633842,
+      "expansions": 3004450,
+      "timed_counters": [
+        [
+          19,
+          4292634,
+          54633842,
+          3004450
+        ],
+        [
+          19,
+          4292634,
+          54633842,
+          3004450
+        ],
+        [
+          19,
+          4292634,
+          54633842,
+          3004450
+        ]
+      ],
+      "counters_match": true,
+      "ours": true,
+      "provari": true
+    }
+  ]
+}
