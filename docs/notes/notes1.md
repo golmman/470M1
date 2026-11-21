@@ -140,3 +140,52 @@ Here are some ideas
 * perf - raw performance profiling and optimizations
 
 Look at `atomic_solver`, `atomi` and `provari` for more ideas and come up with your own suggestions.
+
+---
+
+Product requirements document
+
+* purpose and scope
+  * become the fastest win prover
+* requirements
+  * configurabilty via cli and config-file
+* milestones
+  * faster (wall-time) than full-feature provari (nnue, parallel, etc. all activated)
+  * continuous building of a proof database similar to `atomic_solver`
+  * proof that from the starting position g1f3 d7d6 is won for white
+  * proof the starting position is won for white
+* non-functional goals
+  * maintainability
+    * SOLID principles
+    * reduced coupling, increased cohesion
+    * achieved via regular audits
+      * code and architecture
+      * documentation
+      * workflow
+  * performance
+    * wall time
+    * search tree size
+    * nodes per second (secondary)
+  * testability
+    * test pyramid
+    * independent tools (e.g. cargo tests) for verifications
+    * cli flags and options
+  * clean documentation
+    * reduced verbosity
+    * reduced redundancy
+  * robust workflow
+* interaction requirements
+  * ai driven development
+    * ai writes all the code and documentation
+    * ai does all testing and reviews
+    * ai proposes changes and provides consultation
+    * owner provides guides and sensors
+
+---
+
+Parameter tune, see `atomic_solver`
+
+---
+
+* abandon "kill reviews"? I see no benefit.
+
