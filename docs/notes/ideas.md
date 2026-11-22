@@ -105,8 +105,10 @@ one is a one-plan port of only the shared table/proofs and `--threads 2`,
 gated on identical proofs and no regression at `--threads 1`. If 2-thread
 wall does not beat 0.75× on `deep-win`, stop.
 
-**Rejected alternative:** process-level seed portfolio. The seed spread only
-supports ~1.2×; not worth the cores.
+**Rejected alternative (scope):** process-level seed portfolio for median
+speed on cells that already prove. The seed spread only supports ~1.2×; not
+worth the cores. This rejection does **not** cover the coverage/tail case in
+§5, where a portfolio can turn a censored cell into a proof.
 
 ---
 
@@ -155,12 +157,33 @@ of `guided`, not a standalone initiative.
 
 ### 5. `tt` / `perf` — **not standalone initiatives now**
 
-- **TT:** atomi’s census puts TT probe at ~0.04 pp and store at ~1.18 pp; our
-  table is already provari’s 4-slot/filter/least-work design. The measured
-  8–36% memory-split swing is a configuration/tree effect, not a case for
-  bucketing or salts. A single “memory policy” plan (adaptive proof share,
-  avoid the 128 MB anomaly) is worth maybe 5–10%; fold it into `perf` if we
-  ever need it.
+*Amended 2026-11-20 after the owner’s note: “TT salts were a game changer for
+`atomic_solver`.” The priority below is unchanged; the word “salt” was doing
+two different jobs.*
+
+- **TT, two different “salts”:**
+  - **Bucket-index salt as trajectory diversification** is what
+    `atomic_solver` actually introduced (`--salt`: `0` keeps shipped indexing,
+    `s > 0` changes the bucket index). It does not make one run faster; it
+    gives independent basins, and its payoff was a **portfolio**:
+    `atomic_solver` plan8/plan9 shipped salt-seeded racers, rescuing
+    `m20_white` from a 2B-child-eval timeout to a proof at 791,401,553 evals
+    (~96 s wall) in 3/3 races, with dec10 0.768× wall / 0.685× evals and no
+    regression, at ~3.9× CPU (~747 core-s per hard answer). That is a
+    **coverage/tail** lever and belongs to `parallel`/`proofdb`, not to a TT
+    rewrite. We have no bucket salt; our `--seed` perturbs tie-breaks. The
+    relevant lesson is the portfolio shape, not the exact knob — our own
+    8-seed `deep-win` probe measured a different question (median speed on a
+    cell that already proves): min 5.37 s, median 7.04 s, ~1.2× for 4× the
+    cores. Re-test a salt/seed portfolio only under a coverage or
+    absolute-wall goal, on a cell solo **cannot** prove.
+  - **Salt as a TT collision/structure device** is not a measured win for us:
+    atomi’s census puts probe at ~0.04 pp and store at ~1.18 pp, and our table
+    is already provari’s 4-slot/filter/least-work design. The measured 8–36%
+    memory-split swing is a configuration/tree effect, not a case for
+    bucketing or salts. A single “memory policy” plan (adaptive proof share,
+    avoid the 128 MB anomaly) is worth maybe 5–10%; fold it into `perf` if we
+    ever need it.
 - **Perf:** the movegen audit closed with product parity and the export walk
   at 1.58× plan 2. The walk is ~9.8% of `core` instructions with `--proofs`; a
   perfect recovery is ~2.4 wall points, inside the instrument’s noise. The
@@ -168,7 +191,56 @@ of `guided`, not a standalone initiative.
   NNUE inference optimisation belongs inside `guided`.
 
 **Verdict:** no standalone `tt` or `perf` initiative until `guided`/`parallel`
-are exhausted.
+are exhausted. A salt-shaped portfolio is a `parallel` plan, and only for
+coverage or absolute wall.
+
+---
+
+### 5b. `tune` — external optimizer interface — **defer; probe sensitivity first**
+
+**What `atomic_solver` did:** `tune` was not an in-house optimizer. It shipped
+a narrow contract (`benchmark --json`, `--config` TOML, `quick`/`thorough`
+suites) and left baselines, the parameter space, the loss and the search to an
+external optimizer. The compiled `ScorerParams::default()` stayed hand-tuned;
+the optimizer’s `config.toml` is an opt-in artifact, not a defaults copy, and
+the initiative closed on the interface — its gain is not recorded as a
+feature-ledger win. The neighbouring constant-retuning items that were
+measured went no-go (history/killer constants: the shipped set is the local
+optimum).
+
+**For us:** the analogous surface is `src/eval.rs`’s six-entry `VALUES` table
+plus `TARGET`, `TARGETS`, `FUSE`, `PRESSURE`, `CHECKER`, and `dfpn.rs`’s
+`HAND_DECISIVE` band and `EF_B`. The eval is a copied upstream module whose
+constants were inherited from provari, never fitted to our tree. `prove --json`
+and `bench` already emit machine-readable rows, so a tune-style harness is
+mostly a config surface plus a multi-cell suite.
+
+**Why maybe:** cheap (interface and harness, no new algorithm), deterministic
+`child_evals` makes evaluation stable, and the same surface serves post-
+`guided` tuning (model inference constants, guide thresholds, move order).
+Caveat: the hand eval only sets a 3-way band `{0,1,2}` at ±`HAND_DECISIVE`, so
+a weight change matters only when it moves a position across the band — the
+surface may be flat.
+
+**Why not first:** `guided` is the measured ~2.7×; tuning a coarse hand eval
+is not a route to 2×. With three ledger cells, a tuned set is likely overfit;
+`atomic_solver`’s own lesson is that constant sweeps can sit at a local
+optimum, and that its tuned set came from an external ordering-parameter
+search, not a hand sweep.
+
+**Cheapest decisive experiment:** a read-only sensitivity sweep, not an
+interface. In a scratch tree, expose the eval terms, `HAND_DECISIVE` and
+`EF_B` via env overrides; run each at roughly ±25–50% on the three cells with
+3 seeds (or `strong-v1` once it exists), reading deterministic `child_evals`
+and accepted proofs. Pre-register: if no single perturbation moves a cell by
+≥10%, and no cell wins without a paired loss, the surface is flat — no `tune`
+initiative; fold the harness into `guided` only once the model has parameters
+worth fitting. If it does move, write the interface plan with the observed
+axes and a held-out cell.
+
+**Verdict:** not a standalone initiative before `guided`. Keep it as a
+`guided` follow-on (tune model/guide constants) or a `coverage`-first plan;
+never tune against the three ledger cells alone.
 
 ---
 
@@ -193,6 +265,8 @@ TB initiative for the current bench.
    row with both hand-vs-hand and model-vs-model columns.
 3. Then decide between `parallel` (absolute wall) and `proofdb`
    (batch/incremental), based on the owner’s next goal.
+4. Run the §5b sensitivity sweep before opening `tune`; if the hand-eval
+   surface is flat, tune only inside `guided` and only with a held-out cell.
 
 ### Suggested kickoff prompt (option 1)
 
