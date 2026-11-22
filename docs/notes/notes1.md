@@ -143,6 +143,13 @@ Look at `atomic_solver`, `atomi` and `provari` for more ideas and come up with y
 
 ---
 
+Last session we brainstormed upcoming initatives and produced this list of ideas: `docs/notes/notes1.md`.
+
+I'd like and amendment to section 5: introducing tt salts was a game changer for `atomic_solver`. I agree with the current priority though.
+Then i think the idea of the `tune` initiative of `atomic_solver` might also be interesting for us.
+
+---
+
 Product requirements document
 
 * purpose and scope
@@ -180,10 +187,6 @@ Product requirements document
     * ai does all testing and reviews
     * ai proposes changes and provides consultation
     * owner provides guides and sensors
-
----
-
-Parameter tune, see `atomic_solver`
 
 ---
 
