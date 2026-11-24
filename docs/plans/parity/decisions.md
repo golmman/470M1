@@ -4,6 +4,10 @@ Full text and rationale for the decisions summarised in
 [`initiative.md`](initiative.md). A decision is changed by a new dated row,
 not by editing history silently.
 
+**2026-11-24:** product decisions supersede `D2`, `D6`, `D7` and `D12` and
+narrow `D8` (`PD1`, `PD2`, `PD5`, `PD11` in [`../../decisions.md`](../../decisions.md)).
+`D1`, `D4`, `D5`, `D9` and `D10` carry forward.
+
 ## D1 — Licence and copying
 
 **Resolution (2026-11-17).** This repository is GPL-3.0-or-later. provari is

@@ -10,7 +10,7 @@ a decision record, a measurement record, or a historical plan/report.
 | --- | --- |
 | [`initiative.md`](initiative.md) | Goal, rungs, current status, decisions summary, backlog, risks |
 | [`decisions.md`](decisions.md) | Full text and rationale for D1–D12 |
-| [`gotchas.md`](gotchas.md) | Binding correctness gotchas — read before touching search, table, proof or checker code |
+| [`gotchas.md`](../../gotchas.md) | Binding correctness gotchas (moved to `docs/`) — read before touching search, table, proof or checker code |
 | [`history.md`](history.md) | Chronological record and durable findings |
 | [`analysis1.md`](analysis1.md) | Prior-art map of provari, atomi and atomic_solver; what parity takes and defers |
 | [`plan1.md`](plan1.md) | P0: repository, rules, proof format, independent checker, bench harness |

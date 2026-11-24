@@ -211,7 +211,10 @@ If there are load bearing questions or decisions to be made, let's discuss them.
     - ai proposes changes and provides consultation
     - owner provides guides and sensors
 
-
 ---
 
 - abandon "kill reviews"? I see no benefit.
+
+---
+
+Plan session for foundation . Read AGENTS.md , docs/product.md , docs/decisions.md (PD1, PD2), docs/bench.md and docs/plans/foundation/initiative.md . Write docs/plans/foundation/plan1.md (≤ 8 KB) for item F1, Bench v2: pin the latest provari release (commit, network/model SHA-256, licence, PROVENANCE.md row); define the full-feature reference command (learned guide, tablebase set, --threads N , memory, canonical cap) and how N is chosen per host; pre-register the strong selection rule over corpus-v1 + provari's high200 , and a held-out set; specify the driver changes and the bench.md sections; and plan the first same-session row of the current product against the new column, with the hand guard row alongside. Run only read-only probes.

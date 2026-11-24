@@ -8,7 +8,8 @@ plans live in `docs/plans/<initiative>/planN.md`, their evidence in
 
 | If you want | Read |
 | --- | --- |
-| the goal, the rungs and their budgets | the active initiative, e.g. [`plans/parity/initiative.md`](plans/parity/initiative.md) |
+| the product goal and its reference | [`product.md`](product.md) and [`decisions.md`](decisions.md) (`PD1`) |
+| an initiative's gates and budgets | its `initiative.md` |
 | the reasoning behind a number or a convention | the initiative's `decisions.md` |
 | what happened, plan by plan | the initiative's `history.md` and the plan's `reportN.md` |
 | to measure or re-run a row yourself | [`../bench/README.md`](../bench/README.md) |
@@ -16,15 +17,25 @@ plans live in `docs/plans/<initiative>/planN.md`, their evidence in
 This file states no goal, no rung and no cap policy: it records what was
 measured, at the cap each row used, and makes no goal claim.
 
+**Reference columns (`PD1`, 2026-11-24).** The product goal is measured
+against full-feature provari (latest pinned release, learned guide,
+tablebases, `--threads N`, equal `N`) on a `strong` set plus a `held-out`
+set. `foundation` item `F1` defines that column, `N`, the sets and the
+canonical cap here, and appends its first row. Until then every row below is
+the **hand guard column**: provari `--guide hand`, one thread, three cells.
+The rules below apply to both columns; a geomean is compared only within one
+column, cap and `N`.
+
 ## The metric
 
 ```
 factor(cell) = median candidate wall [s] / median provari --guide hand wall [s]
 ```
 
-- **provari `--guide hand` is 1.000 by definition** — the fair
-  hand-evaluation-for-hand-evaluation column. The bundled model column
-  (`--guide model`) is out of scope and never mixed in.
+- **In the hand guard column, provari `--guide hand` is 1.000 by
+  definition** — the hand-evaluation-for-hand-evaluation column. Model and
+  threaded readings belong to the full-feature column and are never mixed
+  into it.
 - **`< 1.0` means the candidate is faster than provari on that cell.**
 - **Ledger score** = geometric mean of `factor(cell)` over the row's
   *claimed cells* — cells where both sides prove a win at the row's `Cap` and
@@ -61,7 +72,7 @@ factor(cell) = median candidate wall [s] / median provari --guide hand wall [s]
 
 | Item | Value |
 | --- | --- |
-| Reference side | `provari prove "<FEN>" --guide hand --seconds 10 --memory 192`. Fixed: the set is selected so the hand guide proves inside 10 s, so the reference cannot move with a candidate cap |
+| Reference side (guard column) | `provari prove "<FEN>" --guide hand --seconds 10 --memory 192`. Fixed: the set is selected so the hand guide proves inside 10 s, so the reference cannot move with a candidate cap |
 | Candidate side | `470MI prove "<FEN>" --seconds <cap> --memory 192 [--seed N] <stack flags>`; `--memory` covers the TT, the proof table and the filter |
 | Caps planned | reference 10 s always; candidate at the row's `Cap` (10 s, 120 s, 600 s) |
 | Repeats | 3 per cell per side, medians reported, one process at a time |
@@ -69,7 +80,6 @@ factor(cell) = median candidate wall [s] / median provari --guide hand wall [s]
 | Oracle | provari `v0.4.0` at `bceb1ee1faf7d9cf2422eb89c931be69ae30619d`, rebuilt from source per row, never committed |
 | Corpus | `corpus-v1` = `bench/corpus.json`, sha256 `9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e`; the driver refuses any other digest |
 | Tablebases | none |
-| Stretch column | none in the parity initiative |
 
 The driver will be [`../bench/run_bench.py`](../bench/README.md) (flags, sides
 and the derived ledger there), created by plan1. Until then, a plan may use
@@ -356,6 +366,10 @@ Chronological entries — including every plan session that appended no row —
 are in the active initiative's history (`history.md`, or the initiative's own
 history section). Only ledger-structure and lifecycle changes are kept here:
 
+- **2026-11-24** — product PRD adopted (`PD1`): the goal column becomes
+  full-feature provari at equal threads on `strong` + `held-out` sets
+  (defined by `foundation` `F1`); all existing rows form the hand guard
+  column. No row changed.
 - **2026-11-20** — `movegen` closed with **no ledger row**. Plan 13's counted
 export split is ≤0.08e9 re-derivable and its one byte-identical memo is
 negative (+55.9e6), so there is no encoder plan. It also corrects the oracle

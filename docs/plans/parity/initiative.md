@@ -123,6 +123,8 @@ measured and the cap each row used, and makes no goal claim.
 ## Decisions
 
 One-line resolutions; full text and rationale in [`decisions.md`](decisions.md).
+Product decisions (2026-11-24) supersede `D2`, `D6`, `D7`, `D12` and narrow
+`D8`; see [`../../decisions.md`](../../decisions.md).
 
 | # | Decision | Resolution |
 | --- | --- | --- |

@@ -2,7 +2,8 @@
 
 Short index of bugs already found in the source projects and the invariant
 that prevents them. These are load-bearing: a change that breaks one needs a
-test and a report finding. Referenced from `AGENTS.md` §Correctness.
+test and a report finding. Read before touching search, table, proof, checker
+or measurement code. Moved from `plans/parity/` (product-wide, `PD11`).
 
 ## Search and values
 
@@ -77,6 +78,25 @@ test and a report finding. Referenced from `AGENTS.md` §Correctness.
   instrument's field of view as the list of levers.
 - **Proof length is a companion column.** Record our length beside the
   same-session reference mate. A row that cannot state both is incomplete.
+
+## Product growth (PRD, 2026-11-24)
+
+- **Counters are a 1-thread instrument.** At `--threads N > 1` counters may
+  vary run to run; never use them as a regression fixture there (`PD2`).
+- **The 1-thread path stays identical.** Shared tables, stop flags and
+  workers must leave `--threads 1` counters and `.pvr` bytes unchanged.
+- **Observers are trajectory-neutral.** Progress logging may read state at
+  clock ticks only; it must not change node order, budgets or table contents.
+  A test pins counters with logging off and at `debug`.
+- **Defaults are part of the bench.** Moving a default into a config struct
+  must keep its value; a changed default is a bench event, not a refactor.
+- **A store entry is not a claim.** Proof-database entries are claimed only
+  through an exported `.pvr` that both checkers accept (`PD6`).
+- **Warm is not cold.** A run that reads a populated proof database is its
+  own row and is never compared with a cold reference run.
+- **A refactor can move inlining.** Splitting hot modules can change
+  instruction counts with identical counters (movegen plan 6); measure
+  `instructions:u` on every hot-path refactor.
 
 ## Licence and provenance
 

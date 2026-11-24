@@ -104,6 +104,9 @@ movegen bug cannot hide in both the prover and the checker.
 
 ## Non-goals
 
+*Initiative scope only; superseded at product level by `PD5`
+([`../../decisions.md`](../../decisions.md)).*
+
 - **No checker change.** The checker remains on shakmaty. A movegen
   replacement in the checker would destroy the independent-veto property.
 - **No search-formulation change.** The search stays DF-PN with the hand
