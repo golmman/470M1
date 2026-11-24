@@ -132,12 +132,13 @@ Brainstorming session.
 Propose future initiative we can work on to improve this project.
 
 Here are some ideas
-* parallel - node throughput by parallelity
-* nnue - tree size reduction via neural net evaluations
-* tb - tree size reduction via table bases
-* proofdb - proof export inspired by `atomic_solver`
-* tt - transposition table improvements like bucketing, salts, etc.
-* perf - raw performance profiling and optimizations
+
+- parallel - node throughput by parallelity
+- nnue - tree size reduction via neural net evaluations
+- tb - tree size reduction via table bases
+- proofdb - proof export inspired by `atomic_solver`
+- tt - transposition table improvements like bucketing, salts, etc.
+- perf - raw performance profiling and optimizations
 
 Look at `atomic_solver`, `atomi` and `provari` for more ideas and come up with your own suggestions.
 
@@ -152,56 +153,65 @@ Then i think the idea of the `tune` initiative of `atomic_solver` might also be 
 
 Documentation Session. No code changes.
 
+**Context**
+
+We finished the `movegen` and `parity` initiatives and compiled a list of upcoming initiative ideas in `docs/notes/ideas.md`.
 I wrote a short product requirements document in order to make my intent more precise and provide guidance for the a solid architecture.
-Note that we compiled a list of upcoming initiative ideas in `docs/notes/ideas.md`.
+
+**Task**
 
 Align the existing documentation with the given requirements and build architecture and code guidelines accordingly.
-
-If there are load bearing questions and decisions to be made, let's discuss them.
+If there are load bearing questions or decisions to be made, let's discuss them.
 
 **PRD**
 
-* purpose and scope
-  * become the fastest win prover
-* functional requirements
-  * configurabilty via cli and config-file
-  * robust error handling
-  * human readable stdout logging
-    * error logs
-    * iterative deepening / progress logs
-* milestones
-  * faster (wall-time) than full-feature provari (nnue, parallel, etc. all activated)
-  * continuous building of a proof database similar to `atomic_solver`
-  * proof that from the starting position g1f3 d7d6 is won for white
-  * proof the starting position is won for white
-* non-functional goals
-  * maintainability
-    * SOLID principles
-    * reduced coupling, increased cohesion
-    * achieved via regular audits
-      * code and architecture
-      * documentation
-      * workflow
-  * performance
-    * wall time
-    * search tree size
-    * nodes per second (secondary)
-  * testability
-    * test pyramid
-    * independent tools (e.g. cargo tests) for verifications
-    * cli flags and options
-  * clean documentation
-    * reduced verbosity
-    * reduced redundancy
-  * robust workflow
-* interaction requirements
-  * ai driven development
-    * ai writes all the code and documentation
-    * ai does all testing and reviews
-    * ai proposes changes and provides consultation
-    * owner provides guides and sensors
+- purpose and scope
+  - build the fastest win prover
+  - the goal is moving: for now twice as fast as `provari`
+- functional requirements
+  - configurabilty via cli and config-file
+  - robust error handling
+  - human readable stdout logging
+    - error logs
+    - iterative deepening / progress logs
+- milestones
+  - faster (wall-time) than full-feature provari (nnue, parallel, etc. all activated)
+  - continuous building of a proof database similar to `atomic_solver`
+  - proof that from the starting position g1f3 d7d6 is won for white
+  - proof the starting position is won for white
+- non-functional goals
+  - maintainability
+    - SOLID principles
+    - reduced coupling, increased cohesion
+    - achieved via regular audits
+      - code and architecture
+      - documentation
+      - workflow
+  - performance
+    - wall time
+    - search tree size
+    - nodes per second (secondary)
+  - testability
+    - test pyramid
+    - independent tools (e.g. cargo tests) for verifications
+    - cli flags and options
+  - clean documentation
+    - reduced verbosity
+    - reduced redundancy
+  - robust workflow
+    - agile approach, goals may change, change must be documented though
+    - milestones can be completed via initiatives
+    - initiatives have a clear goal
+    - initiative goals are achieved by implementing plans
+    - implementation concludes with an implementation report
+- interaction requirements
+  - ai driven development
+    - ai writes all the code and documentation
+    - ai does all testing and reviews
+    - ai proposes changes and provides consultation
+    - owner provides guides and sensors
+
 
 ---
 
-* abandon "kill reviews"? I see no benefit.
-
+- abandon "kill reviews"? I see no benefit.
