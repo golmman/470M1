@@ -14,29 +14,36 @@ plans live in `docs/plans/<initiative>/planN.md`, their evidence in
 | what happened, plan by plan | the initiative's `history.md` and the plan's `reportN.md` |
 | to measure or re-run a row yourself | [`../bench/README.md`](../bench/README.md) |
 
-This file states no goal, no rung and no cap policy: it records what was
-measured, at the cap each row used, and makes no goal claim.
+This file states no goal and no rung: it fixes the columns, the sets, the
+metric, the canonical cap and the `N` rule, records what was measured at each
+row's cap, and makes no goal claim.
 
-**Reference columns (`PD1`, 2026-11-24).** The product goal is measured
-against full-feature provari (latest pinned release, learned guide,
-tablebases, `--threads N`, equal `N`) on a `strong` set plus a `held-out`
-set. `foundation` item `F1` defines that column, `N`, the sets and the
-canonical cap here, and appends its first row. Until then every row below is
-the **hand guard column**: provari `--guide hand`, one thread, three cells.
-The rules below apply to both columns; a geomean is compared only within one
-column, cap and `N`.
+**Columns (`PD1`, `F1`, 2026-11-24).** Three columns share the rules
+below; a factor compares only within one column, cap and `N`.
+
+| Column | Reference | Candidate | Books a factor? |
+| --- | --- | --- | --- |
+| `guard` | provari `--guide hand --threads 1` | `470MI --guide hand` | yes; the historical 1.000 side |
+| `matched-v1` | provari `--guide model`, one thread, no tablebases | `470MI --guide hand` | yes; equal features apart from the learned guide |
+| `goal-v1` | `matched-v1` plus `--threads N --tablebases 3-4-5` | as `matched-v1` | reference coverage only: our checker cannot check tablebase verdicts |
+
+The guard column is the historical ledger; every row before `foundation`
+plan1 belongs to it and is not rewritten. `goal-v1` sizes the distance to the
+product goal; its walls and coverage sit beside a row, never inside another
+column's geomean.
 
 ## The metric
 
 ```
-factor(cell) = median candidate wall [s] / median provari --guide hand wall [s]
+factor(cell) = median candidate wall [s] / median reference wall [s]
 ```
 
-- **In the hand guard column, provari `--guide hand` is 1.000 by
-  definition** — the hand-evaluation-for-hand-evaluation column. Model and
-  threaded readings belong to the full-feature column and are never mixed
-  into it.
-- **`< 1.0` means the candidate is faster than provari on that cell.**
+- **Each column owns its reference command, `N`, tablebase set, memory and
+  cap.** In the hand guard column provari `--guide hand` is 1.000 by
+  definition; model, threaded and tablebase readings belong to `matched-v1`
+  or `goal-v1` and are never mixed into it.
+- **`< 1.0` means the candidate is faster than the row's reference on that
+  cell.**
 - **Ledger score** = geometric mean of `factor(cell)` over the row's
   *claimed cells* — cells where both sides prove a win at the row's `Cap` and
   the claim passes the checker protocol. Unclaimed cells have no factor: they
@@ -72,53 +79,53 @@ factor(cell) = median candidate wall [s] / median provari --guide hand wall [s]
 
 | Item | Value |
 | --- | --- |
-| Reference side (guard column) | `provari prove "<FEN>" --guide hand --seconds 10 --memory 192`. Fixed: the set is selected so the hand guide proves inside 10 s, so the reference cannot move with a candidate cap |
-| Candidate side | `470MI prove "<FEN>" --seconds <cap> --memory 192 [--seed N] <stack flags>`; `--memory` covers the TT, the proof table and the filter |
-| Caps planned | reference 10 s always; candidate at the row's `Cap` (10 s, 120 s, 600 s) |
-| Repeats | 3 per cell per side, medians reported, one process at a time |
+| Reference side, `guard` | `provari prove "<FEN>" --guide hand --threads 1 --seconds 10 --memory 192 --json` |
+| Reference side, `matched-v1` | `provari prove "<FEN>" --guide model --threads 1 --seed 0 --seconds 10 --memory 192 --json` |
+| Reference side, `goal-v1` | `matched-v1` plus `--threads N --tablebases DIR` |
+| Candidate side | `470MI prove "<FEN>" --seconds 10 --memory 192 --guide hand --json`; it has no threads or tablebase flags yet |
+| Canonical cap | **10 s** per search, **192 MB** per search (`N` threads share it); a 60 s row is a later column version |
+| Repeats | 3 per cell per side, interleaved `ref,cand`; medians and spread `(max-min)/median`; one process at a time |
 | Session | a row's reference and candidate runs are measured back to back on one host |
-| Oracle | provari `v0.4.0` at `bceb1ee1faf7d9cf2422eb89c931be69ae30619d`, rebuilt from source per row, never committed |
-| Corpus | `corpus-v1` = `bench/corpus.json`, sha256 `9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e`; the driver refuses any other digest |
-| Tablebases | none |
+| Oracle | provari `v0.5.0` at `b87d179c01ef8eae92a8ae93e4ca8b3df924dd71`, `--release --features bundled`, rebuilt from source per row, never committed |
+| Data | `data/fetch.sh` digests: `network.nnue` `3d76258c…40b1`, `model.json` `51be8f47…882b`; the driver records them |
+| Corpus | `corpus-v1` = `bench/corpus.json`, sha256 `9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e`, plus `bench/high200.jsonl`, sha256 `857496451612904ef4eddc77a93ae4328f00d603b7755c49b8ae114d89682af6`; the driver refuses any other digest |
+| Tablebases | Lichess Atomic 3-4-5 `.atbw`, manifest sha256 `a0c7a69bc720dae8c77a776810d2f33486c153655cebdef229e27a40fdeefc37`; `make tablebases` verifies every md5 and the driver gates the manifest. `6-wdl`/`6-dtz` are out |
+| Unstable | a reference spread `>= 20%` marks the cell `unstable`: no factor |
 
-The driver will be [`../bench/run_bench.py`](../bench/README.md) (flags, sides
-and the derived ledger there), created by plan1. Until then, a plan may use
-its own driver under `measurements/planN/` and record that in its report.
+The driver is [`../bench/run_bench.py`](../bench/README.md); it gates the
+digests above and the reference `--version`. A plan may use its own driver
+under `measurements/planN/` and records that in its report.
 
-## The bench set
+## Protocol and set
 
-Three cells, drawn from `corpus-v1` (`core` + the pinned `sample20`).
-**Selection rule (fixed):** the bench set is every cell of `core + sample20`
-where the pinned provari oracle proves a win **with the hand guide** inside the
-canonical budget. A cell where provari itself is censored cannot carry a factor
-and is not a bench cell, however interesting it is.
+**Universe.** `core` + the 200 `high200` cells = **201**. The calibration
+cells are `high200` 1-based lines 3, 23, …, 143 (8 cells, none in
+`corpus-v1`); they are excluded from every set forever, leaving **193
+eligible** cells. `high200` is White-to-move, engine-rated wins; it is not a
+position-type sample and membership is cap-boundary sensitive.
 
-| Short name | Cell id | FEN | hand wall[^ref] | hand nodes | mate | Why this cell |
-| --- | --- | ---: | ---: | ---: | --- | --- |
-| `core` | `core`[^coreid] | `r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1` | 0.49 s | 342,289 | 17 | the motivating FEN; here the hand guide *helps* provari |
-| `easy-win` | `1eb80b92f92c` | `rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1` | 0.11 s | 72,523 | 15 | the one easy shared win; here the hand guide *hurts* provari (>2x), so the lever is case-dependent |
-| `deep-win` | `db6a741c723f` | `rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1` | 6.20 s | 4,574,912 | 22 | the deepest hand-guide win in the corpus; the coverage cell |
+**Selection** precedes any candidate run and uses the reference side only
+(`--guide model --seed 0`, one repeat). A prove under 9.0 s joins at 1/1; a
+slower prove or a failure is retried, and a cell joins iff proved in **2 of
+3** (a 1-of-3 cell is flaky and out; two failures eliminate it). It runs once
+per column — `goal-v1` (reference `N`, tablebases) and `matched-v1` (`N=1`,
+none) — and each yields that column's set. A row uses only its own column's
+set.
 
-[^ref]: **Provisional** values inherited from atomi's plan1 set card. Every
-    row **re-measures** its own reference in the same session; never take a
-    reference from this table for a new factor. plan1 of `parity` records the
-    first same-session reference values.
+**Held-out.** Members sorted by cell id; every 5th (1-based ≡ 0 mod 5) is
+`held-out`, the rest is `strong`. The split is fixed with the set,
+content-blind and never tuned on. Sets are `bench/sets/goal-v1.json` and
+`bench/sets/matched-v1.json` (sha256 `0129ff7c2f8d4ceebffda316985d8d99b3ae302ff66028293701572ab8516e9f` and `810289f052183a70d131b5d43eabf6c476bf635ef6106541d9f6d60f755d83d1`),
+driver-gated; sets are never edited. A changed command, `N`, cap or tablebase
+set makes a new `-v2`. The guard cells are `bench/sets/guard.json`
+(`core`, `easy-win`, `deep-win`; the historical set, not a selection).
 
-[^coreid]: `core` is the one hand-named cell — it is not in `high200.jsonl`.
-    Its corpus fingerprint would be `8d0ff8bca7f0`, so a measurement file
-    showing that id means this position.
-
-Cells measured and deliberately **out** of the set, so the exclusion is not
-silently revisited:
-
-| Cell id | Why not a bench cell |
-| --- | --- |
-| `b9a7ed7eb368`, `dd3f89766a40` | provari **hand** censored (10.1 M / 9.3 M nodes); only the out-of-scope bundled model wins them |
-| the other 16 `sample20` ids | provari's model is censored on all of them, so the hand guide is expected to be censored too |
-
-If a later census finds an additional hand-guide win, that cell joins the set
-by the rule above — short name, measured reference, a new reference row.
-Earlier rows are not rewritten.
+**`N` per host.** `P = nproc` (affinity and container-quota aware),
+`Nmax = min(8, P)`. For `N in {1,2,4,8} ∩ [1,Nmax]`, ascending, the driver
+runs the eight calibration cells three times each; `r(N)` is the geomean of
+the per-cell median walls. The choice is the largest `N` with
+`r(N)/r(1) <= 0.8` and `r(N)/r(prev) <= 0.9`, else `N = 1`. `P`, `Nmax`,
+every `r(N)` and the choice are recorded per row; `N` is part of a row.
 
 ## Names and ids (read this first)
 
@@ -164,10 +171,10 @@ cell is in the set.
 **Convention.** The ledger is a **results history**: one row per executed
 plan, each with the budget it was measured at. `Cap` is part of the result, so
 `censored` always means "not claimed at this cap". A factor itself needs no
-budget — it is `candidate wall / provari hand wall`, and the reference is
-re-measured per row inside its own 10 s budget. Decisions append no row.
+budget — it is `candidate wall / the row's reference wall`, and the reference
+is re-measured per row inside its own cap. Decisions append no row.
 
-### Factors
+### Hand guard factors (historical rows, unchanged)
 
 | Plan | Date | Host | Stack | `core` | `easy-win` | `deep-win` | Geomean | Cap |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
@@ -332,19 +339,56 @@ only writes the bytes — so this row is walk-for-walk. Re-derivable work is at
 most **0.08e9** and the one byte-identical memo measured is slower; the row
 letter is unchanged. See `plans/movegen/report13.md`.
 
-Cell syntax: a **bold number** is a claimed factor (candidate wall / provari
-hand wall, both from the row's own session). `censored` means no claimed win
+Cell syntax: a **bold number** is a claimed factor (candidate wall / the
+row's reference wall, both from the row's own session). `censored` means no claimed win
 at the row's cap. A seed fraction (`1/3`, `2/3`) means proved on that many of
 seeds 0–2, hence censored and carrying no factor; `not claimed` means the mate
 was found but the claim failed the checker protocol (verdict in the row's
 note). Walls, `child_evals`, proof lengths and checker verdicts of each row
 belong in its footnote or in the plan's `measurements/planN/README.md`.
 
+
+### Full-feature, matched and guard rows
+
+| Plan | Date | Column | Set | N | TB | Cap | Coverage | Geomean |
+| --- | --- | --- | --- | ---: | --- | ---: | ---: | ---: |
+| foundation plan1 | 2026-11-24 | `matched-v1` | `strong-matched-v1` (20) | 1 | none | 10 s | 9/20 | **3.104** |
+| foundation plan1 | 2026-11-24 | `guard` | `guard` (3) | 1 | none | 10 s | 3/3 | **1.023** |
+
+Foundation plan1 footnote. **Row A (`matched-v1`)**: reference `--guide model`,
+one thread, no tablebases; candidate `--guide hand`, same cap and memory;
+three interleaved repeats; every candidate claim accepted by `470MI check` and
+`provari check` (9/9), every reference proof by `provari check` (9/9). Set
+members 25 = `strong` 20 + `held-out` 5; the row measures `strong` only.
+Factors 2.392 / 2.576 / 4.801 / 2.162 / 1.634 / 2.457 / 11.119 / 4.089 /
+2.291; geomean **3.104**. Censored 8, bounds 1.12–6.35; unstable 3
+(`9a8566095b1f`, `ae8763570b09`, `e026f93c8241`; reference spread
+67/50/28%), no factor. Candidate lengths 35/18/18/13/17/21/12/20/46 against
+reference mates 23/23/18/15/17/21/13/19/32; `child_evals`
+57.0M/0.9M/18.0M/1.8M/2.6M/15.7M/17.4M/44.8M/60.0M. **Row B (`guard`)**:
+coverage 3/3, both sides `--guide hand`, three repeats, claims 3/3 by both
+checkers; factors `core` 1.053, `easy-win` 1.233, `deep-win` 0.825, geomean
+**1.023** (`<= 1.05` gate held; cross-session vs movegen plan12's 1.001).
+Lengths 14/18/20 against mates 17/15/22; `child_evals` 3,896,430 / 904,368 /
+44,828,946. **Goal distance**: `goal-v1` reference (same `N`, 3-4-5
+tablebases) proves **20/20** strong cells, every claim accepted by `provari
+check` with tablebases; the candidate proves 9/20, so the distance factor is
+**2.971** over those 9, with 8 bounds 1.12–6.32 and 3 unstable. `N = 1` by
+calibration (`r(1) 10.024`, `r(2) 10.0237`, `r(4) 10.025`; `P = 4`,
+`Nmax = 4`), cap 10 s, memory 192 MB. Host identity is the candidate binary
+sha256 `25cc08d8…`, the platform string and the `core` reading (the
+container's UTS name is not the owner's host label). Completed candidate
+searches have identical `nodes`/`child_evals`/`mate` across repeats; the 8
+censored searches differ only in the counters at the 10 s wall cut (an
+`--evals`-fixed probe is identical). See `plans/foundation/report1.md` and
+`plans/foundation/measurements/plan1/`.
+
 ### Pins
 
 | Pin | HEAD | Rows |
 | --- | --- | --- |
-| `provari-v0.4.0` | `bceb1ee1faf7d9cf2422eb89c931be69ae30619d` | the 1.000 side of every factor |
+| `provari-v0.5.0` | `b87d179c01ef8eae92a8ae93e4ca8b3df924dd71` | the matched and goal reference of foundation plan1; binary sha256 `3cd1a4ec…7118842`, `network.nnue` `3d76258c…5c40b1`, `model.json` `51be8f47…31882b`, tablebase manifest `a0c7a69b…fdeefc37` |
+| `provari-v0.4.0` | `bceb1ee1faf7d9cf2422eb89c931be69ae30619d` | the 1.000 side of every hand-guard factor before foundation plan1 |
 | `470m1@<sha>` | _owner commits the plan2 tree_ | plan2 |
 | `470m1@<sha>` | _owner commits the plan3 tree_ | plan3 |
 | `470m1@<sha>` | _owner commits the plan4 tree_ | plan4 |
@@ -356,6 +400,7 @@ belong in its footnote or in the plan's `measurements/planN/README.md`.
 | `470MI@<sha>` | _owner commits the movegen plan10 tree_ | movegen plan10 |
 | `470MI@<sha>` | _owner commits the movegen plan11 tree_ | movegen plan11 |
 | `470MI@<sha>` | _owner commits the movegen plan12 tree_ | movegen plan12 |
+| `470MI@<sha>` | _owner commits the foundation plan1 tree_ | foundation plan1 |
 
 The product rename is decided (`MD4`, 2026-11-19): rows measured before the
 rename keep `470m1`; the first adapter row and later rows use `470MI`.
@@ -366,6 +411,12 @@ Chronological entries — including every plan session that appended no row —
 are in the active initiative's history (`history.md`, or the initiative's own
 history section). Only ledger-structure and lifecycle changes are kept here:
 
+- **2026-11-24** — bench v2 (`foundation` `F1`): reference re-pinned to
+  provari `v0.5.0`; three columns (`guard`, `matched-v1`, `goal-v1`); the
+  universe is `core` + `high200` minus 8 calibration cells (193 eligible);
+  `strong`/`held-out` set files are driver-gated; canonical cap 10 s, 192 MB,
+  `N` per host; first rows 3.104 (`matched-v1`, 9/20) and 1.023 (`guard`,
+  3/3), goal distance 2.971. Earlier rows unchanged.
 - **2026-11-24** — product PRD adopted (`PD1`): the goal column becomes
   full-feature provari at equal threads on `strong` + `held-out` sets
   (defined by `foundation` `F1`); all existing rows form the hand guard

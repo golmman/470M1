@@ -12,7 +12,8 @@ licence. A copied file keeps its upstream copyright and licence notice.
 
 | Source | Pin | Licence | Use |
 | --- | --- | --- | --- |
-| `aiorla/provari` | `bceb1ee1faf7d9cf2422eb89c931be69ae30619d` (`v0.4.0`) | GPL-3.0-or-later | Parity reference; code may be copied/adapted with provenance; external oracle process |
+| `aiorla/provari` | `b87d179c01ef8eae92a8ae93e4ca8b3df924dd71` (`v0.5.0`) | GPL-3.0-or-later | Current reference (`F1`); built from source with `--features bundled` as an external oracle process |
+| `aiorla/provari` | `bceb1ee1faf7d9cf2422eb89c931be69ae30619d` (`v0.4.0`) | GPL-3.0-or-later | Historical parity reference (rows up to movegen plan12); code may be copied/adapted with provenance; external oracle process |
 | `aiorla/provari` | `v0.1.0` (`48686bc6c786d6ea70568f0b2ad4002cf0520206`) | GPL-3.0-or-later | Single-threaded search core copied/adapted in plan2; see the rows below |
 | `golmman/atomi` | `a4802e7cbe7ea6338e99dd21d3b84dbd6f871f76` | MIT | Ideas, measured levers, bench/planning structure; code/data may be copied with provenance |
 | `golmman/atomic_solver` | `14abcf27ae34ec71f46d8bc82f300d44e02f5f57` | MIT | Ideas, fixtures, bench driver; code/data may be copied with provenance |
@@ -38,6 +39,18 @@ licence. A copied file keeps its upstream copyright and licence notice.
 | `tests/fixtures/veto.tsv` | atomi `tests/fixtures/veto.tsv` | `34a23421fb0d3d35ed8b8fdcd63d50cc1f0a18bf37315cc503f60ac56c36dba9` | 2026-11-17 | verbatim |
 | `tests/fixtures/never_prove.tsv` | atomi `tests/fixtures/never_prove.tsv` | `3568aad7d9cf44066dc7ab4be2366405687456fc5c239eebb38786ce2f5a6900` | 2026-11-17 | verbatim |
 | `bench/corpus.json` | atomi `bench/corpus.json` (`corpus-v1`) | `9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e` | 2026-11-17 | verbatim |
+| `bench/high200.jsonl` | provari `v0.5.0` (`b87d179`) `bench/high200.jsonl` | `857496451612904ef4eddc77a93ae4328f00d603b7755c49b8ae114d89682af6` | 2026-11-24 | verbatim |
+
+## Data pins
+
+Not committed; fetched by `data/fetch.sh` (network and model) and
+`scripts/fetch_tablebases.sh` (3-4-5 win tables).
+
+| Data | sha256 |
+| --- | --- |
+| provari `data/network.nnue` | `3d76258c556ce216d088f89ff094dadab4310e3838110c64f66049b6ab5c40b1` |
+| provari `data/model.json` | `51be8f472304ce535a385ad88906c75a976e5c8d2b267162bd9818a59231882b` |
+| Lichess Atomic `3-4-5/3-4-5.atbw.md5` | `a0c7a69bc720dae8c77a776810d2f33486c153655cebdef229e27a40fdeefc37` |
 
 ## Independent material
 

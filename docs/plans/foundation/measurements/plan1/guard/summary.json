@@ -1,0 +1,113 @@
+{
+  "cells": [
+    {
+      "id": "1eb80b92f92c",
+      "fen": "rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1",
+      "cap_s": 10.0,
+      "ref": {
+        "walls_s": [
+          0.11,
+          0.1093,
+          0.1105
+        ],
+        "found": 3,
+        "median_wall_s": 0.11,
+        "spread": 0.0109,
+        "mate": 15,
+        "nodes": 72523
+      },
+      "cand": {
+        "walls_s": [
+          0.1367,
+          0.1356,
+          0.1144
+        ],
+        "found": 3,
+        "median_wall_s": 0.1356,
+        "spread": 0.1645,
+        "mate": 18,
+        "nodes": 68692,
+        "child_evals": 904368
+      },
+      "status": "claimed",
+      "factor": 1.2327,
+      "bound": null
+    },
+    {
+      "id": "core",
+      "fen": "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1",
+      "cap_s": 10.0,
+      "ref": {
+        "walls_s": [
+          0.4824,
+          0.4863,
+          0.4858
+        ],
+        "found": 3,
+        "median_wall_s": 0.4858,
+        "spread": 0.008,
+        "mate": 17,
+        "nodes": 342289
+      },
+      "cand": {
+        "walls_s": [
+          0.4868,
+          0.5113,
+          0.5149
+        ],
+        "found": 3,
+        "median_wall_s": 0.5113,
+        "spread": 0.055,
+        "mate": 14,
+        "nodes": 350430,
+        "child_evals": 3896430
+      },
+      "status": "claimed",
+      "factor": 1.0525,
+      "bound": null
+    },
+    {
+      "id": "db6a741c723f",
+      "fen": "rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1",
+      "cap_s": 10.0,
+      "ref": {
+        "walls_s": [
+          6.2357,
+          6.2304,
+          6.2529
+        ],
+        "found": 3,
+        "median_wall_s": 6.2357,
+        "spread": 0.0036,
+        "mate": 22,
+        "nodes": 4574912
+      },
+      "cand": {
+        "walls_s": [
+          5.1417,
+          5.1432,
+          5.1167
+        ],
+        "found": 3,
+        "median_wall_s": 5.1417,
+        "spread": 0.0052,
+        "mate": 20,
+        "nodes": 3553009,
+        "child_evals": 44828946
+      },
+      "status": "claimed",
+      "factor": 0.8246,
+      "bound": null
+    }
+  ],
+  "claimed": [
+    "1eb80b92f92c",
+    "core",
+    "db6a741c723f"
+  ],
+  "censored": [],
+  "unstable": [],
+  "coverage": "3/3",
+  "geomean": 1.0228,
+  "bounds": {}
+}

@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-24T22:03:27.188405+00:00",
+  "host": "f54c552f3ece",
+  "platform": "Linux-7.3.4-401.asahi.fc44.aarch64+16k-aarch64-with-glibc2.43",
+  "nproc": 4,
+  "python": "3.14.10",
+  "rustc": "rustc 1.100.0 (0ef1bc386 2026-11-09)",
+  "provari": "/tmp/470M1-oracle/provari/target/release/provari",
+  "provari_version": "provari 0.5.0, with its network and model built in",
+  "provari_sha256": "3cd1a4ecf4aed82ca3b37f1e4a5af55d9457a0b1f4b44dfb8cb5abebe7118842",
+  "oracle_commit": "b87d179c01ef8eae92a8ae93e4ca8b3df924dd71",
+  "candidate": "target/release/470MI",
+  "candidate_sha256": "25cc08d869699f2ec061afabc8a3539c37dce53f3e8fe8e959f1500bcf427fee",
+  "cap_s": 10.0,
+  "memory_mb": 192,
+  "repeats": 3,
+  "guide": "model",
+  "candidate_guide": "hand",
+  "seed": 0,
+  "threads": 1,
+  "tablebases": "/tmp/470M1-oracle/tablebases/3-4-5",
+  "network": null,
+  "model": null,
+  "digests": {
+    "network": "3d76258c556ce216d088f89ff094dadab4310e3838110c64f66049b6ab5c40b1",
+    "model": "51be8f472304ce535a385ad88906c75a976e5c8d2b267162bd9818a59231882b",
+    "tablebase_manifest": "a0c7a69bc720dae8c77a776810d2f33486c153655cebdef229e27a40fdeefc37"
+  },
+  "cwd": "/workspace/470M1",
+  "nproc_reported": 4,
+  "mode": "calibrate",
+  "nmax": 4,
+  "threads_list": [
+    1,
+    2,
+    4
+  ],
+  "r": {
+    "1": 10.024,
+    "2": 10.0237,
+    "4": 10.025
+  },
+  "median_walls": {
+    "1": {
+      "03632aa611e9": 10.0222,
+      "1a905138dda1": 10.0246,
+      "22437bdb6ec2": 10.0251,
+      "34264cae3289": 10.025,
+      "af4dcd47ad3b": 10.0291,
+      "dfaf0b545c9d": 10.0229,
+      "e0a7b5ab5729": 10.0218,
+      "f643b72c5e1d": 10.0214
+    },
+    "2": {
+      "03632aa611e9": 10.0243,
+      "1a905138dda1": 10.0234,
+      "22437bdb6ec2": 10.0244,
+      "34264cae3289": 10.0233,
+      "af4dcd47ad3b": 10.0228,
+      "dfaf0b545c9d": 10.0251,
+      "e0a7b5ab5729": 10.0239,
+      "f643b72c5e1d": 10.0227
+    },
+    "4": {
+      "03632aa611e9": 10.0269,
+      "1a905138dda1": 10.0254,
+      "22437bdb6ec2": 10.026,
+      "34264cae3289": 10.0259,
+      "af4dcd47ad3b": 10.0243,
+      "dfaf0b545c9d": 10.0244,
+      "e0a7b5ab5729": 10.0244,
+      "f643b72c5e1d": 10.023
+    }
+  },
+  "chosen_n": 1
+}

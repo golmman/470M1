@@ -2,7 +2,9 @@
 
 ## Status
 
-**Proposed (2026-11-24)**, `PD4`. No plan yet.
+**In progress (2026-11-24)**, `PD4`. `F1` (bench v2) is done:
+[plan1](plan1.md) → [report1](report1.md), first matched row 3.104 and guard
+1.023. `F2`–`F7` next.
 
 ## Goal
 

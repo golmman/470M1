@@ -1,0 +1,170 @@
+{
+  "column": "matched-v1",
+  "kind": "strong",
+  "cap_s": 10.0,
+  "memory_mb": 192,
+  "guide": "model",
+  "seed": 0,
+  "threads": 1,
+  "tablebases": null,
+  "corpus_sha256": "9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e",
+  "high200_sha256": "857496451612904ef4eddc77a93ae4328f00d603b7755c49b8ae114d89682af6",
+  "members": [
+    "1051b3d28a27",
+    "18985b7b1ff9",
+    "1afa6ba696a7",
+    "1eb80b92f92c",
+    "285455b84001",
+    "3f93a07c874f",
+    "4445f150cfad",
+    "4610032faa96",
+    "61e7a0c5244b",
+    "62e7209914b8",
+    "69b38a99ef0a",
+    "889610a7f3d7",
+    "8ac94bdaadd9",
+    "9a8566095b1f",
+    "acb4a127c8c8",
+    "ae8763570b09",
+    "b9a7ed7eb368",
+    "c2bf494a61e0",
+    "c5809c3fdba1",
+    "core",
+    "db6a741c723f",
+    "dd3f89766a40",
+    "dfc0cc9f9cf8",
+    "e026f93c8241",
+    "faee216ab7f0"
+  ],
+  "strong": [
+    "1051b3d28a27",
+    "18985b7b1ff9",
+    "1afa6ba696a7",
+    "1eb80b92f92c",
+    "3f93a07c874f",
+    "4445f150cfad",
+    "4610032faa96",
+    "61e7a0c5244b",
+    "69b38a99ef0a",
+    "889610a7f3d7",
+    "8ac94bdaadd9",
+    "9a8566095b1f",
+    "ae8763570b09",
+    "b9a7ed7eb368",
+    "c2bf494a61e0",
+    "c5809c3fdba1",
+    "db6a741c723f",
+    "dd3f89766a40",
+    "dfc0cc9f9cf8",
+    "e026f93c8241"
+  ],
+  "held_out": [
+    "285455b84001",
+    "62e7209914b8",
+    "acb4a127c8c8",
+    "core",
+    "faee216ab7f0"
+  ],
+  "cells": [
+    {
+      "id": "1051b3d28a27",
+      "fen": "rnbq1rk1/p2p2pp/2p1pp1n/1p6/3PP1PP/2NB4/PPP2P2/R1BQK2R w KQ - 0 1"
+    },
+    {
+      "id": "18985b7b1ff9",
+      "fen": "rnbqk1nr/p2pp2p/2p3p1/1p2Pp2/3P4/2NB4/PPP2PPP/R1BQK2R w KQkq - 0 1"
+    },
+    {
+      "id": "1afa6ba696a7",
+      "fen": "rnbqkb1r/pppp2pp/5n2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "1eb80b92f92c",
+      "fen": "rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1"
+    },
+    {
+      "id": "285455b84001",
+      "fen": "rnbqkb1r/pppp2pp/5n2/3P1pN1/4p3/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "3f93a07c874f",
+      "fen": "rnbqkbnr/pppp2p1/8/3P1pNp/4p3/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "4445f150cfad",
+      "fen": "rnbq1bnr/pp1ppkpp/2p2p2/1N6/8/5N2/PPPPPPPP/R1BQKB1R w KQ - 0 1"
+    },
+    {
+      "id": "4610032faa96",
+      "fen": "rnbqkb1r/pppp2pp/7n/3P1pN1/4p3/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "61e7a0c5244b",
+      "fen": "r1bqkbnr/pppp2pp/n7/3P1pN1/4p3/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "62e7209914b8",
+      "fen": "r1b1kbnr/pppp2pp/n4q2/4ppN1/1P1P4/8/P1P1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "69b38a99ef0a",
+      "fen": "rnb1kbnr/pp2p1pp/2pq1p2/3p2N1/3PP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "889610a7f3d7",
+      "fen": "rnbqkbnr/pppp3p/6p1/3P1pN1/4p3/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "8ac94bdaadd9",
+      "fen": "rnb1kbnr/pppp2pp/8/4pp2/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "9a8566095b1f",
+      "fen": "rnbqkb1r/pp1pp1pp/5p1n/2p5/3P2P1/2N2N2/PPP1PP1P/R1BQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "acb4a127c8c8",
+      "fen": "r1bqkbnr/p1p3pp/n7/1p1pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "ae8763570b09",
+      "fen": "rnbqkbnr/pp2p1p1/2pp1p1p/6N1/4P3/2N5/PPPP1PPP/R1BQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "b9a7ed7eb368",
+      "fen": "rnbqkbnr/p1pp2pp/8/1p1P1pN1/4p3/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "c2bf494a61e0",
+      "fen": "rnb1kbnr/ppppq1pp/8/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "c5809c3fdba1",
+      "fen": "rnb1kb1r/pp1p3p/2p1ppp1/3P4/4PB2/8/PPP2P1P/R2QKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "core",
+      "fen": "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "db6a741c723f",
+      "fen": "rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "dd3f89766a40",
+      "fen": "rnbqkbnr/pp1p2pp/2p5/3P1pN1/4p3/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "dfc0cc9f9cf8",
+      "fen": "rnbqkb1r/pp2p2p/2p2pp1/3P1n2/4P1P1/2N5/PPP2P1P/R1BQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "e026f93c8241",
+      "fen": "rnbqkbnr/pp2p1pp/2p5/3p1pN1/4P3/2N5/PPPP1PPP/R1BQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "faee216ab7f0",
+      "fen": "rnbq1b1r/pppppkpp/5p1n/8/6P1/2N2N2/PPPPPP1P/R1BQKB1R w KQ - 0 1"
+    }
+  ]
+}

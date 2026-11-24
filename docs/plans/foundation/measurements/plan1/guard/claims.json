@@ -1,0 +1,204 @@
+{
+  "reference": [
+    {
+      "id": "1eb80b92f92c",
+      "run": {
+        "wall_s": 0.1095,
+        "returncode": 0,
+        "found": true,
+        "mate": 15,
+        "nodes": 72523,
+        "child_evals": null,
+        "ms": 100,
+        "error": null,
+        "command": [
+          "/tmp/470M1-oracle/provari/target/release/provari",
+          "prove",
+          "rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan1/guard/proofs/reference/1eb80b92f92c.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan1/guard/proofs/reference/1eb80b92f92c.pvr",
+      "verdict": true,
+      "exit": 0
+    },
+    {
+      "id": "core",
+      "run": {
+        "wall_s": 0.492,
+        "returncode": 0,
+        "found": true,
+        "mate": 17,
+        "nodes": 342289,
+        "child_evals": null,
+        "ms": 483,
+        "error": null,
+        "command": [
+          "/tmp/470M1-oracle/provari/target/release/provari",
+          "prove",
+          "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan1/guard/proofs/reference/core.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan1/guard/proofs/reference/core.pvr",
+      "verdict": true,
+      "exit": 0
+    },
+    {
+      "id": "db6a741c723f",
+      "run": {
+        "wall_s": 6.2337,
+        "returncode": 0,
+        "found": true,
+        "mate": 22,
+        "nodes": 4574912,
+        "child_evals": null,
+        "ms": 6223,
+        "error": null,
+        "command": [
+          "/tmp/470M1-oracle/provari/target/release/provari",
+          "prove",
+          "rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan1/guard/proofs/reference/db6a741c723f.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan1/guard/proofs/reference/db6a741c723f.pvr",
+      "verdict": true,
+      "exit": 0
+    }
+  ],
+  "candidate": [
+    {
+      "id": "1eb80b92f92c",
+      "run": {
+        "wall_s": 0.1413,
+        "returncode": 0,
+        "found": true,
+        "mate": 18,
+        "nodes": 68692,
+        "child_evals": 904368,
+        "ms": 131,
+        "error": null,
+        "command": [
+          "target/release/470MI",
+          "prove",
+          "rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan1/guard/proofs/candidate/1eb80b92f92c.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan1/guard/proofs/candidate/1eb80b92f92c.pvr",
+      "ours": true,
+      "ours_exit": 0,
+      "theirs": true,
+      "theirs_exit": 0
+    },
+    {
+      "id": "core",
+      "run": {
+        "wall_s": 0.5388,
+        "returncode": 0,
+        "found": true,
+        "mate": 14,
+        "nodes": 350430,
+        "child_evals": 3896430,
+        "ms": 490,
+        "error": null,
+        "command": [
+          "target/release/470MI",
+          "prove",
+          "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan1/guard/proofs/candidate/core.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan1/guard/proofs/candidate/core.pvr",
+      "ours": true,
+      "ours_exit": 0,
+      "theirs": true,
+      "theirs_exit": 0
+    },
+    {
+      "id": "db6a741c723f",
+      "run": {
+        "wall_s": 5.2586,
+        "returncode": 0,
+        "found": true,
+        "mate": 20,
+        "nodes": 3553009,
+        "child_evals": 44828946,
+        "ms": 5107,
+        "error": null,
+        "command": [
+          "target/release/470MI",
+          "prove",
+          "rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan1/guard/proofs/candidate/db6a741c723f.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan1/guard/proofs/candidate/db6a741c723f.pvr",
+      "ours": true,
+      "ours_exit": 0,
+      "theirs": true,
+      "theirs_exit": 0
+    }
+  ]
+}

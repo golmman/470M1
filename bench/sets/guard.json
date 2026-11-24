@@ -1,0 +1,37 @@
+{
+  "column": "guard",
+  "kind": "guard",
+  "cap_s": 10.0,
+  "memory_mb": 192,
+  "guide": "hand",
+  "seed": 0,
+  "threads": 1,
+  "tablebases": null,
+  "corpus_sha256": "9cd0169a30bb7d5b162b6a1ec119fe194b776c8a24a46cdf1582c07062847d0e",
+  "high200_sha256": "857496451612904ef4eddc77a93ae4328f00d603b7755c49b8ae114d89682af6",
+  "members": [
+    "core",
+    "1eb80b92f92c",
+    "db6a741c723f"
+  ],
+  "strong": [
+    "core",
+    "1eb80b92f92c",
+    "db6a741c723f"
+  ],
+  "held_out": [],
+  "cells": [
+    {
+      "id": "core",
+      "fen": "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1"
+    },
+    {
+      "id": "1eb80b92f92c",
+      "fen": "rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1"
+    },
+    {
+      "id": "db6a741c723f",
+      "fen": "rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1"
+    }
+  ]
+}
