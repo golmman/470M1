@@ -150,12 +150,25 @@ Then i think the idea of the `tune` initiative of `atomic_solver` might also be 
 
 ---
 
-Product requirements document
+Documentation Session. No code changes.
+
+I wrote a short product requirements document in order to make my intent more precise and provide guidance for the a solid architecture.
+Note that we compiled a list of upcoming initiative ideas in `docs/notes/ideas.md`.
+
+Align the existing documentation with the given requirements and build architecture and code guidelines accordingly.
+
+If there are load bearing questions and decisions to be made, let's discuss them.
+
+**PRD**
 
 * purpose and scope
   * become the fastest win prover
-* requirements
+* functional requirements
   * configurabilty via cli and config-file
+  * robust error handling
+  * human readable stdout logging
+    * error logs
+    * iterative deepening / progress logs
 * milestones
   * faster (wall-time) than full-feature provari (nnue, parallel, etc. all activated)
   * continuous building of a proof database similar to `atomic_solver`
