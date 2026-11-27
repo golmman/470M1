@@ -58,9 +58,9 @@ justification in the code and a finding in the next code audit.
 | Code | Meaning |
 | --- | --- |
 | 0 | success (including "no win found") |
-| 1 | a checked proof is invalid |
+| 1 | a checked proof is invalid, or `line` on an invalid proof |
 | 2 | usage or configuration error |
-| 3 | runtime failure: I/O, memory, a failed sub-process (`foundation`) |
+| 3 | runtime failure: I/O, memory, a failed sub-process or thread, a closed stdout |
 
 ## Configuration
 

@@ -1,0 +1,40 @@
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 9 tests
+.........
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.86s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.34s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 18 tests
+..................
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.18s; merged doctests compilation took 0.18s
+make[1]: Leaving directory '/workspace/470M1'
+make veto
+make[1]: Entering directory '/workspace/470M1'
+scripts/veto.sh
+== accept tests/fixtures/proofs/core.pvr
+== accept tests/fixtures/proofs/deep-win.pvr
+== accept tests/fixtures/proofs/detour.pvr
+== accept tests/fixtures/proofs/easy-win.pvr
+== accept tests/fixtures/proofs/m1_checkmate.pvr
+== accept tests/fixtures/proofs/m1_explosion.pvr
+== accept tests/fixtures/proofs/m2.pvr
+== accept tests/fixtures/proofs/mate_100th_ply.pvr
+== accept tests/fixtures/proofs/smallest_win.pvr
+== reject tests/fixtures/controls/core-truncated.pvr
+veto: all fixtures accepted, all controls rejected
+make[1]: Leaving directory '/workspace/470M1'

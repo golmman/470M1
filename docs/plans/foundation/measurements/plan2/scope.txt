@@ -1,0 +1,4 @@
+---
+ src/check.rs  | 103 ++++++++++++++++++++++++++++------------------------------
+ src/format.rs |  14 +-------
+ 2 files changed, 51 insertions(+), 66 deletions(-)

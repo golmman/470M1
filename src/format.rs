@@ -9,8 +9,7 @@
 //! zstd frame and header fields are unchanged.
 
 use std::collections::{HashMap, HashSet};
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs;
 use std::path::Path;
 
 use serde_json::{Value, json};
@@ -307,17 +306,6 @@ impl Chooser for FromFile<'_> {
         }
         Ok(index)
     }
-}
-
-/// Writes a proof's file through a temporary one, so that a proof there is
-/// always whole.
-pub fn save(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    let error = |error: std::io::Error| format!("cannot write the proof: {error}");
-    let partial = path.with_extension("partial");
-    let mut out = File::create(&partial).map_err(error)?;
-    out.write_all(bytes).map_err(error)?;
-    out.sync_all().map_err(error)?;
-    fs::rename(&partial, path).map_err(error)
 }
 
 /// A proof of `root` as the bytes of its file, and its header.

@@ -66,6 +66,16 @@ sha256s and the data digests in `env.json`, and refuses to run if any differ.
 `--expect-set-sha256`, `--expect-provari-sha256` and
 `--expect-candidate-sha256` pin a re-run to the set file and the two binaries
 a row recorded (their digests are in `docs/bench.md` and `env.json`).
+
+`--side cand --baseline-bin PATH` compares two candidate binaries without a
+provari reference: each repeat of each cell runs `base` (the candidate
+command with the baseline binary) then `cand`, interleaved. The summary is
+the same shape with `base` for `ref`: claimed iff both sides found on every
+repeat and the base spread is under 20%, `factor = cand / base`, and per
+cell `counters_identical` says whether all found runs share
+(`mate`, `nodes`, `child_evals`, `expansions`). Without `--claim` no provari
+is needed: its gate is skipped and `env.json` records `provari` null plus
+`baseline` and `baseline_sha256`.
 Every run writes `results.json`, `summary.json`, `env.json` and `README.md`
 under the measurement directory; claims add `claims.json` and `proofs/`.
 

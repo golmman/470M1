@@ -2,9 +2,11 @@
 
 ## Status
 
-**In progress (2026-11-24)**, `PD4`. `F1` (bench v2) is done:
+**In progress (2026-11-27)**, `PD4`. `F1` (bench v2) is done:
 [plan1](plan1.md) → [report1](report1.md), first matched row 3.104 and guard
-1.023. `F2`–`F7` next.
+1.023. `F3` and the app half of `F2` are done: [plan2](plan2.md) →
+[report2](report2.md), cand/old guard 1.0078 on the rerun, `core` `Ir`
++0.003%. Library error enums (`F2`) next, then `F4`–`F7`.
 
 ## Goal
 
@@ -51,6 +53,11 @@ initiatives.
 
 Suggested order: F1 (measurement only, gives the baseline), F2 + F3 (the CLI
 edge), F4, F5, F6, F7. The plan session may regroup items into plans.
+
+**Regrouping (plan 2):** F2 splits — the app half (exit codes, atomic
+writes) and F3 are plan 2; the library error enums and the `expect`
+invariant audit are plan 3. `check`'s argument parsing moved from F6 into
+plan 2: clap owns every flag.
 
 ## Risks
 

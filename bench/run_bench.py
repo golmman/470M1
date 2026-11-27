@@ -153,9 +153,10 @@ class Runner:
             command += ["--proofs", proofs]
         return command
 
-    def candidate(self, fen: str, proofs: str | None = None) -> list[str]:
+    def candidate(self, fen: str, proofs: str | None = None,
+                  bin: str | None = None) -> list[str]:
         command = [
-            self.o.bin, "prove", fen,
+            bin or self.o.bin, "prove", fen,
             "--seconds", str(int(self.o.seconds)),
             "--memory", str(self.o.memory),
             "--guide", self.o.candidate_guide,
@@ -183,6 +184,7 @@ class Runner:
             "mate": payload.get("mate"),
             "nodes": payload.get("nodes"),
             "child_evals": payload.get("child_evals"),
+            "expansions": payload.get("expansions"),
             "ms": payload.get("ms"),
             "error": payload.get("error"),
             "command": command,
@@ -190,34 +192,40 @@ class Runner:
 
 
 def factor_rows(rows: list[dict], repeats: int, cap_s: float,
-                cells: dict[str, str]) -> dict:
-    """Per-cell reference and candidate medians and the factor."""
+                cells: dict[str, str], left: str = "ref",
+                right: str = "cand") -> dict:
+    """Per-cell medians of the two sides and the factor right/left."""
     summary: dict = {}
     for row in rows:
         cell = summary.setdefault(row["id"], {
             "id": row["id"],
             "fen": cells[row["id"]],
             "cap_s": cap_s,
-            "ref": {"walls_s": [], "found": 0, "mates": [], "nodes": []},
-            "cand": {"walls_s": [], "found": 0, "mates": [], "child_evals": [],
-                     "nodes": []},
+            "sides": [left, right],
+            left: {"walls_s": [], "found": 0, "mates": [], "nodes": []},
+            right: {"walls_s": [], "found": 0, "mates": [], "child_evals": [],
+                    "nodes": []},
+            "_counters": set(),
         })
-        side = cell["ref"] if row["side"] == "ref" else cell["cand"]
+        side = cell[left] if row["side"] == left else cell[right]
         side["walls_s"].append(row["wall_s"])
         if row["found"]:
             side["found"] += 1
+            cell["_counters"].add((row.get("mate"), row.get("nodes"),
+                                   row.get("child_evals"),
+                                   row.get("expansions")))
             if row["mate"] is not None:
                 side["mates"].append(row["mate"])
-            if side is cell["ref"] and row["nodes"] is not None:
+            if side is cell[left] and row["nodes"] is not None:
                 side["nodes"].append(row["nodes"])
-            if side is cell["cand"]:
+            if side is cell[right]:
                 if row["child_evals"] is not None:
                     side["child_evals"].append(row["child_evals"])
                 if row["nodes"] is not None:
                     side["nodes"].append(row["nodes"])
 
     for cell in summary.values():
-        for side in ("ref", "cand"):
+        for side in cell["sides"]:
             walls = cell[side]["walls_s"]
             cell[side]["median_wall_s"] = round(statistics.median(walls), 4)
             cell[side]["spread"] = round(spread(walls), 4)
@@ -228,8 +236,11 @@ def factor_rows(rows: list[dict], repeats: int, cap_s: float,
             evals = cell[side].pop("child_evals", None)
             if evals is not None:
                 cell[side]["child_evals"] = evals[-1] if evals else None
-        ref = cell["ref"]
-        cand = cell["cand"]
+        counters = cell.pop("_counters")
+        cell["counters_identical"] = (
+            len(counters) == 1 if counters else None)
+        ref = cell[left]
+        cand = cell[right]
         cell["status"] = "censored"
         cell["factor"] = None
         cell["bound"] = None
@@ -258,7 +269,8 @@ def summarize(summary: dict, cap_s: float) -> dict:
             unstable.append(cell["id"])
         else:
             censored.append(cell["id"])
-            if cell["ref"]["found"] and cell["bound"]:
+            base = cell.get("ref") or cell.get("base") or {}
+            if base.get("found") and cell["bound"]:
                 bounds[cell["id"]] = cell["bound"]
     factors = [c["factor"] for c in summary.values() if c["factor"] is not None]
     ordered = sorted(summary.values(), key=lambda c: c["id"])
@@ -303,12 +315,16 @@ def env_record(o: argparse.Namespace, digests: dict) -> dict:
         "nproc": nproc(),
         "python": platform.python_version(),
         "rustc": rustc,
-        "provari": o.provari,
+        "provari": o.provari if Path(o.provari).is_file() else None,
         "provari_version": subprocess.run(
             [o.provari, "--version"], capture_output=True, text=True,
             check=False,
-        ).stdout.strip(),
-        "provari_sha256": sha256(Path(o.provari)),
+        ).stdout.strip() if Path(o.provari).is_file() else None,
+        "provari_sha256": sha256(Path(o.provari))
+        if Path(o.provari).is_file() else None,
+        "baseline": o.baseline_bin,
+        "baseline_sha256": sha256(Path(o.baseline_bin))
+        if o.baseline_bin else None,
         "oracle_commit": REF_COMMIT,
         "candidate": o.bin,
         "candidate_sha256": sha256(Path(o.bin)) if o.bin else None,
@@ -351,6 +367,21 @@ def data_digests(o: argparse.Namespace) -> dict:
 
 
 def check_gates(o: argparse.Namespace) -> None:
+    if o.baseline_bin:
+        if o.side != "cand":
+            fail("--baseline-bin runs only with --side cand")
+        if not Path(o.baseline_bin).is_file():
+            fail(f"missing baseline: {o.baseline_bin}")
+        if not o.claim:
+            # base/cand rows need no provari reference.
+            if not Path(o.bin).is_file():
+                fail(f"missing candidate: {o.bin}")
+            if o.expect_candidate_sha256:
+                got = sha256(Path(o.bin))
+                if got != o.expect_candidate_sha256:
+                    fail(f"candidate sha256 mismatch: "
+                         f"{got} != {o.expect_candidate_sha256}")
+            return
     if not Path(o.provari).is_file():
         fail(f"missing reference: {o.provari}")
     version = subprocess.run(
@@ -456,21 +487,29 @@ def mode_row(o: argparse.Namespace, runner: Runner, cells: dict[str, str],
     out = Path(o.out)
     out.mkdir(parents=True, exist_ok=True)
     rows = []
+    baseline = o.baseline_bin
     for cell in selected:
         for repeat in range(1, o.repeats + 1):
-            sides = ["ref", "cand"] if side == "both" else [side]
+            if baseline:
+                sides = ["base", "cand"]
+            else:
+                sides = ["ref", "cand"] if side == "both" else [side]
             for which in sides:
                 if which == "ref":
                     row = runner.run(runner.reference(cell["fen"]))
+                elif which == "base":
+                    row = runner.run(runner.candidate(
+                        cell["fen"], bin=baseline))
                 else:
                     row = runner.run(runner.candidate(cell["fen"]))
                 row.update({"id": cell["id"], "side": which, "repeat": repeat})
                 rows.append(row)
                 print(f"{cell['id']} {which} {repeat}/{o.repeats} "
                       f"{row['wall_s']:.3f}s found={row['found']}", flush=True)
-    if side == "both":
+    if side == "both" or baseline:
         summary = summarize(
-            factor_rows(rows, o.repeats, o.seconds, cells), o.seconds)
+            factor_rows(rows, o.repeats, o.seconds, cells,
+                        left="base" if baseline else "ref"), o.seconds)
     else:
         summary = summarize_single(rows, side, o.seconds, cells)
     env = env_record(o, digests)
@@ -552,8 +591,10 @@ def write_outputs(out: Path, o: argparse.Namespace, rows: list[dict],
         "| --- | ---: | ---: | ---: | --- | ---: | ---: |",
     ]
     for cell in summary.get("cells", []):
-        if "ref" in cell and "cand" in cell:
-            ref = cell.get("ref", {})
+        pair = next((name for name in ("ref", "base")
+                     if name in cell and "cand" in cell), None)
+        if pair:
+            ref = cell.get(pair, {})
             cand = cell.get("cand", {})
             lines.append(
                 f"| `{cell['id']}` | {ref.get('median_wall_s', '-')} | "
@@ -581,7 +622,7 @@ def claim_cells(o: argparse.Namespace, runner: Runner, summary: dict,
     for cell in summary["cells"]:
         if cell["status"] != "claimed":
             continue
-        if only in (None, "ref"):
+        if only in (None, "ref") and not o.baseline_bin:
             claim_reference(o, runner, cell, proofs, result)
         if only in (None, "cand"):
             claim_candidate(o, runner, cell, proofs, result)
@@ -743,6 +784,9 @@ def args() -> argparse.Namespace:
     parser.add_argument("--provari", required=False,
                         default="/tmp/470M1-oracle/provari/target/release/provari")
     parser.add_argument("--bin", default="target/release/470MI")
+    parser.add_argument("--baseline-bin", default=None,
+                        help="interleave base,cand runs of two candidate "
+                             "binaries; only with --side cand")
     parser.add_argument("--corpus", default=str(CORPUS))
     parser.add_argument("--high200", default=str(HIGH200))
     parser.add_argument("--set", default=None)

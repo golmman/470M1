@@ -9,7 +9,7 @@ The single home of initiative status. Goal and milestones:
 | --- | --- | --- |
 | [`parity`](parity/initiative.md) | founding goal | **closed** 2026-11-17: 3/3 at 10 s, geomean 0.945 vs provari hand, 9/9 accepted ([report5](parity/report5.md)) |
 | [`movegen`](movegen/initiative.md) | founding goal | **closed** 2026-11-20: prover on `atomic-movegen`, checker on shakmaty, differential 0/0; `MD6` a dated miss, last row 1.001 ([report13](movegen/report13.md)) |
-| [`foundation`](foundation/initiative.md) | all; prepares `beat-provari` | **in progress** 2026-11-24: `F1` done (bench v2: matched 3.104, guard 1.023, goal distance 2.971; [report1](foundation/report1.md)); `F2`–`F7` next |
+| [`foundation`](foundation/initiative.md) | all; prepares `beat-provari` | **in progress** 2026-11-27: `F1` done ([report1](foundation/report1.md)); `F3` + `F2` edge done (config, exit codes, atomic writes; [report2](foundation/report2.md)); `F2` library errors, `F4`–`F7` next |
 
 ## Milestone map
 

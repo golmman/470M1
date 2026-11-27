@@ -15,6 +15,9 @@ atomic-movegen = { version = "=2.11.0", features = ["unsafe-optimizations"] }
 shakmaty = { version = "=0.30.1", features = ["variant"] }
 serde_json = "1"
 zstd = { version = "=0.13.3", default-features = false }
+clap = { version = "4.6.8", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
+toml = "1.2.1"
+serde = { version = "1.0.229", features = ["derive"] }
 
 [profile.release]
 debug = false

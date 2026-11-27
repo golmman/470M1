@@ -1,0 +1,28 @@
+# Every default the app holds, spelled out. Absent keys are absent in the
+# resolved config too (JSON null), so they appear here only as comments.
+
+[prove]
+# seconds: absent — the search is unbounded
+memory = 192
+guide = "hand"
+# proofs: absent — no proof is written
+json = false
+seed = 0
+# evals: absent — no evaluation limit
+
+[check]
+workers = 1
+# seconds: absent — no per-proof limit
+compact_only = false
+
+[line]
+# pgn: absent — no tree is written
+# until: absent — the tree is whole
+
+[bench]
+# out: absent — required per invocation (flag or file)
+# reference: absent — falls back to $PROVARI, else "provari"
+seconds = 10.0
+memory = 192
+guide = "hand"
+repeats = 3

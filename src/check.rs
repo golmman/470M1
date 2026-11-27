@@ -11,7 +11,7 @@
 //! so that a mistake in the prover's board, search or proofs cannot also hide
 //! in the check. It uses nothing from the rest of the crate (a test reads
 //! this file to make sure), and only its entry points are visible outside
-//! it, `run` and `check_proof`, so the prover can run the checker but not
+//! it, `check_paths` and `check_proof`, so the prover can run the checker but not
 //! borrow its parts. Keep it that way: a helper both sides need is written
 //! twice.
 //!
@@ -28,9 +28,9 @@
 //! the compact format also those it settles by a mate or a check that wins in
 //! two.
 //!
-//! `470MI check PROOF... [--workers N] [--seconds S] [--compact-only]`
-//! prints a JSON line for each proof, in order, and exits
-//! with 1 if any is not shown valid. A valid proof's line gives the attacker
+//! `470MI check PROOF... [--workers N] [--seconds S] [--compact-only]` maps
+//! to `check_paths`, which returns a JSON line for each proof, in order.
+//! A valid proof's line gives the attacker
 //! positions it proves, its length and the 50-move counter up to which its
 //! root may go, worked out as `docs/proof-format.md` describes (for JSON lines,
 //! the root's own). `valid` is false for a proof found wrong, and null for one
@@ -114,46 +114,44 @@ fn within(visits: &mut u64, deadline: Option<Instant>, places: usize) -> Result<
     Ok(())
 }
 
-/// Checks every proof given, and returns whether all are valid.
-pub fn run(args: &[String]) -> Result<bool, String> {
-    let mut proofs = Vec::new();
-    let mut workers = 1;
-    let mut limits = Limits::default();
-    let mut args = args.iter();
-    while let Some(arg) = args.next() {
-        let mut value = || args.next().ok_or(format!("{arg} needs a value"));
-        match arg.as_str() {
-            "--workers" => {
-                let parsed: usize = value()?.parse().map_err(|_| "bad --workers")?;
-                if parsed == 0 || parsed > MOST_WORKERS {
-                    return Err(format!("--workers is 1..={MOST_WORKERS}, not {parsed}"));
-                }
-                workers = parsed;
-            }
-            "--seconds" => {
-                let seconds: f64 = value()?.parse().map_err(|_| "bad --seconds")?;
-                if !seconds.is_finite() || seconds <= 0.0 {
-                    return Err(format!(
-                        "--seconds must be finite and positive, not {seconds}"
-                    ));
-                }
-                if Duration::try_from_secs_f64(seconds).is_err() {
-                    return Err(format!("--seconds is too large: {seconds}"));
-                }
-                limits.seconds = Some(seconds);
-            }
-            "--compact-only" => limits.compact_only = true,
-            unknown if unknown.starts_with("--") => {
-                return Err(format!("unknown option {unknown}: see 470MI --help"));
-            }
-            _ => proofs.push(PathBuf::from(arg)),
+/// What the caller limits a check to.
+#[derive(Clone, Copy, Debug)]
+pub struct CheckOptions {
+    /// How many checks run at a time, `1..=MOST_WORKERS`.
+    pub workers: usize,
+    /// The seconds a proof's check may take, finite and positive.
+    pub seconds: Option<f64>,
+    /// Whether proofs in JSON lines are refused.
+    pub compact_only: bool,
+}
+
+/// Checks every path's proof and returns its verdict line, in input order.
+/// Out-of-range options are an error here too, so the entry never panics.
+pub fn check_paths(proofs: &[PathBuf], options: CheckOptions) -> Result<Vec<Value>, String> {
+    if !(1..=MOST_WORKERS).contains(&options.workers) {
+        return Err(format!(
+            "workers is 1..={MOST_WORKERS}, not {}",
+            options.workers
+        ));
+    }
+    if let Some(seconds) = options.seconds {
+        if !seconds.is_finite() || seconds <= 0.0 {
+            return Err(format!(
+                "seconds must be finite and positive, not {seconds}"
+            ));
+        }
+        if Duration::try_from_secs_f64(seconds).is_err() {
+            return Err(format!("seconds is too large: {seconds}"));
         }
     }
     if proofs.is_empty() {
-        return Err(
-            "usage: 470MI check PROOF... [--workers N] [--seconds S] [--compact-only]".into(),
-        );
+        return Err("no proofs given".into());
     }
+    let limits = Limits {
+        seconds: options.seconds,
+        compact_only: options.compact_only,
+    };
+    let workers = options.workers;
     let next = AtomicUsize::new(0);
     let results = Mutex::new(vec![None; proofs.len()]);
     std::thread::scope(|scope| -> Result<(), String> {
@@ -187,17 +185,15 @@ pub fn run(args: &[String]) -> Result<bool, String> {
     let results = results
         .into_inner()
         .map_err(|_| "a checking thread stopped unexpectedly".to_owned())?;
-    let mut all_valid = true;
+    let mut lines = Vec::with_capacity(proofs.len());
     for (path, result) in proofs.iter().zip(results) {
         let result = result.ok_or("a proof was not checked")?;
-        let line = verdict(&path.display().to_string(), result);
-        all_valid &= line["valid"] == true;
-        println!("{line}");
+        lines.push(verdict(&path.display().to_string(), result));
     }
-    Ok(all_valid)
+    Ok(lines)
 }
 
-/// Checks one proof from its bytes, as `run` checks a file, without its
+/// Checks one proof from its bytes, as `check_paths` checks a file, without its
 /// limits on time: the JSON line it would print, named `name`. The browser
 /// build's entry point.
 pub fn check_proof(name: &str, bytes: &[u8]) -> Value {
@@ -1378,14 +1374,15 @@ mod tests {
         assert!(error.starts_with("a line can repeat"), "{error}");
     }
 
-    /// A misspelled option is refused, rather than checked as a proof.
+    /// An out-of-range worker count is an error, never a panic.
     #[test]
-    fn refuses_unknown_options() {
-        let args = ["proof.pvr", "--tablebase", "tables"].map(String::from);
-        assert_eq!(
-            super::run(&args),
-            Err("unknown option --tablebase: see 470MI --help".to_owned())
-        );
+    fn refuses_zero_workers() {
+        let options = super::CheckOptions {
+            workers: 0,
+            seconds: None,
+            compact_only: false,
+        };
+        assert!(super::check_paths(&[std::path::PathBuf::from("proof.pvr")], options).is_err());
     }
 
     /// The module's code, before its tests, names no path into the rest of
