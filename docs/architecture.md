@@ -79,22 +79,26 @@ flags + config file -> ProveConfig -> Position (rules)
   `proof-db`: resumable search seeded from the store, periodic checkpoints,
   progress logs, and proofs exported per subtree and checked.
 
-## As-built map (2026-11-27)
+## As-built map (2026-11-28)
 
 | Module | Size | Layer | Conformance |
 | --- | ---: | --- | --- |
 | `dfpn.rs` | 76 KB | search | too large: driver, numbers, hand guide, simulation, null replay, memory and mates in one file |
-| `check.rs` | 53 KB | checker | too large; entry is `check_paths` + `CheckOptions`, no parsing or printing |
+| `check.rs` | 57 KB | checker | too large; entry is `check_paths` + `CheckOptions`, no parsing or printing |
 | `moves.rs` | 36 KB | rules | too large: `Mover`, explosion facts and material rules |
-| `format.rs` | 25 KB | proof | large; walk and encoding mixed; `save` moved to `app::write` |
+| `format.rs` | 28 KB | proof | large; walk and encoding mixed; `save` moved to `app::write` |
 | `app/` | — | app | conforming: `cli` (clap), `values`, `config`, `error`, `write`, `commands/{prove,check,line,bench}` |
-| `table.rs`, `proofs.rs`, `lines.rs`, `board.rs` | 14–17 KB | — | — |
+| `table.rs`, `proofs.rs`, `lines.rs`, `board.rs` | 17–18 KB | — | — |
 | `main.rs` | ≤ 10 KB | app | entry only: parse, dispatch, print the error, exit |
 | `eval.rs`, `search.rs`, `types.rs`, `lib.rs`, `walk.rs`, `clock.rs` | ≤ 10 KB | — | conforming; `search.rs` is a reference baseline, unused by the CLI |
 
-Cross-cutting gaps: library `String` errors (plan 3); no progress
-logging (provari's was removed at the copy); about 90 `unwrap`/`expect`/
-`panic!` sites outside tests to audit.
+Cross-cutting gaps: library `String` errors are retired — every layer has
+its own error enum with `Display` and `std::error::Error` (plan 3). No
+progress logging (provari's was removed at the copy). Eleven panic-like
+sites remain outside tests, all `expect("invariant: ...")`: `board` 3,
+`moves` 6, `check` 1, `app/commands/bench` 1. The twelfth was the
+panicking `Dfpn::new`, which plan 3 removed; the old "~90" counted test
+code.
 
 **Indicative splits** (the `foundation` plans derive the final cut from the
 code):

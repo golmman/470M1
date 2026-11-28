@@ -1,0 +1,4 @@
+Plan 3 guard proofs vs plan 2's guard/proofs/candidate: byte-identical.
+1eb80b92f92c.pvr  32ffb30d96ccb172d406faeee0c8f1c33c31b4bb2944bb463ca9ba89b9918684
+core.pvr          714723211c7a024663881606b621b250234c83b92df9290ab3311396e0cb54b3
+db6a741c723f.pvr  50f062de2a67b1dd1191a1a12d4064ee9d143441f17ee94819ee34138aafd5d0

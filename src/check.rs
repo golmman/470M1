@@ -40,6 +40,7 @@
 //! With `--compact-only` it refuses JSON lines, which a server need not read.
 
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -82,6 +83,57 @@ const MOST_PLACES: usize = 20_000_000;
 /// must already be.
 const LAST: u32 = 99;
 
+/// Why a check cannot start or finish: the command's entry failed.
+#[derive(Debug)]
+pub enum Error {
+    /// The options are out of range, or no proof was given.
+    Options(String),
+    /// A checking thread could not start or stopped.
+    Thread(String),
+    /// A proof was not checked.
+    Incomplete,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Options(message) | Error::Thread(message) => write!(out, "{message}"),
+            Error::Incomplete => write!(out, "a proof was not checked"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
+/// Why one proof is invalid, or cannot be checked.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Rejection {
+    /// The proof is wrong.
+    Invalid(String),
+    /// The checker cannot decide: beyond its limits or tablebases.
+    Unchecked(String),
+}
+
+impl Rejection {
+    fn invalid(message: impl Into<String>) -> Rejection {
+        Rejection::Invalid(message.into())
+    }
+
+    fn unchecked(message: impl Into<String>) -> Rejection {
+        Rejection::Unchecked(message.into())
+    }
+}
+
+impl fmt::Display for Rejection {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Rejection::Invalid(message) | Rejection::Unchecked(message) => write!(out, "{message}"),
+        }
+    }
+}
+
+impl std::error::Error for Rejection {}
+
 /// What the command line limits a check to.
 #[derive(Clone, Copy, Default)]
 struct Limits {
@@ -100,16 +152,20 @@ impl Limits {
 
 /// Stops a walk at its limits, looked at on its first position and every
 /// 1,024th after.
-fn within(visits: &mut u64, deadline: Option<Instant>, places: usize) -> Result<(), String> {
+fn within(visits: &mut u64, deadline: Option<Instant>, places: usize) -> Result<(), Rejection> {
     *visits += 1;
     if *visits % 1024 != 1 {
         return Ok(());
     }
     if deadline.is_some_and(|deadline| Instant::now() > deadline) {
-        return Err("cannot check: it takes longer than the time allowed".into());
+        return Err(Rejection::unchecked(
+            "cannot check: it takes longer than the time allowed",
+        ));
     }
     if places > MOST_PLACES {
-        return Err(format!("cannot check: more than {MOST_PLACES} positions"));
+        return Err(Rejection::unchecked(format!(
+            "cannot check: more than {MOST_PLACES} positions"
+        )));
     }
     Ok(())
 }
@@ -127,25 +183,25 @@ pub struct CheckOptions {
 
 /// Checks every path's proof and returns its verdict line, in input order.
 /// Out-of-range options are an error here too, so the entry never panics.
-pub fn check_paths(proofs: &[PathBuf], options: CheckOptions) -> Result<Vec<Value>, String> {
+pub fn check_paths(proofs: &[PathBuf], options: CheckOptions) -> Result<Vec<Value>, Error> {
     if !(1..=MOST_WORKERS).contains(&options.workers) {
-        return Err(format!(
+        return Err(Error::Options(format!(
             "workers is 1..={MOST_WORKERS}, not {}",
             options.workers
-        ));
+        )));
     }
     if let Some(seconds) = options.seconds {
         if !seconds.is_finite() || seconds <= 0.0 {
-            return Err(format!(
+            return Err(Error::Options(format!(
                 "seconds must be finite and positive, not {seconds}"
-            ));
+            )));
         }
         if Duration::try_from_secs_f64(seconds).is_err() {
-            return Err(format!("seconds is too large: {seconds}"));
+            return Err(Error::Options(format!("seconds is too large: {seconds}")));
         }
     }
     if proofs.is_empty() {
-        return Err("no proofs given".into());
+        return Err(Error::Options("no proofs given".to_owned()));
     }
     let limits = Limits {
         seconds: options.seconds,
@@ -153,8 +209,8 @@ pub fn check_paths(proofs: &[PathBuf], options: CheckOptions) -> Result<Vec<Valu
     };
     let workers = options.workers;
     let next = AtomicUsize::new(0);
-    let results = Mutex::new(vec![None; proofs.len()]);
-    std::thread::scope(|scope| -> Result<(), String> {
+    let results = Mutex::new((0..proofs.len()).map(|_| None).collect::<Vec<_>>());
+    std::thread::scope(|scope| -> Result<(), Error> {
         let mut started = Vec::with_capacity(workers);
         for _ in 0..workers {
             let handle = std::thread::Builder::new()
@@ -172,22 +228,24 @@ pub fn check_paths(proofs: &[PathBuf], options: CheckOptions) -> Result<Vec<Valu
                         slots[index] = Some(result);
                     }
                 })
-                .map_err(|error| format!("cannot start a checking thread: {error}"))?;
+                .map_err(|error| {
+                    Error::Thread(format!("cannot start a checking thread: {error}"))
+                })?;
             started.push(handle);
         }
         for handle in started {
             handle
                 .join()
-                .map_err(|_| "a checking thread stopped unexpectedly".to_owned())?;
+                .map_err(|_| Error::Thread("a checking thread stopped unexpectedly".to_owned()))?;
         }
         Ok(())
     })?;
     let results = results
         .into_inner()
-        .map_err(|_| "a checking thread stopped unexpectedly".to_owned())?;
+        .map_err(|_| Error::Thread("a checking thread stopped unexpectedly".to_owned()))?;
     let mut lines = Vec::with_capacity(proofs.len());
     for (path, result) in proofs.iter().zip(results) {
-        let result = result.ok_or("a proof was not checked")?;
+        let result = result.ok_or(Error::Incomplete)?;
         lines.push(verdict(&path.display().to_string(), result));
     }
     Ok(lines)
@@ -206,7 +264,7 @@ type Shown = (usize, Value, u32);
 
 /// A proof's JSON line: `valid` true with what it proves, or false with
 /// why, or null where it could not be checked.
-fn verdict(name: &str, result: Result<Shown, String>) -> Value {
+fn verdict(name: &str, result: Result<Shown, Rejection>) -> Value {
     match result {
         Ok((won, moves, counter)) => json!({
             "proof": name,
@@ -215,38 +273,43 @@ fn verdict(name: &str, result: Result<Shown, String>) -> Value {
             "moves": moves,
             "highest_counter": counter,
         }),
-        Err(error) => {
-            let unchecked = error.starts_with("cannot check");
-            json!({
-                "proof": name,
-                "valid": if unchecked { Value::Null } else { json!(false) },
-                "error": error,
-            })
-        }
+        Err(Rejection::Unchecked(error)) => json!({
+            "proof": name,
+            "valid": Value::Null,
+            "error": error,
+        }),
+        Err(Rejection::Invalid(error)) => json!({
+            "proof": name,
+            "valid": false,
+            "error": error,
+        }),
     }
 }
 
-fn check_file(path: &Path, limits: Limits) -> Result<Shown, String> {
+fn check_file(path: &Path, limits: Limits) -> Result<Shown, Rejection> {
     let size = fs::metadata(path)
-        .map_err(|error| format!("cannot read: {error}"))?
+        .map_err(|error| Rejection::invalid(format!("cannot read: {error}")))?
         .len();
     if size > MOST_BYTES {
-        return Err(format!("cannot check: larger than {MOST_BYTES} bytes"));
+        return Err(Rejection::unchecked(format!(
+            "cannot check: larger than {MOST_BYTES} bytes"
+        )));
     }
-    let bytes = fs::read(path).map_err(|error| format!("cannot read: {error}"))?;
+    let bytes =
+        fs::read(path).map_err(|error| Rejection::invalid(format!("cannot read: {error}")))?;
     check_bytes(&bytes, limits)
 }
 
 /// Checks a proof in either format.
-fn check_bytes(bytes: &[u8], limits: Limits) -> Result<Shown, String> {
+fn check_bytes(bytes: &[u8], limits: Limits) -> Result<Shown, Rejection> {
     let deadline = limits.deadline();
     if let Some((header, body)) = compact_header(bytes) {
         return check_compact(&header, body, deadline);
     }
     if limits.compact_only {
-        return Err("not in the compact format".into());
+        return Err(Rejection::invalid("not in the compact format"));
     }
-    let text = std::str::from_utf8(bytes).map_err(|_| "neither format")?;
+    let text = std::str::from_utf8(bytes).map_err(|_| Rejection::invalid("neither format"))?;
     check(text, deadline)
 }
 
@@ -264,34 +327,58 @@ fn compact_header(bytes: &[u8]) -> Option<(Value, &[u8])> {
 
 /// Checks a proof in the compact format: how many attacker positions it
 /// proves, its length, and the counter up to which its root may go.
-fn check_compact(header: &Value, body: &[u8], deadline: Option<Instant>) -> Result<Shown, String> {
-    let fields = header.as_object().ok_or("a bad header")?;
+fn check_compact(
+    header: &Value,
+    body: &[u8],
+    deadline: Option<Instant>,
+) -> Result<Shown, Rejection> {
+    let fields = header
+        .as_object()
+        .ok_or_else(|| Rejection::invalid("a bad header"))?;
     let named = usize::from(fields.contains_key("attacker"));
     if fields.len() != FIELDS.len() + named || !FIELDS.iter().all(|key| fields.contains_key(*key)) {
-        return Err(format!(
+        return Err(Rejection::invalid(format!(
             "the header's fields must be {}, and attacker where the side to move is not",
             FIELDS.join(", ")
-        ));
+        )));
     }
     let number = |key: &str| {
         fields[key]
             .as_u64()
-            .ok_or(format!("a bad {key} in the header"))
+            .ok_or_else(|| Rejection::invalid(format!("a bad {key} in the header")))
     };
     if number("provari")? != VERSION {
-        return Err(format!("format version {} is not known", fields["provari"]));
+        return Err(Rejection::invalid(format!(
+            "format version {} is not known",
+            fields["provari"]
+        )));
     }
     if fields["variant"] != "atomic" {
-        return Err(format!("variant {} is not known", fields["variant"]));
+        return Err(Rejection::invalid(format!(
+            "variant {} is not known",
+            fields["variant"]
+        )));
     }
-    let root = parse(fields["root"].as_str().ok_or("a bad root in the header")?)?;
+    let root = parse(
+        fields["root"]
+            .as_str()
+            .ok_or_else(|| Rejection::invalid("a bad root in the header"))?,
+    )?;
     // The side to move attacks, unless the header names the other side.
     let attacker = match fields.get("attacker") {
         None => root.turn(),
         Some(named) => match named.as_str().map(|name| name.parse::<Color>()) {
             Some(Ok(attacker)) if attacker != root.turn() => attacker,
-            Some(Ok(_)) => return Err("the header names the side to move as the attacker".into()),
-            _ => return Err(format!("a bad attacker in the header: {named}")),
+            Some(Ok(_)) => {
+                return Err(Rejection::invalid(
+                    "the header names the side to move as the attacker",
+                ));
+            }
+            _ => {
+                return Err(Rejection::invalid(format!(
+                    "a bad attacker in the header: {named}"
+                )));
+            }
         },
     };
     let (pieces, claimed, positions) = (
@@ -300,14 +387,14 @@ fn check_compact(header: &Value, body: &[u8], deadline: Option<Instant>) -> Resu
         number("positions")?,
     );
     if positions > MOST_POSITIONS {
-        return Err(format!(
+        return Err(Rejection::unchecked(format!(
             "cannot check: more than {MOST_POSITIONS} moves written"
-        ));
+        )));
     }
     if pieces > 0 {
-        return Err(format!(
+        return Err(Rejection::unchecked(format!(
             "cannot check: needs the tablebases up to {pieces} pieces"
-        ));
+        )));
     }
     let moves = read_moves(body, positions)?;
     let mut walker = Walker {
@@ -326,14 +413,16 @@ fn check_compact(header: &Value, body: &[u8], deadline: Option<Instant>) -> Resu
     };
     let (length, counter) = walker.root(&root)?;
     if walker.next != moves.len() {
-        return Err(format!(
+        return Err(Rejection::invalid(format!(
             "{} of the proof's moves are left over",
             moves.len() - walker.next
-        ));
+        )));
     }
     cycle(&walker.places, &walker.edges)?;
     if u64::from(length) != claimed {
-        return Err(format!("the proof takes {length} moves, not {claimed}"));
+        return Err(Rejection::invalid(format!(
+            "the proof takes {length} moves, not {claimed}"
+        )));
     }
     Ok((walker.won, json!(length), counter))
 }
@@ -342,22 +431,24 @@ fn check_compact(header: &Value, body: &[u8], deadline: Option<Instant>) -> Resu
 /// LEB128 numbers, each in one or two bytes, as no position has 16,384 legal
 /// moves. The frame is read only as far as that many moves could reach, so
 /// that memory follows the data, not the header's claim.
-fn read_moves(body: &[u8], positions: u64) -> Result<Vec<u32>, String> {
+fn read_moves(body: &[u8], positions: u64) -> Result<Vec<u32>, Rejection> {
     let frame = zstd::zstd_safe::find_frame_compressed_size(body)
-        .map_err(|_| "a damaged zstd frame".to_string())?;
+        .map_err(|_| Rejection::invalid("a damaged zstd frame"))?;
     if frame != body.len() {
-        return Err("data after the zstd frame".into());
+        return Err(Rejection::invalid("data after the zstd frame"));
     }
     let most = positions * 2;
     let mut bytes = Vec::new();
     zstd::stream::read::Decoder::with_buffer(body)
-        .map_err(|error| format!("a damaged zstd frame: {error}"))?
+        .map_err(|error| Rejection::invalid(format!("a damaged zstd frame: {error}")))?
         .single_frame()
         .take(most + 1)
         .read_to_end(&mut bytes)
-        .map_err(|error| format!("a damaged zstd frame: {error}"))?;
+        .map_err(|error| Rejection::invalid(format!("a damaged zstd frame: {error}")))?;
     if bytes.len() as u64 > most {
-        return Err(format!("more moves than the header's {positions}"));
+        return Err(Rejection::invalid(format!(
+            "more moves than the header's {positions}"
+        )));
     }
     let mut moves = Vec::with_capacity(bytes.len());
     let mut bytes = bytes.iter();
@@ -369,17 +460,21 @@ fn read_moves(body: &[u8], positions: u64) -> Result<Vec<u32>, String> {
                 Some(&second) if second != 0 && second < 128 => {
                     u32::from(first & 127) | u32::from(second) << 7
                 }
-                Some(_) => return Err("a move not in its shortest form, or too large".into()),
-                None => return Err("the last move is cut short".into()),
+                Some(_) => {
+                    return Err(Rejection::invalid(
+                        "a move not in its shortest form, or too large",
+                    ));
+                }
+                None => return Err(Rejection::invalid("the last move is cut short")),
             }
         };
         moves.push(value);
     }
     if moves.len() as u64 != positions {
-        return Err(format!(
+        return Err(Rejection::invalid(format!(
             "{} moves where the header says {positions}",
             moves.len()
-        ));
+        )));
     }
     Ok(moves)
 }
@@ -402,17 +497,31 @@ fn number(m: Move) -> u32 {
             };
             (from.to_u32() * 64 + to.to_u32()) * 5 + promotion
         }
-        _ => unreachable!("no drops or null moves in Atomic"),
+        _ => {
+            let kind = match UciMove::from_standard(m) {
+                UciMove::Normal { .. } => Some(0),
+                _ => None,
+            };
+            kind.expect("invariant: Atomic has no drops or null moves")
+        }
     }
 }
 
 /// Checks a proof: how many attacker positions it wins, its length, and the
 /// root's own counter, as its moves are given by position and counter.
-fn check(text: &str, deadline: Option<Instant>) -> Result<Shown, String> {
+fn check(text: &str, deadline: Option<Instant>) -> Result<Shown, Rejection> {
     let mut lines = text.lines().filter(|line| !line.trim().is_empty());
-    let header: Value = serde_json::from_str(lines.next().ok_or("an empty proof")?)
-        .map_err(|error| format!("a bad header: {error}"))?;
-    let root = parse(header["root"].as_str().ok_or("no root")?)?;
+    let header: Value = serde_json::from_str(
+        lines
+            .next()
+            .ok_or_else(|| Rejection::invalid("an empty proof"))?,
+    )
+    .map_err(|error| Rejection::invalid(format!("a bad header: {error}")))?;
+    let root = parse(
+        header["root"]
+            .as_str()
+            .ok_or_else(|| Rejection::invalid("no root"))?,
+    )?;
     let mut checker = Checker {
         attacker: root.turn(),
         ids: HashMap::new(),
@@ -425,13 +534,19 @@ fn check(text: &str, deadline: Option<Instant>) -> Result<Shown, String> {
         depth: 0,
     };
     for line in lines {
-        let entry: Value =
-            serde_json::from_str(line).map_err(|error| format!("a bad line: {error}"))?;
+        let entry: Value = serde_json::from_str(line)
+            .map_err(|error| Rejection::invalid(format!("a bad line: {error}")))?;
         let Some(uci) = entry["move"].as_str() else {
             continue;
         };
-        let pos = parse(entry["fen"].as_str().ok_or("a line without a position")?)?;
-        let m: UciMove = uci.parse().map_err(|_| format!("a bad move {uci}"))?;
+        let pos = parse(
+            entry["fen"]
+                .as_str()
+                .ok_or_else(|| Rejection::invalid("a line without a position"))?,
+        )?;
+        let m: UciMove = uci
+            .parse()
+            .map_err(|_| Rejection::invalid(format!("a bad move {uci}")))?;
         let id = checker.id(&pos);
         checker.moves.insert((id, pos.halfmoves()), m);
     }
@@ -446,16 +561,16 @@ fn check(text: &str, deadline: Option<Instant>) -> Result<Shown, String> {
 /// A position from its FEN, read as the prover reads one: as Lichess does,
 /// castling rights and an en passant square the position cannot have are
 /// dropped, and more material than a game can reach is let be.
-fn parse(fen: &str) -> Result<Atomic, String> {
+fn parse(fen: &str) -> Result<Atomic, Rejection> {
     let setup: Fen = fen
         .parse()
-        .map_err(|error| format!("a bad FEN {fen}: {error}"))?;
+        .map_err(|error| Rejection::invalid(format!("a bad FEN {fen}: {error}")))?;
     setup
         .into_position(CastlingMode::Standard)
         .or_else(PositionError::ignore_invalid_castling_rights)
         .or_else(PositionError::ignore_invalid_ep_square)
         .or_else(PositionError::ignore_too_much_material)
-        .map_err(|error| format!("an illegal position {fen}: {error}"))
+        .map_err(|error| Rejection::invalid(format!("an illegal position {fen}: {error}")))
 }
 
 fn fen(pos: &Atomic) -> String {
@@ -522,7 +637,7 @@ impl Checker {
     // The 50-move counter grows along a line until a capture or pawn move,
     // after which no earlier position returns, so keyed with the counter the
     // proof cannot loop and every position is checked once.
-    fn attacker_to_move(&mut self, pos: &Atomic, id: u32) -> Result<(), String> {
+    fn attacker_to_move(&mut self, pos: &Atomic, id: u32) -> Result<(), Rejection> {
         let key = (id, pos.halfmoves());
         if self.won.contains(&key) {
             return Ok(());
@@ -533,18 +648,21 @@ impl Checker {
                 self.won.insert(key);
                 return Ok(());
             }
-            return Err(format!("the proof has no move for {}", fen(pos)));
+            return Err(Rejection::invalid(format!(
+                "the proof has no move for {}",
+                fen(pos)
+            )));
         };
         let m = uci
             .to_move(pos)
-            .map_err(|_| format!("{uci} is not legal in {}", fen(pos)))?;
+            .map_err(|_| Rejection::invalid(format!("{uci} is not legal in {}", fen(pos))))?;
         let mut next = pos.clone();
         next.play_unchecked(m);
         self.depth += 1;
         if self.depth > MOST_DEPTH {
-            return Err(format!(
+            return Err(Rejection::unchecked(format!(
                 "cannot check: a line longer than {MOST_DEPTH} attacker moves"
-            ));
+            )));
         }
         self.defender_to_move(&next, id)?;
         self.depth -= 1;
@@ -552,7 +670,7 @@ impl Checker {
         Ok(())
     }
 
-    fn defender_to_move(&mut self, pos: &Atomic, before: u32) -> Result<(), String> {
+    fn defender_to_move(&mut self, pos: &Atomic, before: u32) -> Result<(), Rejection> {
         if self.ends(pos)? {
             return Ok(());
         }
@@ -586,30 +704,31 @@ impl Checker {
 
     /// Whether the game is over, which must be with the attacker winning.
     #[inline(never)]
-    fn ends(&self, pos: &Atomic) -> Result<bool, String> {
+    fn ends(&self, pos: &Atomic) -> Result<bool, Rejection> {
         match pos.outcome() {
             Outcome::Known(KnownOutcome::Decisive { winner }) if winner == self.attacker => {
                 Ok(true)
             }
-            Outcome::Known(_) => Err(format!(
+            Outcome::Known(_) => Err(Rejection::invalid(format!(
                 "the game ends without the attacker winning: {}",
                 fen(pos)
-            )),
-            Outcome::Unknown if pos.halfmoves() >= 100 => {
-                Err(format!("the 50-move limit is reached: {}", fen(pos)))
-            }
+            ))),
+            Outcome::Unknown if pos.halfmoves() >= 100 => Err(Rejection::invalid(format!(
+                "the 50-move limit is reached: {}",
+                fen(pos)
+            ))),
             Outcome::Unknown => Ok(false),
         }
     }
 
     /// Rejects a cycle among the places the proof reaches.
-    fn check_repetitions(&self) -> Result<(), String> {
+    fn check_repetitions(&self) -> Result<(), Rejection> {
         cycle(&self.places, &self.edges)
     }
 }
 
 /// Rejects a cycle among places linked by the moves a proof allows.
-fn cycle(places: &[Place], edges: &[Vec<u32>]) -> Result<(), String> {
+fn cycle(places: &[Place], edges: &[Vec<u32>]) -> Result<(), Rejection> {
     // Unvisited, on the walk, or done.
     let mut state = vec![0u8; places.len()];
     for start in 0..places.len() {
@@ -633,11 +752,11 @@ fn cycle(places: &[Place], edges: &[Vec<u32>]) -> Result<(), String> {
                 }
                 1 => {
                     let place = &places[successor];
-                    return Err(format!(
+                    return Err(Rejection::invalid(format!(
                         "a line can repeat the position {} {}",
                         place.board,
                         if place.turn == Color::White { 'w' } else { 'b' },
-                    ));
+                    )));
                 }
                 _ => {}
             }
@@ -729,14 +848,14 @@ impl Walker<'_> {
 
     /// The root's length, and the counter up to which it may go with the
     /// proof still holding.
-    fn root(&mut self, root: &Atomic) -> Result<(u32, u32), String> {
+    fn root(&mut self, root: &Atomic) -> Result<(u32, u32), Rejection> {
         let legal = legal(root);
         match self.judge(root, &legal) {
             State::Won => Ok((0, LAST)),
-            State::Failed => Err(format!(
+            State::Failed => Err(Rejection::invalid(format!(
                 "the root is over or at the 50-move limit: {}",
                 fen(root)
-            )),
+            ))),
             State::Open => {
                 let id = self.id(root);
                 if root.turn() == self.attacker {
@@ -756,7 +875,7 @@ impl Walker<'_> {
         pos: &Atomic,
         id: u32,
         legal: Vec<Move>,
-    ) -> Result<(u32, u32), String> {
+    ) -> Result<(u32, u32), Rejection> {
         let counter = pos.halfmoves();
         if let Some(&(highest, length, holds)) = self.proven.get(&id)
             && counter <= highest
@@ -765,13 +884,13 @@ impl Walker<'_> {
         }
         within(&mut self.visits, self.deadline, self.places.len())?;
         if !self.line.insert(id) {
-            return Err(format!("a line repeats {}", fen(pos)));
+            return Err(Rejection::invalid(format!("a line repeats {}", fen(pos))));
         }
         self.depth += 1;
         if self.depth > MOST_DEPTH {
-            return Err(format!(
+            return Err(Rejection::unchecked(format!(
                 "cannot check: a line longer than {MOST_DEPTH} attacker moves"
-            ));
+            )));
         }
         let (length, holds) = self.prove(pos, id, legal)?;
         self.depth -= 1;
@@ -784,7 +903,7 @@ impl Walker<'_> {
         Ok((length, holds))
     }
 
-    fn prove(&mut self, pos: &Atomic, id: u32, legal: Vec<Move>) -> Result<(u32, u32), String> {
+    fn prove(&mut self, pos: &Atomic, id: u32, legal: Vec<Move>) -> Result<(u32, u32), Rejection> {
         let mut moves: Vec<(Atomic, u32, bool)> = Vec::with_capacity(legal.len());
         for m in legal {
             let mut next = pos.clone();
@@ -807,10 +926,15 @@ impl Walker<'_> {
         let index = *self
             .moves
             .get(self.next)
-            .ok_or("the proof's moves run out")? as usize;
+            .ok_or_else(|| Rejection::invalid("the proof's moves run out"))?
+            as usize;
         self.next += 1;
         let Some((next, ..)) = moves.get(index) else {
-            return Err(format!("move {index} of {} in {}", moves.len(), fen(pos)));
+            return Err(Rejection::invalid(format!(
+                "move {index} of {} in {}",
+                moves.len(),
+                fen(pos)
+            )));
         };
         let next = next.clone();
         let next_id = self.id(&next);
@@ -858,20 +982,20 @@ impl Walker<'_> {
 
     /// Follows every defence, in square order, and returns the longest,
     /// with the counter up to which every defence still loses.
-    fn defender_to_move(&mut self, pos: &Atomic, id: u32) -> Result<(u32, u32), String> {
+    fn defender_to_move(&mut self, pos: &Atomic, id: u32) -> Result<(u32, u32), Rejection> {
         let mut replies = legal(pos);
         match self.judge(pos, &replies) {
             State::Won => return Ok((0, LAST)),
             State::Failed => {
-                return Err(format!(
+                return Err(Rejection::invalid(format!(
                     "the line ends without the attacker winning: {}",
                     fen(pos)
-                ));
+                )));
             }
             State::Open => {}
         }
         if !self.line.insert(id) {
-            return Err(format!("a line repeats {}", fen(pos)));
+            return Err(Rejection::invalid(format!("a line repeats {}", fen(pos))));
         }
         replies.sort_by_key(|&m| number(m));
         let (mut longest, mut holds) = (0, LAST);
@@ -880,11 +1004,11 @@ impl Walker<'_> {
             next.play_unchecked(reply);
             let legal = legal(&next);
             if self.judge(&next, &legal) != State::Open {
-                return Err(format!(
+                return Err(Rejection::invalid(format!(
                     "the defence {} ends the line without the attacker winning: {}",
                     UciMove::from_standard(reply),
                     fen(pos)
-                ));
+                )));
             }
             let next_id = self.id(&next);
             self.edges[id as usize].push(next_id);
@@ -917,12 +1041,15 @@ mod tests {
 
     /// `format::SMALL` in the compact format, as the prover writes it.
     fn compact() -> Vec<u8> {
-        crate::format::encode_jsonl(crate::format::SMALL).unwrap().1
+        crate::format::encode_jsonl(crate::format::tests::SMALL)
+            .unwrap()
+            .1
     }
 
     fn compact_verdict(bytes: &[u8]) -> Result<(usize, u64), String> {
         check_bytes(bytes, Limits::default())
             .map(|(won, length, _)| (won, length.as_u64().unwrap()))
+            .map_err(|error| error.to_string())
     }
 
     /// A compact proof's header and moves, to tamper with, and back.
@@ -944,7 +1071,7 @@ mod tests {
         assert_eq!(compact_verdict(&compact()).map(|(_, length)| length), Ok(4));
         // The same proof in JSON lines.
         assert_eq!(
-            check(crate::format::SMALL, None).map(|(_, length, _)| length),
+            check(crate::format::tests::SMALL, None).map(|(_, length, _)| length),
             Ok(json!(4))
         );
     }
@@ -953,7 +1080,7 @@ mod tests {
     /// the walk starts with the defences.
     #[test]
     fn accepts_a_proof_for_the_side_not_to_move() {
-        let (_, bytes) = crate::format::small_defended();
+        let (_, bytes) = crate::format::tests::small_defended();
         let (won, _) = compact_verdict(&compact()).unwrap();
         assert_eq!(compact_verdict(&bytes), Ok((won - 1, 3)));
         // The check of `settles_a_check_that_wins_in_two` played: both king
@@ -1000,7 +1127,8 @@ mod tests {
     /// position and counter, so only the root's own counter.
     #[test]
     fn reports_the_highest_counter_its_root_may_have() {
-        let shown = |bytes: &[u8]| check_bytes(bytes, Limits::default());
+        let shown =
+            |bytes: &[u8]| check_bytes(bytes, Limits::default()).map_err(|error| error.to_string());
         let root = "rnbq1b1r/pp1pk2p/2p1ppp1/8/3PPB2/2N5/PPP2P1P/R2QKB1R w KQ - 0 1";
         let header = json!({
             "provari": 1, "variant": "atomic", "root": root,
@@ -1012,7 +1140,7 @@ mod tests {
         // from the check that wins in two.
         for (bytes, highest) in [
             (compact(), 93),
-            (crate::format::small_defended().1, 94),
+            (crate::format::tests::small_defended().1, 94),
             (assemble(&header, &[]), 97),
         ] {
             let (won, length, counter) = shown(&bytes).unwrap();
@@ -1026,7 +1154,12 @@ mod tests {
         }
         for clock in [0, 97] {
             let text = proof(clock).join("\n");
-            assert_eq!(check(&text, None).map(|(.., counter)| counter), Ok(clock));
+            assert_eq!(
+                check(&text, None)
+                    .map(|(.., counter)| counter)
+                    .map_err(|error| error.to_string()),
+                Ok(clock)
+            );
         }
     }
 
@@ -1104,7 +1237,7 @@ mod tests {
             seconds: Some(0.0),
             compact_only: false,
         };
-        let error = check_bytes(&compact(), at_once).unwrap_err();
+        let error = check_bytes(&compact(), at_once).unwrap_err().to_string();
         assert!(
             error.starts_with("cannot check: it takes longer"),
             "{error}"
@@ -1113,7 +1246,9 @@ mod tests {
             seconds: None,
             compact_only: true,
         };
-        let error = check_bytes(crate::format::SMALL.as_bytes(), compact_only).unwrap_err();
+        let error = check_bytes(crate::format::tests::SMALL.as_bytes(), compact_only)
+            .unwrap_err()
+            .to_string();
         assert_eq!(error, "not in the compact format");
         // A small frame that would fill far more than its header's moves
         // can: the checker reads only as far as they could reach.
@@ -1237,12 +1372,15 @@ mod tests {
             match (&checked, read) {
                 (Ok(_), true) => accepted += 1,
                 (Ok(_), false) => panic!("the checker accepts what the reader cannot walk"),
-                (Err(error), true) => assert!(
-                    only_the_checker
-                        .iter()
-                        .any(|start| error.starts_with(start)),
-                    "only the reader accepts: {error}"
-                ),
+                (Err(error), true) => {
+                    let error = error.to_string();
+                    assert!(
+                        only_the_checker
+                            .iter()
+                            .any(|start| error.starts_with(start)),
+                        "only the reader accepts: {error}"
+                    );
+                }
                 (Err(_), false) => {}
             }
         }
@@ -1251,7 +1389,7 @@ mod tests {
 
     #[test]
     fn answers_damaged_proofs_as_the_reader_does() {
-        let proofs = [compact(), crate::format::small_defended().1];
+        let proofs = [compact(), crate::format::tests::small_defended().1];
         let (tries, accepted) = fuzz(&proofs, 400);
         // Some changed moves still prove the win, if otherwise.
         assert!(
@@ -1280,7 +1418,9 @@ mod tests {
     }
 
     fn verdict(lines: &[String]) -> Result<usize, String> {
-        check(&lines.join("\n"), None).map(|(won, ..)| won)
+        check(&lines.join("\n"), None)
+            .map(|(won, ..)| won)
+            .map_err(|error| error.to_string())
     }
 
     #[test]
@@ -1370,7 +1510,7 @@ mod tests {
         checker.edges[ids[1] as usize].push(ids[2]);
         assert!(checker.check_repetitions().is_ok());
         checker.edges[ids[2] as usize].push(ids[0]);
-        let error = checker.check_repetitions().unwrap_err();
+        let error = checker.check_repetitions().unwrap_err().to_string();
         assert!(error.starts_with("a line can repeat"), "{error}");
     }
 

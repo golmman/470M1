@@ -7,11 +7,60 @@
 //! see `PROVENANCE.md`.
 //! (`src/lines.rs`): tablebase branches removed.
 
+use std::fmt;
+
 use serde_json::{Value, json};
 
 use crate::board::{Move, Position};
 use crate::types::Color;
 use crate::{Status, status, walk};
+
+/// Why a proof's lines cannot be shown.
+#[derive(Debug)]
+pub enum Error {
+    /// A subproof could not be measured.
+    Walk(walk::Error),
+    /// An attacker position of the line has no move in the proof.
+    NoMove { fen: String },
+    /// The MOVES given play a token that is not a legal move.
+    Illegal { token: String },
+    /// The MOVES given play a move the proof does not.
+    NotProof { played: String, token: String },
+    /// The game is over at the position asked about.
+    Over,
+    /// A longest line ends without the win the proof claims.
+    NoWin,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Walk(error) => write!(out, "{error}"),
+            Error::NoMove { fen } => write!(out, "the proof has no move for {fen}"),
+            Error::Illegal { token } => write!(out, "{token} is not a legal move here"),
+            Error::NotProof { played, token } => {
+                write!(out, "the proof plays {played} here, not {token}")
+            }
+            Error::Over => write!(out, "the game is over here"),
+            Error::NoWin => write!(out, "the proof ends without a win"),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::Walk(error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+impl From<walk::Error> for Error {
+    fn from(error: walk::Error) -> Error {
+        Error::Walk(error)
+    }
+}
 
 /// A proof's lines from the position after `played` (SAN or UCI, move
 /// numbers allowed), as JSON: against the proof's moves for `attacker`, the
@@ -26,7 +75,7 @@ pub fn show(
     played: &str,
     pgn: bool,
     until: Option<u32>,
-) -> Result<(Value, Option<String>), String> {
+) -> Result<(Value, Option<String>), Error> {
     let mut proof = Proof::new(attacker, moves);
     let mut quiet = |_| {};
     let mut lines = Lines {
@@ -46,21 +95,23 @@ pub fn show(
             continue;
         }
         if !lines.open(&pos) {
-            return Err("the game is over here".into());
+            return Err(Error::Over);
         }
         let m = pos
             .board()
             .move_from_san(text)
             .map(Move::from_native)
             .or_else(|| Move::from_uci(&pos, text))
-            .ok_or(format!("{token} is not a legal move here"))?;
+            .ok_or_else(|| Error::Illegal {
+                token: token.to_owned(),
+            })?;
         if pos.turn() == attacker {
             match lines.proof_move(&pos) {
                 Ok(proved) if proved != m => {
-                    return Err(format!(
-                        "the proof plays {} here, not {token}",
-                        pos.board().san(proved.native()).unwrap_or_default()
-                    ));
+                    return Err(Error::NotProof {
+                        played: pos.board().san(proved.native()).unwrap_or_default(),
+                        token: token.to_owned(),
+                    });
                 }
                 Ok(_) => {}
                 Err(error) => return Err(error),
@@ -69,7 +120,7 @@ pub fn show(
         pos = pos.play(m);
     }
     if !lines.open(&pos) {
-        return Err("the game is over here".into());
+        return Err(Error::Over);
     }
     let fen = pos.to_fen();
     let mut result = json!({ "fen": fen });
@@ -130,7 +181,7 @@ impl Proof {
 
     /// The attacker's move as the proof's length counts it: a capture that
     /// wins at once where there is one, and the proof's move otherwise.
-    pub fn proof_move(&self, pos: &Position) -> Result<Move, String> {
+    pub fn proof_move(&self, pos: &Position) -> Result<Move, Error> {
         if let Some(m) = walk::winning_capture(pos, self.attacker) {
             return Ok(m);
         }
@@ -138,13 +189,13 @@ impl Proof {
             .get(&pos.hash())
             .copied()
             .flatten()
-            .ok_or_else(|| format!("the proof has no move for {}", pos.to_fen()))
+            .ok_or_else(|| Error::NoMove { fen: pos.to_fen() })
     }
 
     /// The defender's replies with the attacker moves each lasts, longest
     /// first and the larger subproof first among equals; none once the game
     /// has decided.
-    fn replies(&mut self, after: &Position) -> Result<Vec<(u32, Move)>, String> {
+    fn replies(&mut self, after: &Position) -> Result<Vec<(u32, Move)>, Error> {
         if !self.open(after) {
             return Ok(Vec::new());
         }
@@ -168,7 +219,7 @@ impl Proof {
 
     /// A longest line from `pos`: the proof's moves against the replies that
     /// last longest.
-    pub fn longest_line(&mut self, pos: &Position) -> Result<Vec<Move>, String> {
+    pub fn longest_line(&mut self, pos: &Position) -> Result<Vec<Move>, Error> {
         let mut line = Vec::new();
         let mut here = pos.clone();
         while self.open(&here) {
@@ -178,7 +229,7 @@ impl Proof {
                 self.replies(&here)?
                     .first()
                     .map(|&(_, reply)| reply)
-                    .ok_or("the proof ends without a win")?
+                    .ok_or(Error::NoWin)?
             };
             here = here.play(m);
             line.push(m);
@@ -187,7 +238,7 @@ impl Proof {
     }
 
     /// Whether the attacker's move here ends the game.
-    fn wins_at_once(&self, pos: &Position) -> Result<bool, String> {
+    fn wins_at_once(&self, pos: &Position) -> Result<bool, Error> {
         let m = self.proof_move(pos)?;
         Ok(matches!(status(&pos.play(m), self.attacker), Status::Won))
     }
@@ -227,21 +278,21 @@ impl Lines<'_> {
         self.proof.open(pos)
     }
 
-    fn proof_move(&self, pos: &Position) -> Result<Move, String> {
+    fn proof_move(&self, pos: &Position) -> Result<Move, Error> {
         self.proof.proof_move(pos)
     }
 
-    fn replies(&mut self, after: &Position) -> Result<Vec<(u32, Move)>, String> {
+    fn replies(&mut self, after: &Position) -> Result<Vec<(u32, Move)>, Error> {
         self.proof.replies(after)
     }
 
-    fn wins_at_once(&self, pos: &Position) -> Result<bool, String> {
+    fn wins_at_once(&self, pos: &Position) -> Result<bool, Error> {
         self.proof.wins_at_once(pos)
     }
 
     /// The proof's tree from `pos`, whose FEN is `fen`, as a PGN game, and
     /// the moves it writes.
-    fn tree(&mut self, pos: Position, fen: &str) -> Result<(String, usize), String> {
+    fn tree(&mut self, pos: Position, fen: &str) -> Result<(String, usize), Error> {
         let attacker = self.proof.attacker;
         let (us, them) = if attacker == Color::White {
             ("White", "Black")
@@ -297,7 +348,7 @@ impl Lines<'_> {
         mut pos: Position,
         tokens: &mut Vec<String>,
         mut numbered: bool,
-    ) -> Result<(), String> {
+    ) -> Result<(), Error> {
         while self.open(&pos) {
             if pos.turn() == self.proof.attacker {
                 let m = self.proof_move(&pos)?;
@@ -385,7 +436,8 @@ fn movetext(tokens: &[String]) -> String {
 mod tests {
     use super::Proof;
     use crate::board::{Move, Position};
-    use crate::format::{SMALL, decode, encode_jsonl, small_defended, strategy};
+    use crate::format::tests::{SMALL, small_defended};
+    use crate::format::{decode, encode_jsonl, strategy};
 
     fn play(pos: &Position, uci: &str) -> Position {
         let m = Move::from_uci(pos, uci).unwrap();

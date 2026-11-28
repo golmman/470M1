@@ -31,12 +31,13 @@ fn rows(name: &str) -> Vec<(String, String, String)> {
 
 fn prove(fen: &str, seconds: u64) -> (Option<u32>, Vec<u8>) {
     let root = position(fen).unwrap();
-    let mut search = Dfpn::new(
+    let mut search = Dfpn::try_new(
         &root,
         Guide::Hand,
         Instant::now() + Duration::from_secs(seconds),
         (32, 32),
-    );
+    )
+    .expect("the test's memory");
     let moves = search.solve(&root);
     let bytes = if moves.is_some() {
         let (_, bytes) = format::encode(&root, root.turn(), |pos| {

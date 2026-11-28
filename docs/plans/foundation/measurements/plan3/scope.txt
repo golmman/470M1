@@ -1,0 +1,28 @@
+$ git diff --stat 96c40da..worktree
+ docs/architecture.md                |  12 +-
+ docs/plans/README.md                |   2 +-
+ docs/plans/foundation/initiative.md |   8 +-
+ src/app/commands/bench.rs           |   2 +-
+ src/app/commands/line.rs            |  15 +-
+ src/app/error.rs                    |  65 +++++-
+ src/board.rs                        | 161 +++++++++++++--
+ src/check.rs                        | 382 ++++++++++++++++++++++++------------
+ src/dfpn.rs                         |  36 ++--
+ src/eval.rs                         |  82 ++++----
+ src/format.rs                       | 267 +++++++++++++++++--------
+ src/lib.rs                          |  67 +------
+ src/lines.rs                        |  92 +++++++--
+ src/moves.rs                        |  36 +++-
+ src/proofs.rs                       |  23 +--
+ src/search.rs                       |  30 ++-
+ src/walk.rs                         |  33 +++-
+ tests/prover.rs                     |   5 +-
+ 18 files changed, 895 insertions(+), 423 deletions(-)
+
+$ git status --short Cargo.toml Cargo.lock
+(empty: no dependency or profile change)
+
+Production changes are error types and propagation, app error conversions,
+invariant messages, the Dfpn::new removal, and test-helper moves that keep
+the source guard to the non-test prefix. No change to search decisions,
+tables, proof encoding, checker rules, defaults, flags or output shapes.

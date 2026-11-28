@@ -120,6 +120,6 @@ fn fen(path: &Path, value: &Value) -> Result<String, Error> {
         .get("fen")
         .and_then(Value::as_str)
         .ok_or_else(|| corpus(path, "a case without a FEN".into()))?;
-    let _ = position(fen).map_err(|reason| corpus(path, reason))?;
+    let _ = position(fen).map_err(|reason| corpus(path, reason.to_string()))?;
     Ok(fen.to_owned())
 }

@@ -1,0 +1,53 @@
+{
+  "runs": [
+    {
+      "side": "base",
+      "cell": "core",
+      "Ir": 5980229410,
+      "found": true,
+      "mate": 14,
+      "nodes": 350430,
+      "child_evals": 3896430,
+      "expansions": 191557
+    },
+    {
+      "side": "cand",
+      "cell": "core",
+      "Ir": 5980229347,
+      "found": true,
+      "mate": 14,
+      "nodes": 350430,
+      "child_evals": 3896430,
+      "expansions": 191557
+    },
+    {
+      "side": "base",
+      "cell": "m1_explosion",
+      "Ir": 13368769,
+      "found": true,
+      "mate": 1,
+      "nodes": 1,
+      "child_evals": 11,
+      "expansions": 1
+    },
+    {
+      "side": "cand",
+      "cell": "m1_explosion",
+      "Ir": 13368706,
+      "found": true,
+      "mate": 1,
+      "nodes": 1,
+      "child_evals": 11,
+      "expansions": 1
+    }
+  ],
+  "delta": {
+    "core": -1.053471287981722e-08,
+    "m1_explosion": -4.712475770940472e-06
+  },
+  "counters_identical": {
+    "core": true,
+    "m1_explosion": true
+  },
+  "gate_core_le_0.005": true
+}

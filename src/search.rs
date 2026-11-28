@@ -12,12 +12,33 @@
 
 use crate::clock::Instant;
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::hash::{BuildHasherDefault, Hasher};
 
 use crate::Status;
 use crate::board::{Move, Position};
 use crate::status;
 use crate::types::{Color, Role};
+/// Why a proof cannot be read back.
+#[derive(Debug)]
+pub enum Error {
+    /// The root is over without the attacker winning.
+    RootOver,
+    /// An attacker position reached has no recorded winning move.
+    NoMove { fen: String },
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::RootOver => write!(out, "the root has ended without the attacker winning"),
+            Error::NoMove { fen } => write!(out, "no winning move recorded for {fen}"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
 /// A position and its 50-move counter, which can turn a win into a draw.
 pub type Key = (u64, u32);
 
@@ -219,12 +240,12 @@ impl Search {
 pub fn read_proof(
     root: &Position,
     mut winning_move: impl FnMut(&Position, &Key) -> Option<Move>,
-    mut emit: impl FnMut(&Position, Option<Move>) -> Result<(), String>,
-) -> Result<usize, String> {
+    mut emit: impl FnMut(&Position, Option<Move>) -> Result<(), Error>,
+) -> Result<usize, Error> {
     let attacker = root.turn();
     match status(root, attacker) {
         Status::Won => return Ok(0),
-        Status::Over => return Err("the root has ended without the attacker winning".into()),
+        Status::Over => return Err(Error::RootOver),
         Status::Open => {}
     }
     let mut count = 0;
@@ -238,8 +259,7 @@ pub fn read_proof(
         if crate::walk::winning_capture(&pos, attacker).is_some() {
             continue;
         }
-        let m = winning_move(&pos, &key)
-            .ok_or_else(|| format!("no winning move recorded for {}", pos.to_fen()))?;
+        let m = winning_move(&pos, &key).ok_or_else(|| Error::NoMove { fen: pos.to_fen() })?;
         emit(&pos, Some(m))?;
         count += 1;
         let after = pos.play(m);

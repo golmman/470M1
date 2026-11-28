@@ -2,11 +2,13 @@
 
 ## Status
 
-**In progress (2026-11-27)**, `PD4`. `F1` (bench v2) is done:
+**In progress (2026-11-28)**, `PD4`. `F1` (bench v2) is done:
 [plan1](plan1.md) → [report1](report1.md), first matched row 3.104 and guard
 1.023. `F3` and the app half of `F2` are done: [plan2](plan2.md) →
 [report2](report2.md), cand/old guard 1.0078 on the rerun, `core` `Ir`
-+0.003%. Library error enums (`F2`) next, then `F4`–`F7`.
++0.003%. The library half of `F2` is done: [plan3](plan3.md) →
+[report3](report3.md), typed errors per layer, no `Result<_, String>`
+outside tests, guard 0.9782, `core` `Ir` −0.000001%. `F4`–`F7` next.
 
 ## Goal
 
@@ -44,7 +46,7 @@ initiatives.
 | # | Item | Content |
 | --- | --- | --- |
 | F1 | **Bench v2** | re-pin the oracle to the latest provari release (commit, data SHA-256, `PROVENANCE.md`); full-feature reference command (learned guide, tablebases, `--threads N`); fix `N`, the tablebase set and the canonical cap; select `strong` (cells the reference proves at the cap, from `corpus-v1` + provari's `high200`) and a `held-out` set; driver and `bench.md` sections; first row with the current product |
-| F2 | **Errors and exit codes** | error enum per layer, exit code 3, atomic writes, invariant `expect`s; `String` errors retired |
+| F2 | **Errors and exit codes** | error enum per layer, exit code 3, atomic writes, invariant `expect`s; `String` errors retired — **done** (app in plan 2, library in plan 3) |
 | F3 | **Configuration** | `clap` + `serde` + `toml`, `--config FILE`, typed validated configs, effective config in `--json`; current defaults unchanged |
 | F4 | **Logging** | `Observer`/`Progress` at clock ticks, stderr logger, levels, `-q`/`-v`; trajectory-neutrality test |
 | F5 | **Module split** | `dfpn`, `moves`, `format`, `main` per `architecture.md`; `Guide`, `Budget`, `ProofSource` seams with contract tests; `instructions:u` per step |

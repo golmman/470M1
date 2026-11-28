@@ -7,11 +7,32 @@
 //! this crate's rules layer.
 
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 
 use crate::Status;
 use crate::board::{Move, Position};
 use crate::status;
 use crate::types::Color;
+
+/// Why a walk cannot measure a proof.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Error {
+    /// The line met a position it had already proved.
+    Repeat,
+    /// An attacker position of the proof has no winning move.
+    NoMove,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Repeat => write!(out, "the proof repeats a position"),
+            Error::NoMove => write!(out, "a position of the proof has no winning move"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 /// Attacker boards and their winning moves.
 pub type Moves = HashMap<u64, Option<Move>>;
@@ -58,10 +79,10 @@ pub fn measure(
     attacker: Color,
     moves: &Moves,
     walk: &mut Walk,
-) -> Result<Measure, String> {
+) -> Result<Measure, Error> {
     let here = pos.hash();
     if walk.active.contains(&here) {
-        return Err("the proof repeats a position".into());
+        return Err(Error::Repeat);
     }
     if let Some(measure) = walk.measures.get(&here) {
         return Ok(*measure);
@@ -69,11 +90,7 @@ pub fn measure(
     let measure = if winning_capture(pos, attacker).is_some() {
         Measure { tree: 0, length: 1 }
     } else {
-        let m = moves
-            .get(&here)
-            .copied()
-            .flatten()
-            .ok_or("a position of the proof has no winning move")?;
+        let m = moves.get(&here).copied().flatten().ok_or(Error::NoMove)?;
         walk.active.insert(here);
         let after = pos.play(m);
         let replies = measure_after(&after, attacker, moves, walk);
@@ -99,7 +116,7 @@ pub fn measure_after(
     attacker: Color,
     moves: &Moves,
     walk: &mut Walk,
-) -> Result<Measure, String> {
+) -> Result<Measure, Error> {
     let mut total = Measure { tree: 0, length: 0 };
     if !matches!(status(after, attacker), Status::Open) {
         return Ok(total);

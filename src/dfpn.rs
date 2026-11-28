@@ -236,12 +236,6 @@ pub struct Dfpn {
 }
 
 impl Dfpn {
-    /// A search of `root` with a table and proofs of these megabytes.
-    pub fn new(root: &Position, guide: Guide, deadline: Instant, memory: (usize, usize)) -> Dfpn {
-        Dfpn::try_new(root, guide, deadline, memory)
-            .unwrap_or_else(|error| panic!("the search's memory: {error}"))
-    }
-
     /// As `new`, unless the memory cannot be had.
     pub fn try_new(
         root: &Position,
@@ -1892,12 +1886,13 @@ mod tests {
         let root =
             crate::position("r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1")
                 .unwrap();
-        let mut search = Dfpn::new(
+        let mut search = Dfpn::try_new(
             &root,
             Guide::Hand,
             Instant::now() + Duration::from_secs(10),
             (16, 16),
-        );
+        )
+        .expect("the test's memory");
         search.set_seed(seed);
         if let Some(limit) = limit {
             search.set_limit(limit);
@@ -1938,12 +1933,13 @@ mod tests {
             crate::position("r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1")
                 .unwrap();
         for seed in 1..=2 {
-            let mut search = Dfpn::new(
+            let mut search = Dfpn::try_new(
                 &root,
                 Guide::Hand,
                 Instant::now() + Duration::from_secs(10),
                 (16, 16),
-            );
+            )
+            .expect("the test's memory");
             search.set_seed(seed);
             let moves = search.solve(&root);
             assert!(moves.is_some(), "seed {seed}: no win");
@@ -1960,12 +1956,13 @@ mod tests {
     #[test]
     fn a_repeated_position_is_a_draw() {
         let root = crate::position("4k3/8/8/8/8/8/4P3/4K3 w - - 0 1").unwrap();
-        let mut search = Dfpn::new(
+        let mut search = Dfpn::try_new(
             &root,
             Guide::None,
             Instant::now() + Duration::from_secs(1),
             (1, 1),
-        );
+        )
+        .expect("the test's memory");
         let hash = root.hash();
         let bit = (hash >> 54) as usize;
         search.repetitions[bit >> 6] |= 1 << (bit & 63);
@@ -1976,12 +1973,13 @@ mod tests {
     #[test]
     fn the_fifty_move_limit_is_not_a_win() {
         let root = crate::position("4k3/8/8/8/8/8/4P3/4K3 w - - 100 80").unwrap();
-        let mut search = Dfpn::new(
+        let mut search = Dfpn::try_new(
             &root,
             Guide::Hand,
             Instant::now() + Duration::from_secs(1),
             (1, 1),
-        );
+        )
+        .expect("the test's memory");
         assert_eq!(search.solve(&root), None);
     }
 
@@ -1990,12 +1988,13 @@ mod tests {
         let root =
             crate::position("r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1")
                 .unwrap();
-        let mut search = Dfpn::new(
+        let mut search = Dfpn::try_new(
             &root,
             Guide::Hand,
             Instant::now() + Duration::from_secs(10),
             (16, 16),
-        );
+        )
+        .expect("the test's memory");
         assert_eq!(search.solve(&root), Some(14));
         let (header, bytes) = crate::format::encode(&root, root.turn(), |pos| {
             let key = (pos.hash(), pos.halfmoves());
@@ -2012,12 +2011,13 @@ mod tests {
         let root =
             crate::position("rnbqkbnr/ppp1pQ1p/3p1pp1/8/8/4P3/PPPP1PPP/RNB1KBNR b KQkq - 1 4")
                 .unwrap();
-        let mut search = Dfpn::new(
+        let mut search = Dfpn::try_new(
             &root,
             Guide::Hand,
             Instant::now() + Duration::from_secs(2),
             (16, 16),
-        );
+        )
+        .expect("the test's memory");
         assert_eq!(search.solve(&root), None);
     }
 }

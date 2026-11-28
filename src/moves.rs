@@ -210,7 +210,10 @@ impl<'a> Mover<'a> {
         if let Some((from, to)) = self.quiet(m)
             && m.promotion().is_none()
         {
-            let role = self.pos.role_at(from).expect("a piece to move");
+            let role = self
+                .pos
+                .role_at(from)
+                .expect("invariant: a legal move's from-square holds a piece");
             return !self.touching
                 && (self.check_squares[role as usize].contains(to)
                     || (self.uncovering.contains(from) && !aligned(from, to, their_king)));
@@ -237,7 +240,10 @@ impl<'a> Mover<'a> {
         } else if effect.capture || Some(from) == self.our_king {
             None
         } else {
-            let role = self.pos.role_at(from).expect("a piece to move");
+            let role = self
+                .pos
+                .role_at(from)
+                .expect("invariant: a legal move's from-square holds a piece");
             Some((to, m.promotion().unwrap_or(role)))
         };
         let mut vacated = Bitboard::square_bb(from);
@@ -341,7 +347,10 @@ impl<'a> Mover<'a> {
         if m.promotion().is_some() || (self.uncovering | self.uncovering_targets).contains(from) {
             return false;
         }
-        let role = self.pos.role_at(from).expect("a piece to move");
+        let role = self
+            .pos
+            .role_at(from)
+            .expect("invariant: a legal move's from-square holds a piece");
         if !self.touching && self.check_squares[role as usize].contains(to) {
             return false;
         }
@@ -370,9 +379,11 @@ impl<'a> Mover<'a> {
         if capturers.is_empty() {
             return false;
         }
-        let role = m
-            .promotion()
-            .unwrap_or_else(|| self.pos.role_at(from).expect("a piece to move"));
+        let role = m.promotion().unwrap_or_else(|| {
+            self.pos
+                .role_at(from)
+                .expect("invariant: a legal move's from-square holds a piece")
+        });
         let destroyed = ring & !self.pos.by_role(Role::Pawn);
         let mut gain = piece_value(role);
         for square in destroyed.squares() {
@@ -407,9 +418,11 @@ impl<'a> Mover<'a> {
         if let Some((from, to)) = self.quiet(m)
             && !self.uncovering_targets.contains(from)
         {
-            let role = m
-                .promotion()
-                .unwrap_or_else(|| self.pos.role_at(from).expect("a piece to move"));
+            let role = m.promotion().unwrap_or_else(|| {
+                self.pos
+                    .role_at(from)
+                    .expect("invariant: a legal move's from-square holds a piece")
+            });
             let attacked = attacks_from(role, self.us, to, effect.occupied);
             return (attacked & self.targets).count();
         }
@@ -437,7 +450,10 @@ impl<'a> Mover<'a> {
         } else if effect.capture || Some(from) == self.our_king {
             None
         } else {
-            let role = self.pos.role_at(from).expect("a piece to move");
+            let role = self
+                .pos
+                .role_at(from)
+                .expect("invariant: a legal move's from-square holds a piece");
             Some((to, m.promotion().unwrap_or(role)))
         };
         let landed_attacks = landed.map_or(Bitboard::EMPTY, |(square, role)| {

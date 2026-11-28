@@ -24,72 +24,17 @@ pub mod table;
 pub mod types;
 pub mod walk;
 
-use atomic_movegen::{Board, FenLoadError, FenPolicy, ValidationErrors};
+use atomic_movegen::{Board, FenPolicy};
 
-use crate::board::Position;
+use crate::board::{FenError, Position};
 
 /// An Atomic position from its FEN, read as Lichess reads one: a castling
 /// right not backed by its pieces and an impossible en passant square are
 /// dropped, more material than a game can reach is allowed, and any other
 /// flaw makes it no position. The error says which in words.
-pub fn position(fen: &str) -> Result<Position, String> {
-    let board = Board::from_fen_with(fen, FenPolicy::Lichess).map_err(read_error)?;
+pub fn position(fen: &str) -> Result<Position, FenError> {
+    let board = Board::from_fen_with(fen, FenPolicy::Lichess).map_err(FenError::from)?;
     Ok(Position::from_board(board))
-}
-
-/// Why a FEN was not read as a position.
-fn read_error(error: FenLoadError) -> String {
-    match error {
-        FenLoadError::Syntax(error) => format!("bad FEN: {error}"),
-        FenLoadError::InvalidPosition(kinds) => format!("illegal position: {}", flaws(kinds)),
-    }
-}
-
-/// Why a position is not one a game reaches.
-fn flaws(kinds: ValidationErrors) -> String {
-    if kinds.contains(ValidationErrors::EMPTY_BOARD) {
-        return "the board is empty".to_owned();
-    }
-    let words = [
-        (
-            ValidationErrors::MISSING_COMMONER_WHITE,
-            "White has no king",
-        ),
-        (
-            ValidationErrors::MISSING_COMMONER_BLACK,
-            "Black has no king",
-        ),
-        (
-            ValidationErrors::TOO_MANY_COMMONERS_WHITE,
-            "White has more than one king",
-        ),
-        (
-            ValidationErrors::TOO_MANY_COMMONERS_BLACK,
-            "Black has more than one king",
-        ),
-        (
-            ValidationErrors::PAWNS_ON_BACKRANK,
-            "a pawn stands on the first or last rank",
-        ),
-        (
-            ValidationErrors::OPPOSITE_CHECK,
-            "the side that just moved is in check",
-        ),
-        (
-            ValidationErrors::IMPOSSIBLE_CHECK,
-            "no game reaches the check",
-        ),
-    ];
-    let found: Vec<&str> = words
-        .into_iter()
-        .filter(|(kind, _)| kinds.contains(*kind))
-        .map(|(_, words)| words)
-        .collect();
-    if found.is_empty() {
-        "no game reaches it".to_owned()
-    } else {
-        found.join("; ")
-    }
 }
 
 /// How the game has ended at `pos`, if it has: the winner, none for a draw,
@@ -154,7 +99,9 @@ mod tests {
     use crate::board::Color;
 
     fn read(fen: &str) -> Result<String, String> {
-        position(fen).map(|pos| pos.to_fen())
+        position(fen)
+            .map(|pos| pos.to_fen())
+            .map_err(|error| error.to_string())
     }
 
     #[test]

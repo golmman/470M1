@@ -1,0 +1,140 @@
+{
+  "cells": [
+    {
+      "id": "1eb80b92f92c",
+      "fen": "rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1",
+      "cap_s": 10.0,
+      "sides": [
+        "base",
+        "cand"
+      ],
+      "base": {
+        "walls_s": [
+          0.1156,
+          0.135,
+          0.1254,
+          0.1145,
+          0.139
+        ],
+        "found": 5,
+        "median_wall_s": 0.1254,
+        "spread": 0.1954,
+        "mate": 18,
+        "nodes": 68692
+      },
+      "cand": {
+        "walls_s": [
+          0.1157,
+          0.116,
+          0.1152,
+          0.113,
+          0.117
+        ],
+        "found": 5,
+        "median_wall_s": 0.1157,
+        "spread": 0.0346,
+        "mate": 18,
+        "nodes": 68692,
+        "child_evals": 904368
+      },
+      "counters_identical": true,
+      "status": "claimed",
+      "factor": 0.9226,
+      "bound": null
+    },
+    {
+      "id": "core",
+      "fen": "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1",
+      "cap_s": 10.0,
+      "sides": [
+        "base",
+        "cand"
+      ],
+      "base": {
+        "walls_s": [
+          0.4946,
+          0.5128,
+          0.4981,
+          0.5129,
+          0.5326
+        ],
+        "found": 5,
+        "median_wall_s": 0.5128,
+        "spread": 0.0741,
+        "mate": 14,
+        "nodes": 350430
+      },
+      "cand": {
+        "walls_s": [
+          0.4934,
+          0.5037,
+          0.5144,
+          0.5167,
+          0.5154
+        ],
+        "found": 5,
+        "median_wall_s": 0.5144,
+        "spread": 0.0453,
+        "mate": 14,
+        "nodes": 350430,
+        "child_evals": 3896430
+      },
+      "counters_identical": true,
+      "status": "claimed",
+      "factor": 1.0031,
+      "bound": null
+    },
+    {
+      "id": "db6a741c723f",
+      "fen": "rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1",
+      "cap_s": 10.0,
+      "sides": [
+        "base",
+        "cand"
+      ],
+      "base": {
+        "walls_s": [
+          5.2592,
+          5.2549,
+          5.2058,
+          5.1658,
+          5.1407
+        ],
+        "found": 5,
+        "median_wall_s": 5.2058,
+        "spread": 0.0228,
+        "mate": 20,
+        "nodes": 3553009
+      },
+      "cand": {
+        "walls_s": [
+          5.322,
+          5.2646,
+          5.2277,
+          5.1585,
+          5.2981
+        ],
+        "found": 5,
+        "median_wall_s": 5.2646,
+        "spread": 0.0311,
+        "mate": 20,
+        "nodes": 3553009,
+        "child_evals": 44828946
+      },
+      "counters_identical": true,
+      "status": "claimed",
+      "factor": 1.0113,
+      "bound": null
+    }
+  ],
+  "claimed": [
+    "1eb80b92f92c",
+    "core",
+    "db6a741c723f"
+  ],
+  "censored": [],
+  "unstable": [],
+  "coverage": "3/3",
+  "geomean": 0.9782,
+  "bounds": {}
+}

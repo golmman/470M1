@@ -1,0 +1,110 @@
+{
+  "reference": [],
+  "candidate": [
+    {
+      "id": "1eb80b92f92c",
+      "run": {
+        "wall_s": 0.1257,
+        "returncode": 0,
+        "found": true,
+        "mate": 18,
+        "nodes": 68692,
+        "child_evals": 904368,
+        "expansions": 53237,
+        "ms": 113,
+        "error": null,
+        "command": [
+          "/tmp/470M1-plan3-bin/cand",
+          "prove",
+          "rnbq1b1r/pp1p1kpp/2p1pp1n/8/3PP1P1/2N2N2/PPP2P1P/R1BQKB1R w KQ - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan3/guard/proofs/candidate/1eb80b92f92c.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan3/guard/proofs/candidate/1eb80b92f92c.pvr",
+      "ours": true,
+      "ours_exit": 0,
+      "theirs": true,
+      "theirs_exit": 0
+    },
+    {
+      "id": "core",
+      "run": {
+        "wall_s": 0.5427,
+        "returncode": 0,
+        "found": true,
+        "mate": 14,
+        "nodes": 350430,
+        "child_evals": 3896430,
+        "expansions": 191557,
+        "ms": 495,
+        "error": null,
+        "command": [
+          "/tmp/470M1-plan3-bin/cand",
+          "prove",
+          "r1b1kbnr/ppp3pp/n4q2/3pppN1/1P1PP3/8/P1P2PPP/RNBQKB1R w KQkq - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan3/guard/proofs/candidate/core.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan3/guard/proofs/candidate/core.pvr",
+      "ours": true,
+      "ours_exit": 0,
+      "theirs": true,
+      "theirs_exit": 0
+    },
+    {
+      "id": "db6a741c723f",
+      "run": {
+        "wall_s": 5.3361,
+        "returncode": 0,
+        "found": true,
+        "mate": 20,
+        "nodes": 3553009,
+        "child_evals": 44828946,
+        "expansions": 2487550,
+        "ms": 5187,
+        "error": null,
+        "command": [
+          "/tmp/470M1-plan3-bin/cand",
+          "prove",
+          "rnb1kbnr/pppp2pp/5q2/4ppN1/3P4/8/PPP1PPPP/RNBQKB1R w KQkq - 0 1",
+          "--seconds",
+          "10",
+          "--memory",
+          "192",
+          "--guide",
+          "hand",
+          "--seed",
+          "0",
+          "--json",
+          "--proofs",
+          "docs/plans/foundation/measurements/plan3/guard/proofs/candidate/db6a741c723f.pvr"
+        ]
+      },
+      "proof": "docs/plans/foundation/measurements/plan3/guard/proofs/candidate/db6a741c723f.pvr",
+      "ours": true,
+      "ours_exit": 0,
+      "theirs": true,
+      "theirs_exit": 0
+    }
+  ]
+}

@@ -37,7 +37,10 @@ pub(crate) fn run(file: &ConfigFile, args: &LineArgs) -> Result<Status, Error> {
         config.pgn.is_some(),
         config.until.map(|until| until.0),
     )
-    .map_err(|error| Error::Moves(format!("the moves \"{played}\": {error}")))?;
+    .map_err(|source| Error::Moves {
+        played: played.clone(),
+        source,
+    })?;
     if let (Some(path), Some(text)) = (&config.pgn, text) {
         write::atomic(path, text.as_bytes()).map_err(|source| Error::Write {
             path: path.clone(),
@@ -54,11 +57,15 @@ fn read_moves(bytes: &[u8]) -> Result<(Position, Color, atomic470mi::walk::Moves
     if let Some((header, indices)) = format::decode(bytes).map_err(Error::Proof)? {
         return format::strategy(&header, &indices).map_err(Error::Proof);
     }
-    let text =
-        std::str::from_utf8(bytes).map_err(|_| Error::Proof("neither proof format".into()))?;
+    let text = std::str::from_utf8(bytes)
+        .map_err(|_| Error::Proof(format::Error::Mismatch("neither proof format".to_owned())))?;
     let (_, compact) = format::encode_jsonl(text).map_err(Error::Proof)?;
     let (header, indices) = format::decode(&compact)
         .map_err(Error::Proof)?
-        .ok_or_else(|| Error::Proof("the JSON-lines proof did not convert".into()))?;
+        .ok_or_else(|| {
+            Error::Proof(format::Error::Mismatch(
+                "the JSON-lines proof did not convert".to_owned(),
+            ))
+        })?;
     format::strategy(&header, &indices).map_err(Error::Proof)
 }

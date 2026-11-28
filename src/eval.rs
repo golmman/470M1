@@ -131,51 +131,51 @@ fn check_masks(
     masks
 }
 
-/// The pre-formulation, one board walk per side, kept as the test witness.
-#[cfg(test)]
-fn terms_reference(pos: &Position, color: Color) -> Terms {
-    let ours = pos.by_color(color);
-    let theirs = pos.by_color(color.flip());
-    let occupied = pos.occupied();
-    let kings = pos.by_role(Role::Commoner);
-    let mut terms = Terms::default();
-    for square in (ours & !kings).squares() {
-        terms.material += pos.role_at(square).map_or(0, |role| VALUES[role as usize]);
-    }
-    let (Some(their_king), Some(our_king)) = (pos.king(color.flip()), pos.king(color)) else {
-        return terms;
-    };
-    let ring = attacks::king_attacks(their_king);
-    if ring.contains(our_king) {
-        return terms;
-    }
-    let targets = ring & theirs & !attacks::king_attacks(our_king);
-    let mut attacked = Bitboard::EMPTY;
-    let mut pressure = 0u32;
-    let mut checkers = 0u32;
-    for square in (ours & !kings).squares() {
-        let Some(role) = pos.role_at(square) else {
-            continue;
-        };
-        let reach = attacks_from(role, color, square, occupied);
-        attacked = attacked | reach;
-        pressure += (reach & ring).count() as u32;
-        let checks = attacks_from(role, color.flip(), their_king, occupied);
-        if (reach & checks & !ours).any() {
-            checkers += 1;
-        }
-    }
-    terms.targets = (attacked & targets).count().min(2) as u32;
-    terms.fuses = (ring & theirs).count() as u32;
-    terms.pressure = pressure;
-    terms.checkers = checkers;
-    terms
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::board::Position;
+
+    /// The pre-formulation, one board walk per side, kept as the test witness.
+    #[cfg(test)]
+    fn terms_reference(pos: &Position, color: Color) -> Terms {
+        let ours = pos.by_color(color);
+        let theirs = pos.by_color(color.flip());
+        let occupied = pos.occupied();
+        let kings = pos.by_role(Role::Commoner);
+        let mut terms = Terms::default();
+        for square in (ours & !kings).squares() {
+            terms.material += pos.role_at(square).map_or(0, |role| VALUES[role as usize]);
+        }
+        let (Some(their_king), Some(our_king)) = (pos.king(color.flip()), pos.king(color)) else {
+            return terms;
+        };
+        let ring = attacks::king_attacks(their_king);
+        if ring.contains(our_king) {
+            return terms;
+        }
+        let targets = ring & theirs & !attacks::king_attacks(our_king);
+        let mut attacked = Bitboard::EMPTY;
+        let mut pressure = 0u32;
+        let mut checkers = 0u32;
+        for square in (ours & !kings).squares() {
+            let Some(role) = pos.role_at(square) else {
+                continue;
+            };
+            let reach = attacks_from(role, color, square, occupied);
+            attacked = attacked | reach;
+            pressure += (reach & ring).count() as u32;
+            let checks = attacks_from(role, color.flip(), their_king, occupied);
+            if (reach & checks & !ours).any() {
+                checkers += 1;
+            }
+        }
+        terms.targets = (attacked & targets).count().min(2) as u32;
+        terms.fuses = (ring & theirs).count() as u32;
+        terms.pressure = pressure;
+        terms.checkers = checkers;
+        terms
+    }
 
     /// The pre-formulation's `evaluate`, for equality.
     fn evaluate_reference(pos: &Position) -> i32 {

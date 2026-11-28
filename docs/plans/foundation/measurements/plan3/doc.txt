@@ -1,0 +1,5 @@
+cargo doc --no-deps
+    Checking atomic470mi v0.1.0 (/workspace/470M1)
+ Documenting atomic470mi v0.1.0 (/workspace/470M1)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.32s
+   Generated /workspace/470M1/target/doc/atomic470mi/index.html and 1 other file

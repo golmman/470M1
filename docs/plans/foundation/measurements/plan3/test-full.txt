@@ -1,0 +1,352 @@
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+    Checking atomic470mi v0.1.0 (/workspace/470M1)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.38s
+scripts/licence.sh
+licence gate: all dependencies are GPL-3.0-or-later compatible
+cargo test
+   Compiling atomic470mi v0.1.0 (/workspace/470M1)
+    Finished `test` profile [optimized + debuginfo] target(s) in 4.11s
+     Running unittests src/lib.rs (target/debug/build/atomic470mi/0eeab58016298818/out/atomic470mi-0eeab58016298818)
+
+running 51 tests
+test board::tests::null_advances_the_clock ... ok
+test board::tests::moves_and_effects_agree ... ok
+test check::tests::accepts_a_win ... ok
+test check::tests::checks_a_root_draw_before_a_zeroing_capture ... ok
+test check::tests::finds_the_explosions_left_out ... ok
+test check::tests::accepts_a_compact_proof ... ok
+test check::tests::refuses_zero_workers ... ok
+test check::tests::rejects_a_line_that_can_repeat ... ok
+test check::tests::rejects_a_missing_move ... ok
+test check::tests::rejects_an_illegal_move ... ok
+test check::tests::keeps_to_its_limits ... ok
+test check::tests::rejects_the_50_move_limit ... ok
+test check::tests::rejects_damaged_compact_proofs ... ok
+test check::tests::settles_a_check_that_wins_in_two ... ok
+test check::tests::uses_nothing_from_the_prover ... ok
+test check::tests::accepts_a_proof_for_the_side_not_to_move ... ok
+test dfpn::tests::a_repeated_position_is_a_draw ... ok
+test dfpn::tests::a_seed_breaks_only_exact_ties ... ok
+test check::tests::reports_the_highest_counter_its_root_may_have ... ok
+test dfpn::tests::a_known_loss_is_not_proved ... ok
+test dfpn::tests::seed_zero_keeps_the_core_tree_unchanged ... ok
+test check::tests::answers_damaged_proofs_as_the_reader_does ... ok
+test dfpn::tests::the_fifty_move_limit_is_not_a_win ... ok
+test dfpn::tests::values_and_thresholds ... ok
+test eval::tests::terms_match_the_reference_over_seeded_play_outs ... ok
+test eval::tests::terms_match_the_reference_over_the_corpus ... ok
+test format::tests::orders_and_judges_consistently ... ok
+test format::tests::proves_a_win_for_the_side_not_to_move ... ok
+test format::tests::reads_back_what_it_writes ... ok
+test lines::tests::shows_a_proof_from_the_defender_to_move ... ok
+test lines::tests::values_follow_the_proof ... ok
+test lines::tests::writes_a_tree ... ok
+test moves::tests::en_passant_explosion ... ok
+test moves::tests::en_passant_explosion_negatives ... ok
+test moves::tests::en_passant_witness_order ... ok
+test moves::tests::evasion_context_matches_position_legal ... ok
+test dfpn::tests::proves_core_and_writes_a_checked_proof ... ok
+test proofs::tests::drops_mates_and_keeps_the_rest ... ok
+test proofs::tests::fills_to_nine_tenths ... ok
+test proofs::tests::keeps_mates_as_other_proofs ... ok
+test proofs::tests::keeps_proofs_whole ... ok
+test proofs::tests::keeps_the_shortest_proof_for_each_counter ... ok
+test search::tests::a_root_draw_precedes_a_capture_that_would_win ... ok
+test table::tests::a_rebuild_takes_back_a_sparse_filter ... ok
+test table::tests::drops_a_filled_filter ... ok
+test table::tests::takes_any_size ... ok
+test tests::reads_fens_as_lichess_does ... ok
+test tests::tells_how_a_game_ended ... ok
+test dfpn::tests::seeds_are_deterministic ... ok
+test dfpn::tests::a_seed_does_not_change_a_proof ... ok
+test moves::tests::matches_the_played_positions ... ok
+
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.99s
+
+     Running unittests src/main.rs (target/debug/build/atomic470mi/41d035b90e9e27a4/out/470MI-41d035b90e9e27a4)
+
+running 12 tests
+test app::error::tests::forwards_a_proof_error_and_its_source ... ok
+test app::error::tests::keeps_the_moves_prefix ... ok
+test app::values::tests::guide ... ok
+test app::values::tests::seconds ... ok
+test app::values::tests::megabytes ... ok
+test app::values::tests::repeats ... ok
+test app::values::tests::workers ... ok
+test app::values::tests::until ... ok
+test app::values::tests::evals ... ok
+test app::write::tests::checks_the_target_before_work ... ok
+test app::write::tests::a_failed_write_keeps_the_old_bytes ... ok
+test app::write::tests::replaces_the_target ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/bench_cells.rs (target/debug/build/atomic470mi/5ceb5eae55c0ab4c/out/bench_cells-5ceb5eae55c0ab4c)
+
+running 1 test
+test bench_cells_prove_and_repeat_their_counters ... ignored, slow: proves the three bench cells at 10 s twice
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/checker.rs (target/debug/build/atomic470mi/e0eeaffb9bf829b0/out/checker-e0eeaffb9bf829b0)
+
+running 2 tests
+test rejects_every_control_fixture ... ok
+test accepts_every_pinned_proof_fixture ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running tests/cli.rs (target/debug/build/atomic470mi/054165651cbfcd1f/out/cli-054165651cbfcd1f)
+
+running 10 tests
+test check_flags_land_in_config ... ok
+test bad_flag_values_are_usage_errors ... ok
+test bench_flags_land_in_config ... ok
+test help_and_version ... ok
+test line_flags_land_in_config ... ok
+test missing_arguments_are_usage_errors ... ok
+test garbage_never_panics ... ok
+test a_closed_stdout_is_an_error_not_a_panic ... ok
+test exit_codes_0_to_3 ... ok
+test prove_flags_land_in_config ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/config.rs (target/debug/build/atomic470mi/cc8d6c72f66225f1/out/config-cc8d6c72f66225f1)
+
+running 7 tests
+test config_file_errors_are_usage_errors ... ok
+test bad_toml_values_are_usage_errors ... ok
+test flag_beats_file_beats_default ... ok
+test defaults_match_the_table ... ok
+test prove_defaults_with_no_flags_at_all ... ok
+test config_never_moves_the_search ... ok
+test every_toml_key_lands_in_config ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/differential.rs (target/debug/build/atomic470mi/15b7a863efde2fbf/out/differential-15b7a863efde2fbf)
+
+running 6 tests
+test material_divergence_is_explicit ... ok
+test en_passant_explosion_regression ... ok
+test rules_differential_full ... ignored, slow: rules differential over fixtures, corpus and play-outs
+test native_keys_are_deterministic ... ok
+test fen_acceptance_and_rules_smoke ... ok
+test native_keys_match_movegen ... ok
+
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/errors.rs (target/debug/build/atomic470mi/194db0d1552954c7/out/errors-194db0d1552954c7)
+
+running 6 tests
+test an_io_error_keeps_its_source ... ok
+test position_delegates_to_the_rules_error ... ok
+test bad_check_options_are_an_entry_error ... ok
+test display_snapshots_are_unchanged ... ok
+test the_source_guard_holds ... ok
+test the_checker_keeps_its_verdict_split ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/prover.rs (target/debug/build/atomic470mi/cf86b0c7bece9891/out/prover-cf86b0c7bece9891)
+
+running 2 tests
+test proves_every_known_win_fixture ... ok
+test refuses_every_never_prove_negative ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.51s
+
+   Doc-tests atomic470mi
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+cargo test -- --ignored
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/debug/build/atomic470mi/0eeab58016298818/out/atomic470mi-0eeab58016298818)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 51 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/build/atomic470mi/41d035b90e9e27a4/out/470MI-41d035b90e9e27a4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+     Running tests/bench_cells.rs (target/debug/build/atomic470mi/5ceb5eae55c0ab4c/out/bench_cells-5ceb5eae55c0ab4c)
+
+running 1 test
+test bench_cells_prove_and_repeat_their_counters ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.46s
+
+     Running tests/checker.rs (target/debug/build/atomic470mi/e0eeaffb9bf829b0/out/checker-e0eeaffb9bf829b0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/cli.rs (target/debug/build/atomic470mi/054165651cbfcd1f/out/cli-054165651cbfcd1f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+     Running tests/config.rs (target/debug/build/atomic470mi/cc8d6c72f66225f1/out/config-cc8d6c72f66225f1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/differential.rs (target/debug/build/atomic470mi/15b7a863efde2fbf/out/differential-15b7a863efde2fbf)
+
+running 1 test
+test rules_differential_full ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 1.88s
+
+     Running tests/errors.rs (target/debug/build/atomic470mi/194db0d1552954c7/out/errors-194db0d1552954c7)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests/prover.rs (target/debug/build/atomic470mi/cf86b0c7bece9891/out/prover-cf86b0c7bece9891)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+   Doc-tests atomic470mi
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+make unsafe-feature
+make[1]: Entering directory '/workspace/470M1'
+scripts/unsafe_feature_gate.sh
+
+running 196 tests
+....................................................................................... 87/196
+....................................................................................... 174/196
+......................
+test result: ok. 196 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.14s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.90s
+
+
+running 7 tests
+.......
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.12s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+
+
+running 12 tests
+............
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.04s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.73s
+
+
+running 4 tests
+....
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.42s
+
+
+running 9 tests
+.........
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.81s
+
+
+running 4 tests
+....
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.55s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 7 tests
+.......
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 4 tests
+....
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s
+
+
+running 5 tests
+.....
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.69s
+
+
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 9 tests
+.........
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.55s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+
+running 18 tests
+..................
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 0.22s; merged doctests compilation took 0.22s
+make[1]: Leaving directory '/workspace/470M1'
+make veto
+make[1]: Entering directory '/workspace/470M1'
+scripts/veto.sh
+== accept tests/fixtures/proofs/core.pvr
+== accept tests/fixtures/proofs/deep-win.pvr
+== accept tests/fixtures/proofs/detour.pvr
+== accept tests/fixtures/proofs/easy-win.pvr
+== accept tests/fixtures/proofs/m1_checkmate.pvr
+== accept tests/fixtures/proofs/m1_explosion.pvr
+== accept tests/fixtures/proofs/m2.pvr
+== accept tests/fixtures/proofs/mate_100th_ply.pvr
+== accept tests/fixtures/proofs/smallest_win.pvr
+== reject tests/fixtures/controls/core-truncated.pvr
+veto: all fixtures accepted, all controls rejected
+make[1]: Leaving directory '/workspace/470M1'

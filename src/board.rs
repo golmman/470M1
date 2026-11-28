@@ -11,16 +11,134 @@
 //! Castling is standard: the kings start on the e-file and the rooks in the
 //! corners.
 
+use std::fmt;
 use std::mem::MaybeUninit;
 use std::ops::ControlFlow;
 
 use atomic_movegen::{
-    Board as NativeBoard, Counts, EnPassantMode, Move as NativeMove, Square as NativeSquare,
-    movegen,
+    Board as NativeBoard, Counts, EnPassantMode, FenLoadError, Move as NativeMove,
+    Square as NativeSquare, ValidationErrors, movegen,
 };
 
 use crate::types::{self, BitboardExt, role_of};
 pub use crate::types::{Bitboard, CastlingSide, Color, Piece, PieceType as Role, Square};
+
+/// Why a position is not one a game reaches.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Flaw {
+    EmptyBoard,
+    MissingKing(Color),
+    TooManyKings(Color),
+    PawnOnBackRank,
+    OppositeCheck,
+    ImpossibleCheck,
+    /// A validator flag this layer does not know how to name.
+    Unreachable,
+}
+
+impl fmt::Display for Flaw {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Flaw::EmptyBoard => write!(out, "the board is empty"),
+            Flaw::MissingKing(Color::White) => write!(out, "White has no king"),
+            Flaw::MissingKing(Color::Black) => write!(out, "Black has no king"),
+            Flaw::TooManyKings(Color::White) => write!(out, "White has more than one king"),
+            Flaw::TooManyKings(Color::Black) => write!(out, "Black has more than one king"),
+            Flaw::MissingKing(_) => write!(out, "a king is missing"),
+            Flaw::TooManyKings(_) => write!(out, "a side has more than one king"),
+            Flaw::PawnOnBackRank => write!(out, "a pawn stands on the first or last rank"),
+            Flaw::OppositeCheck => write!(out, "the side that just moved is in check"),
+            Flaw::ImpossibleCheck => write!(out, "no game reaches the check"),
+            Flaw::Unreachable => write!(out, "no game reaches it"),
+        }
+    }
+}
+
+/// Why a FEN is not read as a position: bad syntax, or a well-formed board
+/// no game reaches.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum FenError {
+    Syntax(FenLoadError),
+    Illegal(Vec<Flaw>),
+}
+
+impl fmt::Display for FenError {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            FenError::Syntax(FenLoadError::Syntax(error)) => write!(out, "bad FEN: {error}"),
+            FenError::Syntax(error) => write!(out, "bad FEN: {error}"),
+            FenError::Illegal(flaws) => {
+                write!(out, "illegal position: ")?;
+                if flaws.is_empty() {
+                    return write!(out, "no game reaches it");
+                }
+                for (i, flaw) in flaws.iter().enumerate() {
+                    if i > 0 {
+                        write!(out, "; ")?;
+                    }
+                    write!(out, "{flaw}")?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
+impl std::error::Error for FenError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            FenError::Syntax(error) => Some(error),
+            FenError::Illegal(_) => None,
+        }
+    }
+}
+
+impl From<FenLoadError> for FenError {
+    fn from(error: FenLoadError) -> FenError {
+        match error {
+            FenLoadError::Syntax(error) => FenError::Syntax(FenLoadError::Syntax(error)),
+            FenLoadError::InvalidPosition(kinds) => FenError::Illegal(flaws(kinds)),
+        }
+    }
+}
+
+/// The flaws a validator reports, in the order the messages name them.
+fn flaws(kinds: ValidationErrors) -> Vec<Flaw> {
+    if kinds.contains(ValidationErrors::EMPTY_BOARD) {
+        return vec![Flaw::EmptyBoard];
+    }
+    let words = [
+        (
+            ValidationErrors::MISSING_COMMONER_WHITE,
+            Flaw::MissingKing(Color::White),
+        ),
+        (
+            ValidationErrors::MISSING_COMMONER_BLACK,
+            Flaw::MissingKing(Color::Black),
+        ),
+        (
+            ValidationErrors::TOO_MANY_COMMONERS_WHITE,
+            Flaw::TooManyKings(Color::White),
+        ),
+        (
+            ValidationErrors::TOO_MANY_COMMONERS_BLACK,
+            Flaw::TooManyKings(Color::Black),
+        ),
+        (ValidationErrors::PAWNS_ON_BACKRANK, Flaw::PawnOnBackRank),
+        (ValidationErrors::OPPOSITE_CHECK, Flaw::OppositeCheck),
+        (ValidationErrors::IMPOSSIBLE_CHECK, Flaw::ImpossibleCheck),
+    ];
+    let found: Vec<Flaw> = words
+        .into_iter()
+        .filter(|(kind, _)| kinds.contains(*kind))
+        .map(|(_, flaw)| flaw)
+        .collect();
+    if found.is_empty() {
+        vec![Flaw::Unreachable]
+    } else {
+        found
+    }
+}
 
 /// A move in `atomic-movegen`'s stable 16-bit wire encoding. The native value
 /// is kept whole, so the move list, legality and effect calls need no
@@ -92,11 +210,16 @@ impl Move {
         let from = self.from() as u16;
         let to = self.to() as u16;
         let kind = match self.promotion() {
-            Some(Role::Knight) => 3,
-            Some(Role::Bishop) => 4,
-            Some(Role::Rook) => 5,
-            Some(Role::Queen) => 6,
-            Some(_) => unreachable!("a promotion to pawn or commoner"),
+            Some(role) => {
+                let kind = match role {
+                    Role::Knight => Some(3),
+                    Role::Bishop => Some(4),
+                    Role::Rook => Some(5),
+                    Role::Queen => Some(6),
+                    _ => None,
+                };
+                kind.expect("invariant: a promotion is to a queen, rook, bishop or knight")
+            }
             None if self.is_en_passant() => 1,
             None if self.is_castle() => 2,
             None => 0,
@@ -108,16 +231,17 @@ impl Move {
     pub(crate) fn from_proof_bits(bits: u16) -> Move {
         let from = Square::from_u8((bits & 63) as u8);
         let to = Square::from_u8(((bits >> 6) & 63) as u8);
-        let native = match bits >> 12 {
-            0 => NativeMove::make_move(from, to),
-            1 => NativeMove::make_enpassant(from, to),
-            2 => NativeMove::make_castling(from, to),
-            3 => NativeMove::make_promotion(from, to, Role::Knight),
-            4 => NativeMove::make_promotion(from, to, Role::Bishop),
-            5 => NativeMove::make_promotion(from, to, Role::Rook),
-            6 => NativeMove::make_promotion(from, to, Role::Queen),
-            _ => unreachable!("a proof move kind"),
+        let kind = match bits >> 12 {
+            0 => Some(NativeMove::make_move(from, to)),
+            1 => Some(NativeMove::make_enpassant(from, to)),
+            2 => Some(NativeMove::make_castling(from, to)),
+            3 => Some(NativeMove::make_promotion(from, to, Role::Knight)),
+            4 => Some(NativeMove::make_promotion(from, to, Role::Bishop)),
+            5 => Some(NativeMove::make_promotion(from, to, Role::Rook)),
+            6 => Some(NativeMove::make_promotion(from, to, Role::Queen)),
+            _ => None,
         };
+        let native = kind.expect("invariant: a proof move's kind is one `proof_bits` writes");
         Move::from_native(native)
     }
 }
@@ -183,7 +307,7 @@ impl Position {
     }
 
     /// A position read from FEN under the Lichess policy.
-    pub fn from_fen(fen: &str) -> Result<Position, String> {
+    pub fn from_fen(fen: &str) -> Result<Position, FenError> {
         crate::position(fen)
     }
 
@@ -332,7 +456,7 @@ impl Position {
                 counts,
                 EnPassantMode::Legal,
             )
-            .expect("a well-formed move");
+            .expect("invariant: a legal move has a child effect");
         Effect {
             hash: child.key,
             counter: u32::from(child.rule50),
@@ -400,6 +524,7 @@ mod tests {
             assert!(pos.is_pseudo_legal(m));
             let bits = m.bits();
             assert_eq!(Move::from_bits(bits), m);
+            assert_eq!(Move::from_proof_bits(m.proof_bits()), m, "{m:?}");
         }
     }
 

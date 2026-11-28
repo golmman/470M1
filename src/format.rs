@@ -9,8 +9,10 @@
 //! zstd frame and header fields are unchanged.
 
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::fs;
-use std::path::Path;
+use std::io;
+use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
 
@@ -23,6 +25,54 @@ const VERSION: u64 = 1;
 /// The zstd level proofs are written at: smaller than the fast levels, and
 /// still quick.
 const LEVEL: i32 = 19;
+
+/// Why a proof cannot be written or read.
+#[derive(Debug)]
+pub enum Error {
+    /// A proof file could not be read.
+    Read { path: PathBuf, source: io::Error },
+    /// JSON is malformed, or a needed field is missing.
+    Json(String),
+    /// A zstd frame is damaged, or cannot be written.
+    Zstd(String),
+    /// The header is not one this format knows.
+    Header(String),
+    /// A position in the proof is not one a game reaches.
+    Position(String),
+    /// A move in the proof is not legal where it is played.
+    Move(String),
+    /// A proof walk failed.
+    Walk(String),
+    /// The proof needs tablebases, which cannot be walked here.
+    Tablebases(String),
+    /// The proof does not match its own header or file.
+    Mismatch(String),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Read { path, source } => write!(out, "{}: {source}", path.display()),
+            Error::Json(message)
+            | Error::Zstd(message)
+            | Error::Header(message)
+            | Error::Position(message)
+            | Error::Move(message)
+            | Error::Walk(message)
+            | Error::Tablebases(message)
+            | Error::Mismatch(message) => write!(out, "{message}"),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::Read { source, .. } => Some(source),
+            _ => None,
+        }
+    }
+}
 
 /// A compact proof's header.
 pub struct Header {
@@ -76,11 +126,6 @@ fn judge(pos: &Position, attacker: Color, legal: &[Move]) -> State {
     State::Open
 }
 
-#[cfg(test)]
-fn state(pos: &Position, attacker: Color) -> State {
-    judge(pos, attacker, &pos.legal_moves())
-}
-
 /// Whether the attacker's move just played won at once: the defender's king
 /// exploded, which only a capture does, or the defender mated, which only a
 /// check does.
@@ -117,7 +162,7 @@ fn is_capture(pos: &Position, m: Move) -> bool {
 /// when reading. `choose` returns the index of the move in `moves`, the
 /// position's legal moves in the format's order.
 trait Chooser {
-    fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, String>;
+    fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, Error>;
 }
 
 struct Walk<C> {
@@ -134,20 +179,20 @@ struct Walk<C> {
 }
 
 impl<C: Chooser> Walk<C> {
-    fn root(&mut self, root: &Position) -> Result<u32, String> {
+    fn root(&mut self, root: &Position) -> Result<u32, Error> {
         let legal = root.legal_moves();
         match judge(root, self.attacker, &legal) {
             State::Won => Ok(0),
-            State::Failed => Err(format!(
+            State::Failed => Err(Error::Walk(format!(
                 "the root is over or at the 50-move limit: {}",
                 root.to_fen()
-            )),
+            ))),
             State::Open if root.turn() == self.attacker => self.attacker_to_move(root, legal),
             State::Open => self.defender_to_move(root, legal),
         }
     }
 
-    fn attacker_to_move(&mut self, pos: &Position, legal: Vec<Move>) -> Result<u32, String> {
+    fn attacker_to_move(&mut self, pos: &Position, legal: Vec<Move>) -> Result<u32, Error> {
         let (hash, counter) = (pos.hash(), pos.halfmoves());
         if let Some(&(highest, length)) = self.proven.get(&hash)
             && counter <= highest
@@ -155,7 +200,7 @@ impl<C: Chooser> Walk<C> {
             return Ok(length);
         }
         if !self.line.insert(hash) {
-            return Err(format!("a line repeats {}", pos.to_fen()));
+            return Err(Error::Walk(format!("a line repeats {}", pos.to_fen())));
         }
         let (length, m) = self.prove(pos, legal)?;
         self.line.remove(&hash);
@@ -173,7 +218,7 @@ impl<C: Chooser> Walk<C> {
     }
 
     /// Proves an attacker position: its length, and its move.
-    fn prove(&mut self, pos: &Position, legal: Vec<Move>) -> Result<(u32, Option<Move>), String> {
+    fn prove(&mut self, pos: &Position, legal: Vec<Move>) -> Result<(u32, Option<Move>), Error> {
         // Checks first, then the format's order, which tells every move
         // apart. The positions after the moves are made again where needed,
         // which costs less than keeping them all.
@@ -232,19 +277,19 @@ impl<C: Chooser> Walk<C> {
         })
     }
 
-    fn defender_to_move(&mut self, pos: &Position, mut replies: Vec<Move>) -> Result<u32, String> {
+    fn defender_to_move(&mut self, pos: &Position, mut replies: Vec<Move>) -> Result<u32, Error> {
         match judge(pos, self.attacker, &replies) {
             State::Won => return Ok(0),
             State::Failed => {
-                return Err(format!(
+                return Err(Error::Walk(format!(
                     "the line ends without the attacker winning: {}",
                     pos.to_fen()
-                ));
+                )));
             }
             State::Open => {}
         }
         if !self.line.insert(pos.hash()) {
-            return Err(format!("a line repeats {}", pos.to_fen()));
+            return Err(Error::Walk(format!("a line repeats {}", pos.to_fen())));
         }
         // No two moves share a number.
         replies.sort_unstable_by_key(|&m| number(pos, m));
@@ -253,10 +298,10 @@ impl<C: Chooser> Walk<C> {
             let next = pos.play(reply);
             let legal = next.legal_moves();
             if judge(&next, self.attacker, &legal) != State::Open {
-                return Err(format!(
+                return Err(Error::Walk(format!(
                     "a defence ends the line without the attacker winning: {}",
                     pos.to_fen()
-                ));
+                )));
             }
             longest = longest.max(self.attacker_to_move(&next, legal)?);
         }
@@ -272,13 +317,15 @@ struct FromSearch<F> {
 }
 
 impl<F: FnMut(&Position) -> Option<Move>> Chooser for FromSearch<F> {
-    fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, String> {
+    fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, Error> {
         let m = (self.source)(pos)
-            .ok_or_else(|| format!("no winning move recorded for {}", pos.to_fen()))?;
-        let index = moves
-            .iter()
-            .position(|legal| *legal == m)
-            .ok_or_else(|| format!("the recorded move is not legal in {}", pos.to_fen()))?;
+            .ok_or_else(|| Error::Walk(format!("no winning move recorded for {}", pos.to_fen())))?;
+        let index = moves.iter().position(|legal| *legal == m).ok_or_else(|| {
+            Error::Move(format!(
+                "the recorded move is not legal in {}",
+                pos.to_fen()
+            ))
+        })?;
         self.indices.push(index as u32);
         Ok(index)
     }
@@ -291,18 +338,19 @@ struct FromFile<'a> {
 }
 
 impl Chooser for FromFile<'_> {
-    fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, String> {
+    fn choose(&mut self, pos: &Position, moves: &[Move]) -> Result<usize, Error> {
         let index = *self
             .indices
             .get(self.next)
-            .ok_or("the proof's moves run out")? as usize;
+            .ok_or_else(|| Error::Move("the proof's moves run out".to_owned()))?
+            as usize;
         self.next += 1;
         if index >= moves.len() {
-            return Err(format!(
+            return Err(Error::Move(format!(
                 "move {index} of {} in {}",
                 moves.len(),
                 pos.to_fen()
-            ));
+            )));
         }
         Ok(index)
     }
@@ -313,7 +361,7 @@ pub fn encode(
     root: &Position,
     attacker: Color,
     source: impl FnMut(&Position) -> Option<Move>,
-) -> Result<(Header, Vec<u8>), String> {
+) -> Result<(Header, Vec<u8>), Error> {
     let (header, indices) = walk(root, attacker, source)?;
     let bytes = file(&header, &indices)?;
     Ok((header, bytes))
@@ -326,7 +374,7 @@ pub fn walk(
     root: &Position,
     attacker: Color,
     source: impl FnMut(&Position) -> Option<Move>,
-) -> Result<(Header, Vec<u32>), String> {
+) -> Result<(Header, Vec<u32>), Error> {
     let board = root.clone();
     let mut walk = Walk {
         attacker,
@@ -351,7 +399,7 @@ pub fn walk(
 }
 
 /// A proof's file: its header line, then its moves in a zstd frame.
-pub fn file(header: &Header, indices: &[u32]) -> Result<Vec<u8>, String> {
+pub fn file(header: &Header, indices: &[u32]) -> Result<Vec<u8>, Error> {
     let mut body = Vec::with_capacity(indices.len());
     for &index in indices {
         if index < 128 {
@@ -367,7 +415,7 @@ pub fn file(header: &Header, indices: &[u32]) -> Result<Vec<u8>, String> {
             compressor.include_checksum(true)?;
             compressor.compress(&body)
         })
-        .map_err(|e| format!("cannot compress: {e}"))?;
+        .map_err(|e| Error::Zstd(format!("cannot compress: {e}")))?;
     let mut bytes = header_line(header).into_bytes();
     bytes.push(b'\n');
     bytes.extend(body);
@@ -377,22 +425,36 @@ pub fn file(header: &Header, indices: &[u32]) -> Result<Vec<u8>, String> {
 /// A proof in JSON lines as the bytes of a compact one, its moves taken by
 /// position and counter, as the lines list them; JSON lines prove wins for
 /// the side to move.
-pub fn encode_jsonl(text: &str) -> Result<(Header, Vec<u8>), String> {
-    let parse = |fen: &str| -> Result<Position, String> {
-        crate::position(fen).map_err(|flaws| format!("an illegal position {fen}: {flaws}"))
+pub fn encode_jsonl(text: &str) -> Result<(Header, Vec<u8>), Error> {
+    let parse = |fen: &str| -> Result<Position, Error> {
+        crate::position(fen)
+            .map_err(|error| Error::Position(format!("an illegal position {fen}: {error}")))
     };
     let mut lines = text.lines().filter(|line| !line.trim().is_empty());
-    let head: Value =
-        serde_json::from_str(lines.next().ok_or("an empty proof")?).map_err(|e| e.to_string())?;
-    let root = parse(head["root"].as_str().ok_or("a proof without its root")?)?;
+    let head: Value = serde_json::from_str(
+        lines
+            .next()
+            .ok_or_else(|| Error::Json("an empty proof".to_owned()))?,
+    )
+    .map_err(|e| Error::Json(e.to_string()))?;
+    let root = parse(
+        head["root"]
+            .as_str()
+            .ok_or_else(|| Error::Header("a proof without its root".to_owned()))?,
+    )?;
     let mut moves = HashMap::new();
     for line in lines {
-        let entry: Value = serde_json::from_str(line).map_err(|e| e.to_string())?;
+        let entry: Value = serde_json::from_str(line).map_err(|e| Error::Json(e.to_string()))?;
         let Some(uci) = entry["move"].as_str() else {
             continue;
         };
-        let pos = parse(entry["fen"].as_str().ok_or("a line without its position")?)?;
-        let m = Move::from_uci(&pos, uci).ok_or(format!("{uci} is not legal"))?;
+        let pos = parse(
+            entry["fen"]
+                .as_str()
+                .ok_or_else(|| Error::Header("a line without its position".to_owned()))?,
+        )?;
+        let m =
+            Move::from_uci(&pos, uci).ok_or_else(|| Error::Move(format!("{uci} is not legal")))?;
         moves.insert((pos.hash(), pos.halfmoves()), m);
     }
     let attacker = root.turn();
@@ -418,14 +480,17 @@ fn header_line(header: &Header) -> String {
 
 /// A proof in this format: its header and moves; none for a proof in JSON
 /// lines.
-pub fn read(path: &Path) -> Result<Option<(Header, Vec<u32>)>, String> {
-    let bytes = fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+pub fn read(path: &Path) -> Result<Option<(Header, Vec<u32>)>, Error> {
+    let bytes = fs::read(path).map_err(|source| Error::Read {
+        path: path.to_owned(),
+        source,
+    })?;
     decode(&bytes)
 }
 
 /// A proof's header and moves from the bytes of its file; none for JSON
 /// lines.
-pub fn decode(bytes: &[u8]) -> Result<Option<(Header, Vec<u32>)>, String> {
+pub fn decode(bytes: &[u8]) -> Result<Option<(Header, Vec<u32>)>, Error> {
     let Some(end) = bytes.iter().take(4096).position(|&byte| byte == b'\n') else {
         return Ok(None);
     };
@@ -436,39 +501,52 @@ pub fn decode(bytes: &[u8]) -> Result<Option<(Header, Vec<u32>)>, String> {
         return Ok(None);
     }
     if head["provari"] != VERSION || head["variant"] != "atomic" {
-        return Err(format!("not a proof this version reads: {head}"));
+        return Err(Error::Header(format!(
+            "not a proof this version reads: {head}"
+        )));
     }
-    let number = |key: &str| head[key].as_u64().ok_or(format!("a bad {key}"));
+    let number = |key: &str| {
+        head[key]
+            .as_u64()
+            .ok_or_else(|| Error::Header(format!("a bad {key}")))
+    };
     let attacker = head
         .get("attacker")
         .map(|attacker| {
             attacker
                 .as_str()
                 .and_then(types::parse_color)
-                .ok_or("a bad attacker")
+                .ok_or_else(|| Error::Header("a bad attacker".to_owned()))
         })
         .transpose()?;
     let header = Header {
-        root: head["root"].as_str().ok_or("a bad root")?.to_owned(),
+        root: head["root"]
+            .as_str()
+            .ok_or_else(|| Error::Header("a bad root".to_owned()))?
+            .to_owned(),
         attacker,
         tablebases: number("tablebases")? as usize,
         moves: number("moves")? as u32,
         positions: number("positions")?,
     };
     let body = zstd::bulk::decompress(&bytes[end + 1..], header.positions as usize * 2 + 1)
-        .map_err(|e| format!("a damaged proof: {e}"))?;
+        .map_err(|e| Error::Zstd(format!("a damaged proof: {e}")))?;
     let mut indices = Vec::with_capacity(header.positions as usize);
     let mut body = body.iter();
     while let Some(&first) = body.next() {
         if first < 128 {
             indices.push(u32::from(first));
         } else {
-            let second = *body.next().ok_or("a damaged proof: a move cut short")?;
+            let second = *body
+                .next()
+                .ok_or_else(|| Error::Zstd("a damaged proof: a move cut short".to_owned()))?;
             indices.push(u32::from(first & 127) | u32::from(second) << 7);
         }
     }
     if indices.len() as u64 != header.positions {
-        return Err("a damaged proof: the moves do not match the header".into());
+        return Err(Error::Mismatch(
+            "a damaged proof: the moves do not match the header".to_owned(),
+        ));
     }
     Ok(Some((header, indices)))
 }
@@ -476,19 +554,24 @@ pub fn decode(bytes: &[u8]) -> Result<Option<(Header, Vec<u32>)>, String> {
 /// Walks a proof back into its root, its attacker, and the move of every
 /// attacker position it proves: the moves written and those its settled
 /// positions take.
-pub fn strategy(header: &Header, indices: &[u32]) -> Result<(Position, Color, Strategy), String> {
+pub fn strategy(header: &Header, indices: &[u32]) -> Result<(Position, Color, Strategy), Error> {
     if header.tablebases > 0 {
-        return Err(format!(
+        return Err(Error::Tablebases(format!(
             "the proof needs the tablebases up to {} pieces",
             header.tablebases
-        ));
+        )));
     }
-    let root = crate::position(&header.root).map_err(|e| format!("an illegal root: {e}"))?;
+    let root = crate::position(&header.root)
+        .map_err(|e| Error::Position(format!("an illegal root: {e}")))?;
     let board = root.clone();
     let attacker = match header.attacker {
         None => board.turn(),
         Some(attacker) if attacker != board.turn() => attacker,
-        Some(_) => return Err("the header names the side to move as the attacker".into()),
+        Some(_) => {
+            return Err(Error::Header(
+                "the header names the side to move as the attacker".to_owned(),
+            ));
+        }
     };
     let mut walk = Walk {
         attacker,
@@ -499,15 +582,32 @@ pub fn strategy(header: &Header, indices: &[u32]) -> Result<(Position, Color, St
     };
     let length = walk.root(&board)?;
     if walk.chooser.next != indices.len() || length != header.moves {
-        return Err("the proof does not match its header".into());
+        return Err(Error::Mismatch(
+            "the proof does not match its header".to_owned(),
+        ));
     }
     Ok((root, attacker, walk.strategy.unwrap_or_default()))
 }
 
-/// A mate in 4, in JSON lines: a quiet knight move first, so that the
-/// compact format writes 6 moves.
 #[cfg(test)]
-pub const SMALL: &str = r#"{"moves":4,"root":"rnbqkb1r/1pp1n1pp/p2p4/3P1pN1/4p2P/2N5/PPP1PPP1/R1BQKB1R w KQkq - 0 1"}
+pub(crate) mod tests {
+    use super::{
+        Header, State, decode, encode, encode_jsonl, is_capture, judge, number, strategy,
+        won_at_once,
+    };
+    use crate::board::Move;
+    use crate::board::Position;
+    use crate::types::{Color, Role, castle_king_to, castle_side};
+
+    #[cfg(test)]
+    fn state(pos: &Position, attacker: Color) -> State {
+        judge(pos, attacker, &pos.legal_moves())
+    }
+
+    /// A mate in 4, in JSON lines: a quiet knight move first, so that the
+    /// compact format writes 6 moves.
+    #[cfg(test)]
+    pub const SMALL: &str = r#"{"moves":4,"root":"rnbqkb1r/1pp1n1pp/p2p4/3P1pN1/4p2P/2N5/PPP1PPP1/R1BQKB1R w KQkq - 0 1"}
 {"fen":"rnbqkb1r/1pp1n1pp/p2p4/3P1pN1/4p2P/2N5/PPP1PPP1/R1BQKB1R w KQkq - 0 1","move":"g5f7"}
 {"fen":"rnb1kb1r/1ppqnNpp/p2p4/3P1p2/4p2P/2N5/PPP1PPP1/R1BQKB1R w KQkq - 2 2","move":"c1g5"}
 {"fen":"rnb1kbnr/1ppq1Npp/p2p4/3P1pB1/4p2P/2N5/PPP1PPP1/R2QKB1R w KQkq - 4 3","move":"g5e7"}
@@ -516,30 +616,20 @@ pub const SMALL: &str = r#"{"moves":4,"root":"rnbqkb1r/1pp1n1pp/p2p4/3P1pN1/4p2P
 {"fen":"rnb1kb1r/1ppq1Npp/p2p4/5pB1/4p2P/2N5/PPP1PPP1/R2QKB1R w KQkq - 0 3","move":"g5e7"}
 "#;
 
-/// SMALL's win from the position after the attacker's first move, with the
-/// defender to move there, so that the header names the attacker.
-#[cfg(test)]
-pub fn small_defended() -> (Header, Vec<u8>) {
-    let (_, bytes) = encode_jsonl(SMALL).unwrap();
-    let (header, indices) = decode(&bytes).unwrap().unwrap();
-    let (root, attacker, moves) = strategy(&header, &indices).unwrap();
-    let key = root.hash();
-    let after = root.play(moves[&key].unwrap());
-    encode(&after, attacker, |pos| {
-        moves.get(&pos.hash()).copied().flatten()
-    })
-    .unwrap()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{
-        SMALL, State, decode, encode_jsonl, is_capture, number, small_defended, state, strategy,
-        won_at_once,
-    };
-    use crate::board::Move;
-    use crate::board::Position;
-    use crate::types::{Color, Role, castle_king_to, castle_side};
+    /// SMALL's win from the position after the attacker's first move, with the
+    /// defender to move there, so that the header names the attacker.
+    #[cfg(test)]
+    pub fn small_defended() -> (Header, Vec<u8>) {
+        let (_, bytes) = encode_jsonl(SMALL).unwrap();
+        let (header, indices) = decode(&bytes).unwrap().unwrap();
+        let (root, attacker, moves) = strategy(&header, &indices).unwrap();
+        let key = root.hash();
+        let after = root.play(moves[&key].unwrap());
+        encode(&after, attacker, |pos| {
+            moves.get(&pos.hash()).copied().flatten()
+        })
+        .unwrap()
+    }
 
     #[test]
     fn reads_back_what_it_writes() {
@@ -578,12 +668,15 @@ mod tests {
         named.attacker = Some(Color::Black);
         let error = strategy(&named, &indices).err();
         assert_eq!(
-            error.as_deref(),
+            error.map(|error| error.to_string()).as_deref(),
             Some("the header names the side to move as the attacker")
         );
         let mut bad = line.replace("white", "red").into_bytes();
         bad.extend(&bytes[line.len()..]);
-        assert_eq!(decode(&bad).err().as_deref(), Some("a bad attacker"));
+        assert_eq!(
+            decode(&bad).err().map(|error| error.to_string()).as_deref(),
+            Some("a bad attacker")
+        );
     }
 
     /// The proof order follows the rules: checks first, then the format's

@@ -133,16 +133,6 @@ impl Proofs {
         })
     }
 
-    /// A table of `size` slots, for tests.
-    #[cfg(test)]
-    pub fn sized(size: usize) -> Proofs {
-        Proofs {
-            entries: vec![Entry::default(); size],
-            used: 0,
-            most: size - (size / 10).max(1),
-        }
-    }
-
     /// The shortest proof of a position that holds at this counter.
     pub fn get(&self, hash: u64, counter: u32) -> Option<Proof> {
         let key = key(hash);
@@ -307,7 +297,7 @@ fn key(hash: u64) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{Proof, Proofs};
+    use super::{Entry, Proof, Proofs};
     use crate::board::Move;
 
     fn proof(length: u32, limit: u32) -> Proof {
@@ -320,6 +310,17 @@ mod tests {
 
     /// The shortest proof that holds at the counter, among a position's
     /// proofs at different counters.
+    impl Proofs {
+        /// A table of `size` slots, for tests.
+        fn sized(size: usize) -> Proofs {
+            Proofs {
+                entries: vec![Entry::default(); size],
+                used: 0,
+                most: size - (size / 10).max(1),
+            }
+        }
+    }
+
     #[test]
     fn keeps_the_shortest_proof_for_each_counter() {
         let mut proofs = Proofs::new(1).unwrap();
